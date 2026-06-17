@@ -11,7 +11,7 @@ import { getProductByHandle } from '@/mock/products';
 import { useCartStore } from '@/store/cart';
 import { track } from '@/lib/analytics';
 import type { ProductVariant } from '@/types';
-import { ShoppingBag, Star, Sparkles, Share2, Check, Link as LinkIcon } from 'lucide-react';
+import { ShoppingBag, Star, Sparkles, Share2, Check } from 'lucide-react';
 import ReviewSection from '@/components/product/ReviewSection';
 import RelatedProducts from '@/components/product/RelatedProducts';
 import Breadcrumb from '@/components/ui/Breadcrumb';

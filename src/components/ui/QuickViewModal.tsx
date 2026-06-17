@@ -22,11 +22,14 @@ export default function QuickViewModal({ product, onClose }: Props) {
 
   // Reset state whenever product changes
   useEffect(() => {
-    setSelectedVariant(null);
-    setSelectedColor(null);
-    setSelectedSize(null);
-    setActiveImg(0);
-    setAdded(false);
+    const id = window.setTimeout(() => {
+      setSelectedVariant(null);
+      setSelectedColor(null);
+      setSelectedSize(null);
+      setActiveImg(0);
+      setAdded(false);
+    }, 0);
+    return () => window.clearTimeout(id);
   }, [product?.id]);
 
   // Close on Escape

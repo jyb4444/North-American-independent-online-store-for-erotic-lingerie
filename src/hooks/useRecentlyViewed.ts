@@ -11,13 +11,16 @@ export function useRecentlyViewed(excludeId?: string) {
   const [ids, setIds] = useState<string[]>([]);
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      const parsed: string[] = raw ? JSON.parse(raw) : [];
-      setIds(Array.isArray(parsed) ? parsed : []);
-    } catch {
-      setIds([]);
-    }
+    const id = window.setTimeout(() => {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        const parsed: string[] = raw ? JSON.parse(raw) : [];
+        setIds(Array.isArray(parsed) ? parsed : []);
+      } catch {
+        setIds([]);
+      }
+    }, 0);
+    return () => window.clearTimeout(id);
   }, []);
 
   const recordView = useCallback((productId: string) => {

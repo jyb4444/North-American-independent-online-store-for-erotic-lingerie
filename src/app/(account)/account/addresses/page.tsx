@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { type Dispatch, type SetStateAction, useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Plus, Pencil, Trash2, Check, MapPin, X } from 'lucide-react';
@@ -15,9 +15,43 @@ const EMPTY_FORM: AddressForm = {
   city: '', state: '', zip: '', country: 'US', is_default: false,
 };
 
+function AddressField({
+  form,
+  label,
+  name,
+  required,
+  placeholder,
+  half,
+  setForm,
+}: {
+  form: AddressForm;
+  label: string;
+  name: keyof AddressForm;
+  required?: boolean;
+  placeholder?: string;
+  half?: boolean;
+  setForm: Dispatch<SetStateAction<AddressForm>>;
+}) {
+  return (
+    <div className={half ? '' : 'col-span-2'}>
+      <label className="mb-1.5 block text-xs font-medium uppercase tracking-widest text-ivory-muted">
+        {label}{required && ' *'}
+      </label>
+      <input
+        type="text"
+        value={form[name] as string}
+        onChange={(e) => setForm((f) => ({ ...f, [name]: e.target.value }))}
+        required={required}
+        placeholder={placeholder}
+        className="w-full border border-wine-700 bg-wine-800 px-3 py-2.5 text-sm text-ivory placeholder-ivory-dim focus:border-gold-400 focus:outline-none transition"
+      />
+    </div>
+  );
+}
+
 export default function AddressesPage() {
   const router = useRouter();
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
 
   const [userId, setUserId] = useState('');
   const [addresses, setAddresses] = useState<Address[]>([]);
@@ -28,15 +62,7 @@ export default function AddressesPage() {
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState('');
 
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (!user) { router.push('/login'); return; }
-      setUserId(user.id);
-      fetchAddresses(user.id);
-    });
-  }, []);
-
-  async function fetchAddresses(uid: string) {
+  const fetchAddresses = useCallback(async (uid: string) => {
     const { data } = await supabase
       .from('addresses')
       .select('*')
@@ -45,7 +71,15 @@ export default function AddressesPage() {
       .order('created_at', { ascending: false });
     setAddresses(data ?? []);
     setLoading(false);
-  }
+  }, [supabase]);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) { router.push('/login'); return; }
+      setUserId(user.id);
+      void fetchAddresses(user.id);
+    });
+  }, [fetchAddresses, router, supabase.auth]);
 
   function openNew() {
     setEditingId(null);
@@ -94,7 +128,7 @@ export default function AddressesPage() {
 
     setSaving(false);
     setShowForm(false);
-    fetchAddresses(userId);
+    void fetchAddresses(userId);
   }
 
   async function handleDelete(id: string) {
@@ -107,26 +141,6 @@ export default function AddressesPage() {
     await supabase.from('addresses').update({ is_default: true }).eq('id', address.id);
     setAddresses((prev) =>
       prev.map((a) => ({ ...a, is_default: a.id === address.id }))
-    );
-  }
-
-  function Field({ label, name, required, placeholder, half }: {
-    label: string; name: keyof AddressForm; required?: boolean; placeholder?: string; half?: boolean;
-  }) {
-    return (
-      <div className={half ? '' : 'col-span-2'}>
-        <label className="mb-1.5 block text-xs font-medium uppercase tracking-widest text-ivory-muted">
-          {label}{required && ' *'}
-        </label>
-        <input
-          type="text"
-          value={form[name] as string}
-          onChange={(e) => setForm((f) => ({ ...f, [name]: e.target.value }))}
-          required={required}
-          placeholder={placeholder}
-          className="w-full border border-wine-700 bg-wine-800 px-3 py-2.5 text-sm text-ivory placeholder-ivory-dim focus:border-gold-400 focus:outline-none transition"
-        />
-      </div>
     );
   }
 
@@ -226,14 +240,14 @@ export default function AddressesPage() {
           </div>
 
           <form onSubmit={handleSave} className="grid grid-cols-2 gap-3">
-            <Field label="Full Name" name="full_name" required />
-            <Field label="Phone" name="phone" placeholder="+1 555 000 0000" half />
-            <Field label="Country" name="country" required half />
-            <Field label="Address Line 1" name="address_line1" required placeholder="123 Main St" />
-            <Field label="Address Line 2" name="address_line2" placeholder="Apt, Suite, etc." />
-            <Field label="City" name="city" required half />
-            <Field label="State / Province" name="state" required half />
-            <Field label="ZIP / Postal Code" name="zip" required half />
+            <AddressField form={form} setForm={setForm} label="Full Name" name="full_name" required />
+            <AddressField form={form} setForm={setForm} label="Phone" name="phone" placeholder="+1 555 000 0000" half />
+            <AddressField form={form} setForm={setForm} label="Country" name="country" required half />
+            <AddressField form={form} setForm={setForm} label="Address Line 1" name="address_line1" required placeholder="123 Main St" />
+            <AddressField form={form} setForm={setForm} label="Address Line 2" name="address_line2" placeholder="Apt, Suite, etc." />
+            <AddressField form={form} setForm={setForm} label="City" name="city" required half />
+            <AddressField form={form} setForm={setForm} label="State / Province" name="state" required half />
+            <AddressField form={form} setForm={setForm} label="ZIP / Postal Code" name="zip" required half />
 
             <div className="col-span-2 flex items-center gap-2">
               <button

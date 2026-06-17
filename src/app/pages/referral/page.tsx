@@ -21,11 +21,14 @@ export default function ReferralPage() {
 
   useEffect(() => {
     if (!user || user === 'loading') return;
-    setLoading(true);
-    fetch('/api/referral')
-      .then((r) => r.json() as Promise<ReferralData>)
-      .then((data) => setReferral(data))
-      .finally(() => setLoading(false));
+    const id = window.setTimeout(() => {
+      setLoading(true);
+      fetch('/api/referral')
+        .then((r) => r.json() as Promise<ReferralData>)
+        .then((data) => setReferral(data))
+        .finally(() => setLoading(false));
+    }, 0);
+    return () => window.clearTimeout(id);
   }, [user]);
 
   const referralUrl = referral

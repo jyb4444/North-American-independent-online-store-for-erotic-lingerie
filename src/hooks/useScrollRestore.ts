@@ -1,12 +1,10 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { usePathname } from 'next/navigation';
 
 const STORAGE_PREFIX = 'velour_scroll_';
 
 export function useScrollRestore(key: string) {
-  const pathname = usePathname();
   const savedRef = useRef<number | null>(null);
 
   // On mount: restore saved scroll position

@@ -24,7 +24,10 @@ export default function MobileBottomNav() {
   // Hide on PDP (it has its own sticky ATC bar)
   const isPDP = pathname.startsWith('/products/');
 
-  useEffect(() => { setMounted(true); }, []);
+  useEffect(() => {
+    const id = window.setTimeout(() => setMounted(true), 0);
+    return () => window.clearTimeout(id);
+  }, []);
 
   if (isPDP) return null;
 

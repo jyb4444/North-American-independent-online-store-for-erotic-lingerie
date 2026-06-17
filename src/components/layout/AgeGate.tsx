@@ -22,7 +22,10 @@ export default function AgeGate() {
   const [show, setShow] = useState(false);
 
   useEffect(() => {
-    if (!getAgeCookie()) setShow(true);
+    const id = window.setTimeout(() => {
+      if (!getAgeCookie()) setShow(true);
+    }, 0);
+    return () => window.clearTimeout(id);
   }, []);
 
   function handleConfirm() {
