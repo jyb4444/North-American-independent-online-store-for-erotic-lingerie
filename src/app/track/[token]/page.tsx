@@ -28,7 +28,11 @@ function publicOrder(order: Awaited<ReturnType<typeof lookupOrder>>): PublicTrac
   };
 }
 
-export default async function TokenTrackPage({ params }: PageProps<'/track/[token]'>) {
+type TokenTrackPageProps = {
+  params: Promise<{ token: string }>;
+};
+
+export default async function TokenTrackPage({ params }: TokenTrackPageProps) {
   const { token } = await params;
   const order = publicOrder(await lookupOrder({ token }));
   return (
