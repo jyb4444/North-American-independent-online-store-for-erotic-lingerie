@@ -150,6 +150,129 @@ export type Database = {
           updated_at?: string;
         };
       };
+      orders: {
+        Row: {
+          id: string;
+          user_id: string | null;
+          shopify_order_id: string;
+          shopify_order_number: string;
+          email: string;
+          phone: string | null;
+          financial_status: string | null;
+          fulfillment_status: string | null;
+          total_amount: number | null;
+          currency: string;
+          processed_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          user_id?: string | null;
+          shopify_order_id: string;
+          shopify_order_number: string;
+          email: string;
+          phone?: string | null;
+          financial_status?: string | null;
+          fulfillment_status?: string | null;
+          total_amount?: number | null;
+          currency?: string;
+          processed_at?: string | null;
+        };
+        Update: {
+          user_id?: string | null;
+          shopify_order_number?: string;
+          email?: string;
+          phone?: string | null;
+          financial_status?: string | null;
+          fulfillment_status?: string | null;
+          total_amount?: number | null;
+          currency?: string;
+          processed_at?: string | null;
+          updated_at?: string;
+        };
+      };
+      shipments: {
+        Row: {
+          id: string;
+          order_id: string;
+          shopify_fulfillment_id: string | null;
+          tracking_number: string | null;
+          tracking_url: string | null;
+          carrier: string | null;
+          status: string;
+          estimated_delivery_at: string | null;
+          shipped_at: string | null;
+          delivered_at: string | null;
+          public_lookup_token: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          order_id: string;
+          shopify_fulfillment_id?: string | null;
+          tracking_number?: string | null;
+          tracking_url?: string | null;
+          carrier?: string | null;
+          status?: string;
+          estimated_delivery_at?: string | null;
+          shipped_at?: string | null;
+          delivered_at?: string | null;
+          public_lookup_token: string;
+        };
+        Update: {
+          shopify_fulfillment_id?: string | null;
+          tracking_number?: string | null;
+          tracking_url?: string | null;
+          carrier?: string | null;
+          status?: string;
+          estimated_delivery_at?: string | null;
+          shipped_at?: string | null;
+          delivered_at?: string | null;
+          updated_at?: string;
+        };
+      };
+      shipment_events: {
+        Row: {
+          id: string;
+          shipment_id: string;
+          status: string;
+          title: string;
+          description: string | null;
+          location: string | null;
+          occurred_at: string;
+          created_at: string;
+        };
+        Insert: {
+          shipment_id: string;
+          status: string;
+          title: string;
+          description?: string | null;
+          location?: string | null;
+          occurred_at?: string;
+        };
+        Update: never;
+      };
+      notification_logs: {
+        Row: {
+          id: string;
+          order_id: string | null;
+          shipment_id: string | null;
+          channel: 'email' | 'sms';
+          event_type: string;
+          recipient: string;
+          provider_message_id: string | null;
+          sent_at: string;
+        };
+        Insert: {
+          order_id?: string | null;
+          shipment_id?: string | null;
+          channel: 'email' | 'sms';
+          event_type: string;
+          recipient: string;
+          provider_message_id?: string | null;
+        };
+        Update: never;
+      };
     };
   };
 };

@@ -4,11 +4,17 @@ import ProductCarousel from '@/components/ui/ProductCarousel';
 import ProductCard from '@/components/product/ProductCard';
 import DailyRewardCard from '@/components/rewards/DailyRewardCard';
 import RecentlyViewedSection from '@/components/ui/RecentlyViewedSection';
-import { MOCK_PRODUCTS, getBestsellers, getNewArrivals } from '@/mock/products';
+import { getAllProducts, getBestsellers, getNewArrivals } from '@/lib/products';
 
-export default function HomePage() {
-  const newArrivals = getNewArrivals();
-  const hotProducts = [...getBestsellers(), ...MOCK_PRODUCTS]
+export const dynamic = 'force-dynamic';
+
+export default async function HomePage() {
+  const [newArrivals, bestsellers, allProducts] = await Promise.all([
+    getNewArrivals(),
+    getBestsellers(),
+    getAllProducts(),
+  ]);
+  const hotProducts = [...bestsellers, ...allProducts]
     .filter((product, index, products) => products.findIndex((p) => p.id === product.id) === index)
     .sort((a, b) => Number(b.isBestseller) - Number(a.isBestseller) || b.rating - a.rating)
     .slice(0, 8);

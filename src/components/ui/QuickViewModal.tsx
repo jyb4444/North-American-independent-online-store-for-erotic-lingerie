@@ -12,6 +12,10 @@ import WishlistButton from '@/components/product/WishlistButton';
 
 type Props = { product: Product | null; onClose: () => void };
 
+function isShopifyVariantGid(value?: string) {
+  return !!value && value.startsWith('gid://shopify/ProductVariant/');
+}
+
 export default function QuickViewModal({ product, onClose }: Props) {
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null);
   const [selectedColor, setSelectedColor] = useState<string | null>(null);
@@ -92,6 +96,9 @@ export default function QuickViewModal({ product, onClose }: Props) {
       color: selectedVariant.color,
       colorHex: selectedVariant.colorHex,
       quantity: 1,
+      shopifyVariantId: isShopifyVariantGid(selectedVariant.shopifyVariantId ?? selectedVariant.id)
+        ? selectedVariant.shopifyVariantId ?? selectedVariant.id
+        : undefined,
     });
     track.addedToCart(product!, selectedVariant, 1);
     setAdded(true);
