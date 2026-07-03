@@ -1,7 +1,20 @@
-const SHOPIFY_DOMAIN = process.env.NEXT_PUBLIC_SHOPIFY_DOMAIN!;
-const SHOPIFY_STOREFRONT_TOKEN = process.env.NEXT_PUBLIC_SHOPIFY_STOREFRONT_TOKEN!;
+function getShopifyConfig() {
+  const domain = process.env.NEXT_PUBLIC_SHOPIFY_DOMAIN;
+  const token = process.env.NEXT_PUBLIC_SHOPIFY_STOREFRONT_TOKEN;
 
-const endpoint = `https://${SHOPIFY_DOMAIN}/api/2024-01/graphql.json`;
+  if (!domain || domain === 'your-store.myshopify.com' || !token || token === 'your-storefront-access-token') {
+    return null;
+  }
+
+  return {
+    endpoint: `https://${domain}/api/2026-01/graphql.json`,
+    token,
+  };
+}
+
+export function hasShopifyConfig() {
+  return getShopifyConfig() !== null;
+}
 
 export async function shopifyFetch<T>({
   query,
@@ -12,11 +25,16 @@ export async function shopifyFetch<T>({
   variables?: Record<string, unknown>;
   cache?: RequestCache;
 }): Promise<T> {
-  const res = await fetch(endpoint, {
+  const config = getShopifyConfig();
+  if (!config) {
+    throw new Error('Shopify Storefront API is not configured');
+  }
+
+  const res = await fetch(config.endpoint, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'X-Shopify-Storefront-Access-Token': SHOPIFY_STOREFRONT_TOKEN,
+      'X-Shopify-Storefront-Access-Token': config.token,
     },
     body: JSON.stringify({ query, variables }),
     cache,

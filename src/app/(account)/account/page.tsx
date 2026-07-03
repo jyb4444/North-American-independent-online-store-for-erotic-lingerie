@@ -3,6 +3,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Package, Crown, MapPin, Heart, ChevronRight, UserCog } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
+import { getOrdersForUser } from '@/lib/logistics';
 import LocalLookbookPanel from '@/components/ai/LocalLookbookPanel';
 import NewUserTaskChecklist from '@/components/onboarding/NewUserTaskChecklist';
 import DailyRewardCard from '@/components/rewards/DailyRewardCard';
@@ -12,6 +13,25 @@ function getTier(name: string) {
   if (name === 'gold') return { name: 'Gold', color: 'text-yellow-400', border: 'border-yellow-400/40', bg: 'bg-yellow-400/10', next: null };
   if (name === 'silver') return { name: 'Silver', color: 'text-zinc-300', border: 'border-zinc-300/40', bg: 'bg-zinc-300/10', next: 'Gold' };
   return { name: 'Bronze', color: 'text-gold-400', border: 'border-gold-400/40', bg: 'bg-gold-400/10', next: 'Silver' };
+}
+
+function formatDate(value: string | null) {
+  if (!value) return 'Pending';
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  }).format(new Date(value));
+}
+
+function money(value: number | null, currency: string) {
+  if (value === null) return '';
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(value);
+}
+
+function statusLabel(status: string | null) {
+  if (!status) return 'Preparing';
+  return status.replace(/_/g, ' ');
 }
 
 export default async function AccountPage() {
@@ -31,8 +51,7 @@ export default async function AccountPage() {
   const displayName = user.user_metadata?.first_name ?? user.email?.split('@')[0] ?? 'Member';
   const avatarUrl = user.user_metadata?.avatar_url as string | undefined;
 
-  // TODO: fetch real orders after ordering is connected.
-  const mockOrders: { id: string; date: string; status: string; total: string; items: number }[] = [];
+  const orders = (await getOrdersForUser(user.id)).slice(0, 3);
 
   const quickLinks = [
     { href: '/account/orders', icon: Package, label: 'Style Activity', sub: 'Private history' },
@@ -118,7 +137,7 @@ export default async function AccountPage() {
             </Link>
           </div>
 
-          {mockOrders.length === 0 ? (
+          {orders.length === 0 ? (
             <div className="flex h-48 flex-col items-center justify-center border border-gold-600/20 bg-wine-900 text-center">
               <Package size={28} className="mb-3 text-wine-700" />
               <p className="font-serif text-lg font-light italic text-ivory-muted">Your private dashboard is ready</p>
@@ -126,20 +145,20 @@ export default async function AccountPage() {
             </div>
           ) : (
             <div className="space-y-3">
-              {mockOrders.map((order) => (
+              {orders.map((order) => (
                 <div key={order.id} className="border border-gold-600/20 bg-wine-900 p-5 transition hover:border-gold-400/30">
                   <div className="flex items-start justify-between">
                     <div>
-                      <p className="text-sm font-medium text-ivory">{order.id}</p>
-                      <p className="mt-0.5 text-xs text-ivory-dim">{order.date}</p>
+                      <p className="text-sm font-medium text-ivory">#{order.shopify_order_number}</p>
+                      <p className="mt-0.5 text-xs text-ivory-dim">{formatDate(order.processed_at ?? order.created_at)}</p>
                     </div>
                     <span className="border border-gold-600/40 px-3 py-0.5 text-[10px] font-medium uppercase tracking-widest text-gold-400">
-                      {order.status}
+                      {statusLabel(order.fulfillment_status)}
                     </span>
                   </div>
                   <div className="mt-4 flex items-center justify-between border-t border-gold-600/10 pt-3 text-xs">
-                    <span className="text-ivory-dim">{order.items} item{order.items > 1 ? 's' : ''}</span>
-                    <span className="font-serif text-base text-gold-400">{order.total}</span>
+                    <span className="text-ivory-dim">{order.shipments.length} shipment{order.shipments.length === 1 ? '' : 's'}</span>
+                    <span className="font-serif text-base text-gold-400">{money(order.total_amount, order.currency)}</span>
                   </div>
                 </div>
               ))}

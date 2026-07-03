@@ -1,7 +1,12 @@
 import { Resend } from 'resend';
 import type { CartItem } from '@/types';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+let resend: Resend | null = null;
+
+function getResend() {
+  resend ??= new Resend(process.env.RESEND_API_KEY);
+  return resend;
+}
 
 const FROM = process.env.RESEND_FROM_EMAIL ?? 'Velour <onboarding@resend.dev>';
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
@@ -136,6 +141,25 @@ function restockAlertHtml(productTitle: string, size: string, color: string, pro
   `);
 }
 
+function shipmentCreatedHtml(input: {
+  orderNumber: string;
+  carrier: string | null;
+  trackingNumber: string;
+  trackingUrl: string | null;
+  lookupToken: string;
+}) {
+  const privateTrackingUrl = `${BASE_URL}/track/${input.lookupToken}`;
+  return emailWrapper(`
+    ${heading('Your order is on the way.')}
+    ${para(`Order <strong style="color:${IVORY};">#${input.orderNumber}</strong> has shipped. Tracking is available through your private order link.`)}
+    ${divider()}
+    ${para(`<strong style="color:${IVORY};">Carrier:</strong> ${input.carrier ?? 'Carrier update pending'}<br/><strong style="color:${IVORY};">Tracking:</strong> ${input.trackingNumber}`)}
+    ${button('View Private Tracking', privateTrackingUrl)}
+    ${input.trackingUrl ? para(`Carrier page: <a href="${input.trackingUrl}" style="color:${GOLD};">open tracking</a>`) : ''}
+    ${para('For privacy, this message does not include product names. Billing appears as <strong style="color:' + IVORY + ';">VLR APPAREL</strong>.')}
+  `);
+}
+
 function contactConfirmationHtml(name: string) {
   return emailWrapper(`
     ${heading(`Thanks, ${name}.`)}
@@ -150,7 +174,7 @@ function contactConfirmationHtml(name: string) {
 // ─── Send helpers ───────────────────────────────────────────────────────────────
 
 export async function sendWelcomeEmail(to: string, firstName: string) {
-  return resend.emails.send({
+  return getResend().emails.send({
     from: FROM,
     to,
     subject: 'Your private wardrobe is ready',
@@ -165,7 +189,7 @@ export async function sendWishlistReminderEmail(
   productImage: string,
   productHandle: string,
 ) {
-  return resend.emails.send({
+  return getResend().emails.send({
     from: FROM,
     to,
     subject: 'A style you saved is still waiting',
@@ -174,7 +198,7 @@ export async function sendWishlistReminderEmail(
 }
 
 export async function sendAbandonedCartEmail(to: string, firstName: string, items: CartItem[]) {
-  return resend.emails.send({
+  return getResend().emails.send({
     from: FROM,
     to,
     subject: 'You left something in your private bag',
@@ -189,7 +213,7 @@ export async function sendRestockAlertEmail(
   color: string,
   productHandle: string,
 ) {
-  return resend.emails.send({
+  return getResend().emails.send({
     from: FROM,
     to,
     subject: `Back in stock: ${productTitle} — ${color} / ${size}`,
@@ -197,8 +221,24 @@ export async function sendRestockAlertEmail(
   });
 }
 
+export async function sendShipmentCreatedEmail(input: {
+  to: string;
+  orderNumber: string;
+  carrier: string | null;
+  trackingNumber: string;
+  trackingUrl: string | null;
+  lookupToken: string;
+}) {
+  return getResend().emails.send({
+    from: FROM,
+    to: input.to,
+    subject: `Your Velour order #${input.orderNumber} has shipped`,
+    html: shipmentCreatedHtml(input),
+  });
+}
+
 export async function sendContactConfirmation(to: string, name: string) {
-  return resend.emails.send({
+  return getResend().emails.send({
     from: FROM,
     to,
     subject: "We received your message — Velour",
@@ -213,7 +253,7 @@ export async function sendContactNotification(
   message: string,
 ) {
   const recipientEmail = process.env.CONTACT_RECIPIENT_EMAIL ?? 'ykj2018720@gmail.com';
-  return resend.emails.send({
+  return getResend().emails.send({
     from: FROM,
     to: recipientEmail,
     replyTo: email,

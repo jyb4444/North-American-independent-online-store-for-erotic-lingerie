@@ -5,6 +5,7 @@ export type ProductVariant = {
   colorHex: string;
   stock: number;
   sku: string;
+  shopifyVariantId?: string;
 };
 
 export type ModelMeasurements = {
@@ -53,6 +54,9 @@ export type CartItem = {
   color: string;
   colorHex: string;
   quantity: number;
+  // Shopify Global ID — set after products are synced to Shopify
+  // Format: gid://shopify/ProductVariant/XXXXX
+  shopifyVariantId?: string;
 };
 
 export type MembershipTier = 'none' | 'bronze' | 'silver' | 'gold';

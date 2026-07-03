@@ -48,9 +48,9 @@ export async function GET(req: Request) {
       .from('profiles')
       .select('first_name')
       .eq('id', snapshot.user_id)
-      .maybeSingle();
+      .maybeSingle() as { data: { first_name: string | null } | null };
 
-    const firstName = (profile?.first_name as string | null | undefined) ?? '';
+    const firstName = profile?.first_name ?? '';
 
     try {
       await sendAbandonedCartEmail(snapshot.email, firstName, items);
