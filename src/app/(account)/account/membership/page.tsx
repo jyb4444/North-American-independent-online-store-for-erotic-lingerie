@@ -38,7 +38,7 @@ export default async function MembershipPage() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-14 sm:px-6">
       <div className="mb-12 text-center">
-        <p className="text-xs font-medium uppercase tracking-[0.4em] text-gold-400">Velour</p>
+        <p className="text-xs font-medium uppercase tracking-[0.4em] text-gold-400">Self Love</p>
         <h1 className="font-serif text-4xl font-light italic text-ivory">Private Style Tools</h1>
         <div className="mx-auto mt-4 h-px w-12 bg-gold-400/40" />
         <p className="mx-auto mt-4 max-w-sm text-sm font-light leading-relaxed text-ivory-muted">

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import Image from 'next/image';
 import { track } from '@/lib/analytics';
 
 const COOKIE_KEY = 'velour_age_verified';
@@ -60,7 +61,14 @@ export default function AgeGate() {
             <span className="absolute left-4 top-4 font-serif text-lg text-gold-600/40 select-none">✦</span>
             <span className="absolute right-4 top-4 font-serif text-lg text-gold-600/40 select-none">✦</span>
 
-            <p className="mb-1 font-serif text-xs font-light uppercase tracking-[0.3em] text-gold-400">Velour</p>
+            <Image
+              src="/logo.png"
+              alt="Self Love"
+              width={72}
+              height={72}
+              className="mx-auto mb-3 h-16 w-16 rounded-full object-cover"
+            />
+            <p className="mb-1 text-xs font-semibold uppercase tracking-[0.3em] text-gold-400">Self Love</p>
             <h1 className="mb-1 font-serif text-3xl font-light italic text-ivory">Adults Only</h1>
             <div className="mx-auto mb-6 h-px w-12 bg-gold-400/50" />
             <p className="mb-8 text-sm leading-relaxed text-ivory-muted">

@@ -3,7 +3,7 @@ import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'Terms of Service',
-  description: 'Terms and conditions governing use of the Velour website and services.',
+  description: 'Terms and conditions governing use of the Self Love website and services.',
 };
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -24,7 +24,7 @@ export default function TermsPage() {
       <p className="mb-10 text-xs text-ivory-dim">Last updated: June 2026</p>
 
       <Section title="1. Acceptance of Terms">
-        <p>By accessing or using the Velour website (&ldquo;Site&rdquo;), you agree to be bound by these Terms of Service (&ldquo;Terms&rdquo;). If you do not agree to these Terms, please do not use the Site. These Terms apply to all visitors, users, and customers.</p>
+        <p>By accessing or using the Self Love website (&ldquo;Site&rdquo;), you agree to be bound by these Terms of Service (&ldquo;Terms&rdquo;). If you do not agree to these Terms, please do not use the Site. These Terms apply to all visitors, users, and customers.</p>
       </Section>
 
       <Section title="2. Age Requirement">
@@ -37,7 +37,7 @@ export default function TermsPage() {
       </Section>
 
       <Section title="4. Ordering and Payment">
-        <p>By placing an order, you agree to pay the listed price plus applicable taxes and shipping fees. All transactions are processed in USD unless otherwise stated. Charges appear on your statement as <strong className="text-ivory">VLR APPAREL</strong>.</p>
+        <p>By placing an order, you agree to pay the listed price plus applicable taxes and shipping fees. All transactions are processed in USD unless otherwise stated. Charges appear discreetly on your statement.</p>
         <p>We reserve the right to cancel any order due to pricing errors, suspected fraud, or stock unavailability. In such cases, a full refund will be issued promptly.</p>
       </Section>
 
@@ -51,7 +51,7 @@ export default function TermsPage() {
       </Section>
 
       <Section title="7. Intellectual Property">
-        <p>All content on this Site — including images, text, logos, and software — is owned by Velour or its licensors and is protected by copyright and other intellectual property laws. You may not reproduce, distribute, or create derivative works without our express written permission.</p>
+        <p>All content on this Site — including images, text, logos, and software — is owned by Self Love or its licensors and is protected by copyright and other intellectual property laws. You may not reproduce, distribute, or create derivative works without our express written permission.</p>
       </Section>
 
       <Section title="8. User Accounts">
@@ -59,7 +59,7 @@ export default function TermsPage() {
       </Section>
 
       <Section title="9. AI Preview Feature">
-        <p>Our AI Preview feature generates images based on product and body description inputs. These images are for personal styling guidance only and are not a guarantee of fit or appearance. Images are not stored on our servers and are private to your browser. Velour is not liable for any decisions made based on AI-generated previews.</p>
+        <p>Our AI Preview feature generates images based on product and body description inputs. These images are for personal styling guidance only and are not a guarantee of fit or appearance. Images are not stored on our servers and are private to your browser. Self Love is not liable for any decisions made based on AI-generated previews.</p>
       </Section>
 
       <Section title="10. Disclaimer of Warranties">
@@ -67,7 +67,7 @@ export default function TermsPage() {
       </Section>
 
       <Section title="11. Limitation of Liability">
-        <p>To the maximum extent permitted by law, Velour shall not be liable for any indirect, incidental, special, consequential, or punitive damages arising from your use of the Site or products purchased through it.</p>
+        <p>To the maximum extent permitted by law, Self Love shall not be liable for any indirect, incidental, special, consequential, or punitive damages arising from your use of the Site or products purchased through it.</p>
       </Section>
 
       <Section title="12. Governing Law">

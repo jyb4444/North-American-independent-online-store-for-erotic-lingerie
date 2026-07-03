@@ -5,7 +5,7 @@ function generateReferralCode(userId: string): string {
   // Short deterministic code: first 6 chars of userId + 4 random chars
   const base = userId.replace(/-/g, '').slice(0, 6).toUpperCase();
   const suffix = Math.random().toString(36).slice(2, 6).toUpperCase();
-  return `VLR-${base}-${suffix}`;
+  return `SL-${base}-${suffix}`;
 }
 
 // GET: fetch or create referral code for current user

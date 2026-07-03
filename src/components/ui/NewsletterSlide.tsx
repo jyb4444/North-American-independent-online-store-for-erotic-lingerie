@@ -86,7 +86,7 @@ export default function NewsletterSlide() {
 
           {state === 'success' ? (
             <div className="py-2 text-center">
-              <p className="font-serif text-lg font-light text-ivory">Welcome to Velour</p>
+              <p className="font-serif text-lg font-light text-ivory">Welcome to Self Love</p>
               <p className="mt-1 text-xs text-ivory-muted">
                 Your first private access email is on its way.
               </p>

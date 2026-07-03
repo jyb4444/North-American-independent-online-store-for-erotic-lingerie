@@ -4,7 +4,8 @@ import { Resend } from 'resend';
 import { rateLimit } from '@/lib/rate-limit';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
-const FROM = process.env.RESEND_FROM_EMAIL ?? 'Velour <onboarding@resend.dev>';
+const FROM = process.env.RESEND_FROM_EMAIL ?? 'Self Love <onboarding@resend.dev>';
+const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
 
 function generateCode(): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -61,13 +62,13 @@ export async function POST(req: NextRequest) {
     await resend.emails.send({
       from: FROM,
       to: recipient_email,
-      subject: `You've received a Velour gift card — ${sender_name ?? 'A friend'} sent you a gift`,
+      subject: `You've received a Self Love gift card — ${sender_name ?? 'A friend'} sent you a gift`,
       html: `
         <div style="font-family: Georgia, serif; max-width: 520px; margin: 0 auto; padding: 40px 24px; background: #110a0d; color: #e8ddd0;">
-          <p style="font-size: 22px; font-weight: 300; color: #c9a84c; font-style: italic; margin-bottom: 24px;">Velour</p>
+          <img src="${BASE_URL}/logo.png" width="72" height="72" alt="Self Love" style="display:block;margin:0 auto 16px;border-radius:999px;object-fit:cover;" />
           <h1 style="font-size: 20px; font-weight: 300; margin-bottom: 8px;">A gift for you, ${recipient_name ?? 'you'}</h1>
           <p style="font-size: 13px; color: #b0a090; margin-bottom: 20px;">
-            ${sender_name ?? 'Someone special'} sent you a Velour gift card worth
+            ${sender_name ?? 'Someone special'} sent you a Self Love gift card worth
             <strong style="color: #c9a84c;">$${amount.toFixed(2)}</strong>.
           </p>
           ${message ? `<blockquote style="border-left: 2px solid #c9a84c; padding-left: 16px; margin: 20px 0; font-style: italic; color: #b0a090; font-size: 13px;">"${message}"</blockquote>` : ''}
@@ -76,7 +77,7 @@ export async function POST(req: NextRequest) {
             <p style="font-size: 22px; font-weight: 300; color: #c9a84c; letter-spacing: 0.15em;">${code}</p>
             <p style="font-size: 11px; color: #6b5e50; margin-top: 8px;">Balance: $${amount.toFixed(2)} · Expires: ${expiresAt.toLocaleDateString('en-US', { year: 'numeric', month: 'long' })}</p>
           </div>
-          <p style="font-size: 12px; color: #b0a090;">Enter this code at checkout on velour.com to redeem your gift.</p>
+          <p style="font-size: 12px; color: #b0a090;">Enter this code at checkout to redeem your gift.</p>
           <p style="font-size: 11px; color: #4a3020; margin-top: 24px;">Sent discreetly. The gift card is valid for one year from issue date.</p>
         </div>
       `,

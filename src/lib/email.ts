@@ -8,7 +8,7 @@ function getResend() {
   return resend;
 }
 
-const FROM = process.env.RESEND_FROM_EMAIL ?? 'Velour <onboarding@resend.dev>';
+const FROM = process.env.RESEND_FROM_EMAIL ?? 'Self Love <onboarding@resend.dev>';
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
 
 // ─── Shared style constants ────────────────────────────────────────────────────
@@ -26,14 +26,15 @@ function emailWrapper(body: string) {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Velour</title>
+  <title>Self Love</title>
 </head>
 <body style="margin:0;padding:0;background:${BG};font-family:Georgia,serif;">
   <table width="100%" cellpadding="0" cellspacing="0" style="background:${BG};padding:40px 16px;">
     <tr><td align="center">
       <table width="100%" style="max-width:560px;background:${SURFACE};border:1px solid ${BORDER};">
         <tr><td style="padding:36px 40px 0;text-align:center;border-bottom:1px solid ${BORDER};">
-          <p style="margin:0;font-family:Georgia,serif;font-size:26px;font-style:italic;font-weight:300;color:${GOLD};letter-spacing:0.06em;">Velour</p>
+          <img src="${BASE_URL}/logo.png" width="72" height="72" alt="Self Love" style="display:block;margin:0 auto 12px;border-radius:999px;object-fit:cover;" />
+          <p style="margin:0;font-family:Arial,sans-serif;font-size:13px;font-weight:700;color:${IVORY};letter-spacing:0.22em;text-transform:uppercase;">Self Love</p>
           <p style="margin:8px 0 0;font-size:10px;text-transform:uppercase;letter-spacing:0.3em;color:${MUTED};font-family:Arial,sans-serif;">Private Intimate Apparel</p>
           <div style="margin:20px auto 0;height:1px;width:40px;background:${BORDER};"></div>
         </td></tr>
@@ -42,8 +43,8 @@ function emailWrapper(body: string) {
         </td></tr>
         <tr><td style="padding:24px 40px;border-top:1px solid ${BORDER};text-align:center;">
           <p style="margin:0;font-size:10px;color:${MUTED};font-family:Arial,sans-serif;line-height:1.6;">
-            © ${new Date().getFullYear()} Velour · Private Intimate Apparel<br/>
-            Billing appears as <strong style="color:${IVORY};">VLR APPAREL</strong> — never as Velour or intimate apparel.<br/>
+            © ${new Date().getFullYear()} Self Love · Private Intimate Apparel<br/>
+            Billing appears discreetly — never as intimate apparel.<br/>
             <a href="${BASE_URL}/pages/privacy" style="color:${MUTED};">Privacy Policy</a> &nbsp;·&nbsp;
             <a href="${BASE_URL}/pages/terms" style="color:${MUTED};">Terms</a> &nbsp;·&nbsp;
             <a href="${BASE_URL}/pages/contact" style="color:${MUTED};">Contact Us</a>
@@ -128,7 +129,7 @@ function abandonedCartHtml(firstName: string, items: CartItem[]) {
     ${rows}
     ${more}
     ${button('Return to Your Bag', BASE_URL)}
-    ${para('Your bag stays private in this browser. Billing always appears as <strong style="color:' + IVORY + ';">VLR APPAREL</strong>.')}
+    ${para('Your bag stays private in this browser. Billing appears discreetly.')}
   `);
 }
 
@@ -156,7 +157,7 @@ function shipmentCreatedHtml(input: {
     ${para(`<strong style="color:${IVORY};">Carrier:</strong> ${input.carrier ?? 'Carrier update pending'}<br/><strong style="color:${IVORY};">Tracking:</strong> ${input.trackingNumber}`)}
     ${button('View Private Tracking', privateTrackingUrl)}
     ${input.trackingUrl ? para(`Carrier page: <a href="${input.trackingUrl}" style="color:${GOLD};">open tracking</a>`) : ''}
-    ${para('For privacy, this message does not include product names. Billing appears as <strong style="color:' + IVORY + ';">VLR APPAREL</strong>.')}
+    ${para('For privacy, this message does not include product names. Billing appears discreetly.')}
   `);
 }
 
@@ -167,7 +168,7 @@ function contactConfirmationHtml(name: string) {
     ${para('For urgent matters, please include your order number (once ordering is live) or a brief description so we can help faster.')}
     ${divider()}
     ${para('While you wait, you can explore the collection or use the <a href="' + BASE_URL + '/pages/faq" style="color:' + GOLD + ';">FAQ</a> for common questions.')}
-    ${button('Back to Velour', BASE_URL)}
+    ${button('Back to Self Love', BASE_URL)}
   `);
 }
 
@@ -232,7 +233,7 @@ export async function sendShipmentCreatedEmail(input: {
   return getResend().emails.send({
     from: FROM,
     to: input.to,
-    subject: `Your Velour order #${input.orderNumber} has shipped`,
+    subject: `Your Self Love order #${input.orderNumber} has shipped`,
     html: shipmentCreatedHtml(input),
   });
 }
@@ -241,7 +242,7 @@ export async function sendContactConfirmation(to: string, name: string) {
   return getResend().emails.send({
     from: FROM,
     to,
-    subject: "We received your message — Velour",
+    subject: "We received your message — Self Love",
     html: contactConfirmationHtml(name),
   });
 }
@@ -257,7 +258,7 @@ export async function sendContactNotification(
     from: FROM,
     to: recipientEmail,
     replyTo: email,
-    subject: `[Velour Contact] ${subject} — from ${name}`,
+    subject: `[Self Love Contact] ${subject} — from ${name}`,
     html: emailWrapper(`
       ${heading('New contact form submission')}
       ${para('<strong style="color:' + IVORY + ';">From:</strong> ' + name + ' &lt;' + email + '&gt;')}

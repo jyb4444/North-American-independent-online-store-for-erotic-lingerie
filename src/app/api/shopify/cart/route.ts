@@ -62,6 +62,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ checkoutUrl: data.cartCreate.cart.checkoutUrl });
   } catch (err) {
     console.error('Shopify cart creation failed:', err);
-    return NextResponse.json({ error: 'Failed to create cart' }, { status: 500 });
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : 'Failed to create cart' },
+      { status: 500 }
+    );
   }
 }

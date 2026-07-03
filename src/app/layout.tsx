@@ -14,8 +14,12 @@ import MobileBottomNav from '@/components/layout/MobileBottomNav';
 import NewsletterSlide from '@/components/ui/NewsletterSlide';
 
 export const metadata: Metadata = {
-  title: { default: 'Velour — Premium Intimate Apparel', template: '%s | Velour' },
+  title: { default: 'Self Love — Premium Intimate Apparel', template: '%s | Self Love' },
   description: 'Discover luxurious intimate apparel with private fit guidance and saved style tools.',
+  icons: {
+    icon: '/logo.png',
+    apple: '/logo.png',
+  },
   robots: { index: true, follow: true },
 };
 

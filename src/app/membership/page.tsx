@@ -42,7 +42,7 @@ export default function MembershipPage() {
       <section className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:py-24">
         <div className="max-w-3xl">
           <p className="text-xs font-medium uppercase tracking-[0.35em] text-gold-400">
-            Velour Membership
+            Self Love Membership
           </p>
           <h1 className="mt-5 font-serif text-5xl font-light leading-tight text-ivory sm:text-6xl">
             Personalized lingerie, chosen around your body and preferences.

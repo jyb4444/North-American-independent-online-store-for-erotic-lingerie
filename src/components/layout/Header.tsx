@@ -78,8 +78,18 @@ export default function Header() {
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
 
         {/* Logo */}
-        <Link href="/" className="font-serif text-xl font-light italic tracking-widest text-gold-400">
-          Velour
+        <Link href="/" className="flex items-center gap-2">
+          <Image
+            src="/logo.png"
+            alt="Self Love"
+            width={38}
+            height={38}
+            priority
+            className="h-9 w-9 rounded-full object-cover"
+          />
+          <span className="text-sm font-semibold uppercase tracking-[0.22em] text-ivory">
+            Self Love
+          </span>
         </Link>
 
         {/* Desktop Nav */}

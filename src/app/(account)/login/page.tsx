@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { createClient } from '@/lib/supabase/client';
 import { Eye, EyeOff } from 'lucide-react';
 
@@ -92,7 +93,15 @@ export default function LoginPage() {
       <div className="w-full max-w-sm">
         {/* Brand */}
         <div className="mb-8 text-center">
-          <p className="font-serif text-3xl font-light italic text-gold-400">Velour</p>
+          <Image
+            src="/logo.png"
+            alt="Self Love"
+            width={84}
+            height={84}
+            className="mx-auto h-20 w-20 rounded-full object-cover"
+            priority
+          />
+          <p className="mt-3 text-sm font-semibold uppercase tracking-[0.24em] text-ivory">Self Love</p>
           <div className="mx-auto mt-3 h-px w-10 bg-gold-600/50" />
           <p className="mt-3 text-xs font-medium uppercase tracking-[0.3em] text-ivory-muted">
             {mode === 'signin' ? 'Welcome Back' : 'Create Account'}
@@ -203,7 +212,7 @@ export default function LoginPage() {
                   value={referralCode}
                   onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
                   maxLength={19}
-                  placeholder="VLR-XXXXXX-XXXX"
+                  placeholder="SL-XXXXXX-XXXX"
                   className="w-full border border-wine-700 bg-wine-800 px-3 py-2.5 font-mono text-sm text-ivory placeholder-ivory-dim/50 focus:border-gold-400 focus:outline-none transition"
                 />
                 <p className="mt-1 text-[11px] text-ivory-dim">

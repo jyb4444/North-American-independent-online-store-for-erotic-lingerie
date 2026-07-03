@@ -25,12 +25,12 @@ const FAQS = [
     a: 'Checkout is not live yet. Payment options will be shown clearly once ordering is available.',
   },
   {
-    q: 'How does the Velour Membership work?',
+    q: 'How does the Self Love Membership work?',
     a: 'Membership currently helps organize your private account, wishlist, and style setup. Purchase-based rewards will be defined only after ordering is live.',
   },
   {
     q: 'What will appear on my bank statement?',
-    a: 'All charges appear as VLR APPAREL — never as "Velour," "intimate apparel," or any description that reveals the nature of your purchase. Packaging is similarly discreet with no brand markings on the outside.',
+    a: 'Charges appear discreetly and never include "intimate apparel" or any description that reveals the nature of your purchase. Packaging is similarly discreet with no product-identifying markings on the outside.',
   },
   {
     q: 'My size is out of stock — will it come back?',

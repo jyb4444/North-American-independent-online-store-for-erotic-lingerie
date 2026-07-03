@@ -3,7 +3,7 @@ import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'Privacy Policy',
-  description: 'How Velour collects, uses, and protects your personal information.',
+  description: 'How Self Love collects, uses, and protects your personal information.',
 };
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -24,7 +24,7 @@ export default function PrivacyPage() {
       <p className="mb-10 text-xs text-ivory-dim">Last updated: June 2026</p>
 
       <Section title="1. Who We Are">
-        <p>Velour (&ldquo;we,&rdquo; &ldquo;us,&rdquo; or &ldquo;our&rdquo;) operates this website. We are committed to protecting your privacy with particular care given the personal nature of the products we sell. This policy explains what data we collect, how we use it, and your rights.</p>
+        <p>Self Love (&ldquo;we,&rdquo; &ldquo;us,&rdquo; or &ldquo;our&rdquo;) operates this website. We are committed to protecting your privacy with particular care given the personal nature of the products we sell. This policy explains what data we collect, how we use it, and your rights.</p>
         <p>Contact: <a href="/pages/contact" className="text-gold-400 hover:underline">Contact us</a> or email us directly via the contact form.</p>
       </Section>
 
@@ -43,7 +43,7 @@ export default function PrivacyPage() {
       </Section>
 
       <Section title="4. Discreet Billing">
-        <p>All charges on your bank or credit card statement appear as <strong className="text-ivory">VLR APPAREL</strong> — never as &ldquo;Velour,&rdquo; &ldquo;intimate apparel,&rdquo; or any description that reveals the nature of your purchase. Packaging is similarly discreet.</p>
+        <p>Charges appear discreetly and never include &ldquo;intimate apparel&rdquo; or any description that reveals the nature of your purchase. Packaging is similarly discreet.</p>
       </Section>
 
       <Section title="5. AI Preview Privacy">

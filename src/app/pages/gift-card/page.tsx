@@ -84,7 +84,7 @@ export default function GiftCardPage() {
       <div className="mb-12 text-center">
         <Gift size={32} className="mx-auto mb-4 text-gold-400/60" />
         <p className="mb-2 text-xs font-medium uppercase tracking-[0.3em] text-gold-400">Send a Gift</p>
-        <h1 className="font-serif text-4xl font-light text-ivory">Velour Gift Card</h1>
+        <h1 className="font-serif text-4xl font-light text-ivory">Self Love Gift Card</h1>
         <p className="mt-3 text-sm text-ivory-muted">
           A thoughtful way to gift luxury intimate apparel.
           Delivered discreetly by email.
@@ -215,7 +215,7 @@ export default function GiftCardPage() {
 
         <p className="text-center text-xs text-ivory-dim">
           Gift cards are delivered by email and valid for one year.
-          The recipient&rsquo;s billing statement will show only &ldquo;VLR APPAREL&rdquo;.
+          Redemption and billing details are handled discreetly.
         </p>
       </form>
     </div>

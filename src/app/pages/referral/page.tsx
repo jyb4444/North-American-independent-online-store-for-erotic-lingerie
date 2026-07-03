@@ -49,7 +49,7 @@ export default function ReferralPage() {
       {/* Header */}
       <div className="mb-12 text-center">
         <Users size={32} className="mx-auto mb-4 text-gold-400/60" />
-        <p className="mb-2 text-xs font-medium uppercase tracking-[0.3em] text-gold-400">Share Velour</p>
+        <p className="mb-2 text-xs font-medium uppercase tracking-[0.3em] text-gold-400">Share Self Love</p>
         <h1 className="font-serif text-4xl font-light text-ivory">Refer a Friend</h1>
         <p className="mt-3 text-sm leading-relaxed text-ivory-muted">
           When a friend signs up and makes their first purchase using your private link,

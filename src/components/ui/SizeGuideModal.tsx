@@ -20,7 +20,7 @@ export default function SizeGuideModal({ open, onClose }: Props) {
           >
             <div className="flex items-center justify-between border-b border-gold-600/20 px-6 py-4">
               <div>
-                <p className="text-xs font-medium uppercase tracking-[0.3em] text-gold-400">Velour</p>
+                <p className="text-xs font-medium uppercase tracking-[0.3em] text-gold-400">Self Love</p>
                 <h2 className="font-serif text-xl font-light text-ivory">Size Guide</h2>
               </div>
               <button onClick={onClose} className="text-ivory-dim hover:text-gold-400 transition">

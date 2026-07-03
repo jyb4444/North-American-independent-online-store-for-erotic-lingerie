@@ -1,7 +1,7 @@
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowRight, Gift, Heart, Ruler, ShoppingBag, Sparkles, Trash2, X, Check } from 'lucide-react';
+import { ArrowRight, Gift, Heart, ShoppingBag, Sparkles, Trash2, X, Check } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useCartStore } from '@/store/cart';
@@ -24,20 +24,14 @@ function isShopifyVariantGid(value?: string) {
 function CheckoutButton({
   items,
   totalPrice,
-  hasCheckoutDomain,
-  onClose,
 }: {
   items: CartItem[];
   totalPrice: number;
-  hasCheckoutDomain: boolean;
-  onClose: () => void;
 }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   async function handleCheckout() {
-    if (!hasCheckoutDomain) { onClose(); return; }
-
     const shopifyLines = items
       .map((item) => ({
         merchandiseId: [item.shopifyVariantId, item.variantId].find(isShopifyVariantGid),
@@ -76,7 +70,7 @@ function CheckoutButton({
         disabled={loading}
         className="w-full border border-gold-400 py-3.5 text-xs font-medium uppercase tracking-[0.2em] text-gold-400 transition hover:bg-gold-400 hover:text-wine-950 disabled:opacity-60 disabled:cursor-wait"
       >
-        {loading ? 'Preparing checkout...' : hasCheckoutDomain ? 'Continue Privately' : 'Keep Planning Privately'}
+        {loading ? 'Preparing checkout...' : 'Go to checkout'}
       </button>
     </div>
   );
@@ -119,9 +113,6 @@ export default function CartDrawer() {
       setGcState('error');
     }
   }
-  const hasCheckoutDomain = !!process.env.NEXT_PUBLIC_SHOPIFY_DOMAIN
-    && process.env.NEXT_PUBLIC_SHOPIFY_DOMAIN !== 'your-store.myshopify.com';
-
   const cartProducts = useMemo(
     () => items
       .map((item) => MOCK_PRODUCTS.find((product) => product.id === item.productId))
@@ -440,22 +431,6 @@ export default function CartDrawer() {
                 </div>
               ) : (
                 <div className="space-y-6">
-                  <div className="border border-gold-600/20 bg-wine-950/35 px-4 py-3">
-                    <div className="flex items-start gap-3">
-                      <Ruler size={15} className="mt-0.5 flex-shrink-0 text-gold-400" />
-                      <div>
-                        <p className="text-xs font-medium uppercase tracking-widest text-gold-400">
-                          Fit guidance
-                        </p>
-                        <p className="mt-1 text-xs leading-relaxed text-ivory-dim">
-                          {hasProfile
-                            ? 'Fit guidance is based on your private profile.'
-                            : 'Add your private fit profile for size guidance while you compare styles.'}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
                   <ul className="space-y-5">
                     {items.map((item) => (
                       (() => {
@@ -685,19 +660,15 @@ export default function CartDrawer() {
                 )}
 
                 <p className="text-xs text-ivory-dim">
-                  {hasCheckoutDomain
-                    ? 'Review your private bag before continuing.'
-                    : 'Keep planning your private look. Your bag stays private in this browser.'}
+                  Review your bag before continuing to secure checkout.
                 </p>
                 <p className="text-[11px] text-ivory-dim">
-                  Billing appears as <span className="text-ivory">VLR APPAREL</span> — discreet on all statements.
+                  Billing appears discreetly on all statements.
                 </p>
                 <PrivacyTrustBar context="cart" compact />
                 <CheckoutButton
                   items={items}
                   totalPrice={totalPrice()}
-                  hasCheckoutDomain={hasCheckoutDomain}
-                  onClose={closeCart}
                 />
                 <button
                   onClick={closeCart}

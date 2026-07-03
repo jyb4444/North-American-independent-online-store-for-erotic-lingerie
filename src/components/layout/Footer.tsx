@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { useState } from 'react';
 import { Mail } from 'lucide-react';
 
@@ -24,7 +25,7 @@ function NewsletterForm() {
   if (state === 'success') {
     return (
       <p className="text-xs text-gold-400">
-        You&rsquo;re on the list. Welcome to Velour.
+        You&rsquo;re on the list. Welcome to Self Love.
       </p>
     );
   }
@@ -60,7 +61,14 @@ export default function Footer() {
 
         {/* Brand + divider */}
         <div className="mb-12 text-center">
-          <p className="font-serif text-2xl font-light italic text-gold-400">Velour</p>
+          <Image
+            src="/logo.png"
+            alt="Self Love"
+            width={72}
+            height={72}
+            className="mx-auto h-16 w-16 rounded-full object-cover"
+          />
+          <p className="mt-3 text-sm font-semibold uppercase tracking-[0.24em] text-ivory">Self Love</p>
           <div className="mx-auto mt-3 h-px w-12 bg-gold-600/40" />
         </div>
 
@@ -122,7 +130,7 @@ export default function Footer() {
         </div>
 
         <div className="mt-12 flex flex-col items-center justify-between gap-3 border-t border-gold-600/10 pt-8 text-xs md:flex-row">
-          <p>© {new Date().getFullYear()} Velour. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} Self Love. All rights reserved.</p>
           <div className="flex gap-5">
             <Link href="/pages/privacy" className="hover:text-gold-400 transition">Privacy Policy</Link>
             <Link href="/pages/terms" className="hover:text-gold-400 transition">Terms of Service</Link>
