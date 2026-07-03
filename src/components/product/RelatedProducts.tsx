@@ -2,18 +2,14 @@
 
 import { useMemo } from 'react';
 import Link from 'next/link';
-import { MOCK_PRODUCTS } from '@/mock/products';
 import ProductCard from '@/components/product/ProductCard';
 import type { Product } from '@/types';
 
-type Props = { product: Product };
+type Props = { product: Product; products?: Product[] };
 
-export default function RelatedProducts({ product }: Props) {
+export default function RelatedProducts({ product, products = [] }: Props) {
   const related = useMemo(() => {
-    // 1. Same category
-    // 2. Shared tags
-    // Exclude current product, limit to 4
-    const scored = MOCK_PRODUCTS.filter((p) => p.id !== product.id).map((p) => {
+    const scored = products.filter((p) => p.id !== product.id).map((p) => {
       let score = 0;
       if (p.category === product.category) score += 3;
       const sharedTags = p.tags.filter((t) => product.tags.includes(t)).length;
@@ -24,7 +20,7 @@ export default function RelatedProducts({ product }: Props) {
       .sort((a, b) => b.score - a.score || b.product.rating - a.product.rating)
       .slice(0, 4)
       .map((s) => s.product);
-  }, [product]);
+  }, [product, products]);
 
   if (related.length === 0) return null;
 

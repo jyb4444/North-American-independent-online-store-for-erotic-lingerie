@@ -16,6 +16,72 @@ import { notifyWishlistChanged, useWishlistSummary } from '@/hooks/useWishlistSu
 import { useFitProfile } from '@/hooks/useFitProfile';
 import type { CartItem, Product } from '@/types';
 
+function isShopifyVariantGid(value?: string) {
+  return !!value && value.startsWith('gid://shopify/ProductVariant/');
+}
+
+// ── Checkout button: creates a real Shopify cart via Cart API ─────────────
+function CheckoutButton({
+  items,
+  totalPrice,
+  hasCheckoutDomain,
+  onClose,
+}: {
+  items: CartItem[];
+  totalPrice: number;
+  hasCheckoutDomain: boolean;
+  onClose: () => void;
+}) {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  async function handleCheckout() {
+    if (!hasCheckoutDomain) { onClose(); return; }
+
+    const shopifyLines = items
+      .map((item) => ({
+        merchandiseId: [item.shopifyVariantId, item.variantId].find(isShopifyVariantGid),
+        quantity: item.quantity,
+      }))
+      .filter((line): line is { merchandiseId: string; quantity: number } => !!line.merchandiseId);
+
+    setLoading(true);
+    setError('');
+    try {
+      track.checkoutStarted(items, totalPrice);
+      const res = await fetch('/api/shopify/cart', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lines: shopifyLines, items }),
+      });
+      const data = await res.json() as { checkoutUrl?: string; error?: string };
+      if (data.checkoutUrl) {
+        window.location.href = data.checkoutUrl;
+      } else {
+        throw new Error(data.error ?? 'Unknown error');
+      }
+    } catch (err) {
+      console.error('Checkout failed:', err);
+      setError(err instanceof Error ? err.message : 'Could not start checkout. Please remove and re-add this item.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="space-y-2">
+      {error && <p className="text-xs leading-relaxed text-crimson-400">{error}</p>}
+      <button
+        onClick={handleCheckout}
+        disabled={loading}
+        className="w-full border border-gold-400 py-3.5 text-xs font-medium uppercase tracking-[0.2em] text-gold-400 transition hover:bg-gold-400 hover:text-wine-950 disabled:opacity-60 disabled:cursor-wait"
+      >
+        {loading ? 'Preparing checkout...' : hasCheckoutDomain ? 'Continue Privately' : 'Keep Planning Privately'}
+      </button>
+    </div>
+  );
+}
+
 type RecommendationType = 'soft_match' | 'featured' | 'category_match';
 type CartRecommendation = {
   product: Product;
@@ -265,6 +331,9 @@ export default function CartDrawer() {
       color: variant.color,
       colorHex: variant.colorHex,
       quantity: 1,
+      shopifyVariantId: isShopifyVariantGid(variant.shopifyVariantId ?? variant.id)
+        ? variant.shopifyVariantId ?? variant.id
+        : undefined,
     });
     track.addedToCart(recommendation.product, variant, 1);
     track.cartRecommendationAdded({
@@ -624,22 +693,12 @@ export default function CartDrawer() {
                   Billing appears as <span className="text-ivory">VLR APPAREL</span> — discreet on all statements.
                 </p>
                 <PrivacyTrustBar context="cart" compact />
-                <button
-                  onClick={() => {
-                    const shopifyDomain = process.env.NEXT_PUBLIC_SHOPIFY_DOMAIN;
-                    if (shopifyDomain && shopifyDomain !== 'your-store.myshopify.com') {
-                      track.checkoutStarted(items, totalPrice());
-                      // TODO: replace SHOPIFY_CHECKOUT_URL with real Shopify cart checkout URL
-                      // from: await shopifyFetch({ query: CREATE_CART, variables: { lines } })
-                      window.location.href = `https://${shopifyDomain}/checkout`;
-                    } else {
-                      closeCart();
-                    }
-                  }}
-                  className="w-full border border-gold-400 py-3.5 text-xs font-medium uppercase tracking-[0.2em] text-gold-400 transition hover:bg-gold-400 hover:text-wine-950"
-                >
-                  {hasCheckoutDomain ? 'Continue Privately' : 'Keep Planning Privately'}
-                </button>
+                <CheckoutButton
+                  items={items}
+                  totalPrice={totalPrice()}
+                  hasCheckoutDomain={hasCheckoutDomain}
+                  onClose={closeCart}
+                />
                 <button
                   onClick={closeCart}
                   className="w-full py-2 text-xs uppercase tracking-widest text-ivory-dim transition hover:text-ivory-muted"

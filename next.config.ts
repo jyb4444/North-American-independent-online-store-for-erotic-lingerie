@@ -5,7 +5,7 @@ const CSP = [
   "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://us-assets.i.posthog.com https://app.posthog.com",
   "style-src 'self' 'unsafe-inline'",
   "font-src 'self'",
-  "img-src 'self' data: blob: https://images.unsplash.com https://placehold.co https://cdn.shopify.com https://*.googleusercontent.com https://img.clerk.com https://images.clerk.dev",
+  "img-src 'self' data: blob: https://images.unsplash.com https://placehold.co https://cdn.shopify.com https://*.googleusercontent.com https://img.clerk.com https://images.clerk.dev https://*.supabase.co",
   "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://us.i.posthog.com https://app.posthog.com https://us-assets.i.posthog.com",
   "frame-ancestors 'none'",
   "form-action 'self'",
@@ -20,6 +20,8 @@ const nextConfig: NextConfig = {
       { hostname: 'img.clerk.com' },
       { hostname: 'images.clerk.dev' },
       { hostname: '*.googleusercontent.com' },
+      // Supabase Storage — product images
+      { hostname: 'ihxykadhxelkggewjjyt.supabase.co' },
     ],
   },
 

@@ -6,6 +6,9 @@ const PRODUCT_FRAGMENT = `
     handle
     title
     description
+    productType
+    vendor
+    createdAt
     priceRange {
       minVariantPrice { amount currencyCode }
     }
@@ -22,9 +25,9 @@ const PRODUCT_FRAGMENT = `
           id
           title
           sku
-          quantityAvailable
           selectedOptions { name value }
           price { amount currencyCode }
+          image { url altText }
         }
       }
     }
