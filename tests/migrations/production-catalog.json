@@ -1,0 +1,3536 @@
+{
+  "tables": [
+    {
+      "acl": [
+        "postgres=arwdDxtm/postgres",
+        "anon=arwdDxtm/postgres",
+        "authenticated=arwdDxtm/postgres",
+        "service_role=arwdDxtm/postgres"
+      ],
+      "force_rls": false,
+      "kind": "r",
+      "name": "addresses",
+      "owner": "postgres",
+      "rls": true,
+      "schema": "public"
+    },
+    {
+      "acl": [
+        "postgres=arwdDxtm/postgres",
+        "anon=arwdDxtm/postgres",
+        "authenticated=arwdDxtm/postgres",
+        "service_role=arwdDxtm/postgres"
+      ],
+      "force_rls": false,
+      "kind": "r",
+      "name": "reviews",
+      "owner": "postgres",
+      "rls": true,
+      "schema": "public"
+    },
+    {
+      "acl": [
+        "postgres=arwdDxtm/postgres",
+        "anon=arwdDxtm/postgres",
+        "authenticated=arwdDxtm/postgres",
+        "service_role=arwdDxtm/postgres"
+      ],
+      "force_rls": false,
+      "kind": "r",
+      "name": "restock_alerts",
+      "owner": "postgres",
+      "rls": true,
+      "schema": "public"
+    },
+    {
+      "acl": [
+        "postgres=arwdDxtm/postgres",
+        "anon=arwdDxtm/postgres",
+        "authenticated=arwdDxtm/postgres",
+        "service_role=arwdDxtm/postgres"
+      ],
+      "force_rls": false,
+      "kind": "r",
+      "name": "cart_snapshots",
+      "owner": "postgres",
+      "rls": true,
+      "schema": "public"
+    },
+    {
+      "acl": [
+        "postgres=arwdDxtm/postgres",
+        "anon=arwdDxtm/postgres",
+        "authenticated=arwdDxtm/postgres",
+        "service_role=arwdDxtm/postgres"
+      ],
+      "force_rls": false,
+      "kind": "r",
+      "name": "profiles",
+      "owner": "postgres",
+      "rls": true,
+      "schema": "public"
+    },
+    {
+      "acl": [
+        "postgres=arwdDxtm/postgres",
+        "anon=arwdDxtm/postgres",
+        "authenticated=arwdDxtm/postgres",
+        "service_role=arwdDxtm/postgres"
+      ],
+      "force_rls": false,
+      "kind": "r",
+      "name": "orders",
+      "owner": "postgres",
+      "rls": true,
+      "schema": "public"
+    },
+    {
+      "acl": [
+        "postgres=arwdDxtm/postgres",
+        "anon=arwdDxtm/postgres",
+        "authenticated=arwdDxtm/postgres",
+        "service_role=arwdDxtm/postgres"
+      ],
+      "force_rls": false,
+      "kind": "r",
+      "name": "memberships",
+      "owner": "postgres",
+      "rls": true,
+      "schema": "public"
+    },
+    {
+      "acl": [
+        "postgres=arwdDxtm/postgres",
+        "anon=arwdDxtm/postgres",
+        "authenticated=arwdDxtm/postgres",
+        "service_role=arwdDxtm/postgres"
+      ],
+      "force_rls": false,
+      "kind": "r",
+      "name": "wishlists",
+      "owner": "postgres",
+      "rls": true,
+      "schema": "public"
+    },
+    {
+      "acl": [
+        "postgres=arwdDxtm/postgres",
+        "anon=arwdDxtm/postgres",
+        "authenticated=arwdDxtm/postgres",
+        "service_role=arwdDxtm/postgres"
+      ],
+      "force_rls": false,
+      "kind": "r",
+      "name": "referrals",
+      "owner": "postgres",
+      "rls": true,
+      "schema": "public"
+    },
+    {
+      "acl": [
+        "postgres=arwdDxtm/postgres",
+        "anon=arwdDxtm/postgres",
+        "authenticated=arwdDxtm/postgres",
+        "service_role=arwdDxtm/postgres"
+      ],
+      "force_rls": false,
+      "kind": "r",
+      "name": "shipments",
+      "owner": "postgres",
+      "rls": true,
+      "schema": "public"
+    },
+    {
+      "acl": [
+        "postgres=arwdDxtm/postgres",
+        "anon=arwdDxtm/postgres",
+        "authenticated=arwdDxtm/postgres",
+        "service_role=arwdDxtm/postgres"
+      ],
+      "force_rls": false,
+      "kind": "r",
+      "name": "shipment_events",
+      "owner": "postgres",
+      "rls": true,
+      "schema": "public"
+    },
+    {
+      "acl": [
+        "postgres=arwdDxtm/postgres",
+        "anon=arwdDxtm/postgres",
+        "authenticated=arwdDxtm/postgres",
+        "service_role=arwdDxtm/postgres"
+      ],
+      "force_rls": false,
+      "kind": "r",
+      "name": "notification_logs",
+      "owner": "postgres",
+      "rls": true,
+      "schema": "public"
+    },
+    {
+      "acl": [
+        "postgres=arwdDxtm/postgres",
+        "anon=arwdDxtm/postgres",
+        "authenticated=arwdDxtm/postgres",
+        "service_role=arwdDxtm/postgres"
+      ],
+      "force_rls": false,
+      "kind": "r",
+      "name": "order_items",
+      "owner": "postgres",
+      "rls": true,
+      "schema": "public"
+    },
+    {
+      "acl": [
+        "postgres=arwdDxtm/postgres",
+        "anon=arwdDxtm/postgres",
+        "authenticated=arwdDxtm/postgres",
+        "service_role=arwdDxtm/postgres"
+      ],
+      "force_rls": false,
+      "kind": "r",
+      "name": "return_requests",
+      "owner": "postgres",
+      "rls": true,
+      "schema": "public"
+    },
+    {
+      "acl": [
+        "postgres=arwdDxtm/postgres",
+        "anon=arwdDxtm/postgres",
+        "authenticated=arwdDxtm/postgres",
+        "service_role=arwdDxtm/postgres"
+      ],
+      "force_rls": false,
+      "kind": "r",
+      "name": "gift_cards",
+      "owner": "postgres",
+      "rls": true,
+      "schema": "public"
+    },
+    {
+      "acl": [
+        "postgres=arwdDxtm/postgres",
+        "anon=arwdDxtm/postgres",
+        "authenticated=arwdDxtm/postgres",
+        "service_role=arwdDxtm/postgres"
+      ],
+      "force_rls": false,
+      "kind": "r",
+      "name": "return_request_items",
+      "owner": "postgres",
+      "rls": true,
+      "schema": "public"
+    },
+    {
+      "acl": [
+        "postgres=arwdDxtm/postgres",
+        "anon=arwdDxtm/postgres",
+        "authenticated=arwdDxtm/postgres",
+        "service_role=arwdDxtm/postgres"
+      ],
+      "force_rls": false,
+      "kind": "r",
+      "name": "return_request_events",
+      "owner": "postgres",
+      "rls": true,
+      "schema": "public"
+    }
+  ],
+  "columns": [
+    {
+      "acl": null,
+      "column": "id",
+      "default": "gen_random_uuid()",
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "addresses",
+      "type": "uuid"
+    },
+    {
+      "acl": null,
+      "column": "user_id",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "addresses",
+      "type": "uuid"
+    },
+    {
+      "acl": null,
+      "column": "full_name",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "addresses",
+      "type": "text"
+    },
+    {
+      "acl": null,
+      "column": "phone",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": false,
+      "table": "addresses",
+      "type": "text"
+    },
+    {
+      "acl": null,
+      "column": "address_line1",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "addresses",
+      "type": "text"
+    },
+    {
+      "acl": null,
+      "column": "address_line2",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": false,
+      "table": "addresses",
+      "type": "text"
+    },
+    {
+      "acl": null,
+      "column": "city",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "addresses",
+      "type": "text"
+    },
+    {
+      "acl": null,
+      "column": "state",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "addresses",
+      "type": "text"
+    },
+    {
+      "acl": null,
+      "column": "zip",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "addresses",
+      "type": "text"
+    },
+    {
+      "acl": null,
+      "column": "country",
+      "default": "'US'::text",
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "addresses",
+      "type": "text"
+    },
+    {
+      "acl": null,
+      "column": "is_default",
+      "default": "false",
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "addresses",
+      "type": "boolean"
+    },
+    {
+      "acl": null,
+      "column": "created_at",
+      "default": "now()",
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "addresses",
+      "type": "timestamp with time zone"
+    },
+    {
+      "acl": null,
+      "column": "updated_at",
+      "default": "now()",
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "addresses",
+      "type": "timestamp with time zone"
+    },
+    {
+      "acl": null,
+      "column": "id",
+      "default": "gen_random_uuid()",
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "reviews",
+      "type": "uuid"
+    },
+    {
+      "acl": null,
+      "column": "product_id",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "reviews",
+      "type": "text"
+    },
+    {
+      "acl": null,
+      "column": "product_handle",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "reviews",
+      "type": "text"
+    },
+    {
+      "acl": null,
+      "column": "rating",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "reviews",
+      "type": "integer"
+    },
+    {
+      "acl": null,
+      "column": "body",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "reviews",
+      "type": "text"
+    },
+    {
+      "acl": null,
+      "column": "nickname",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "reviews",
+      "type": "text"
+    },
+    {
+      "acl": null,
+      "column": "email",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "reviews",
+      "type": "text"
+    },
+    {
+      "acl": null,
+      "column": "verified_purchase",
+      "default": "false",
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "reviews",
+      "type": "boolean"
+    },
+    {
+      "acl": null,
+      "column": "approved",
+      "default": "true",
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "reviews",
+      "type": "boolean"
+    },
+    {
+      "acl": null,
+      "column": "created_at",
+      "default": "now()",
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "reviews",
+      "type": "timestamp with time zone"
+    },
+    {
+      "acl": null,
+      "column": "video_urls",
+      "default": "'{}'::text[]",
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "reviews",
+      "type": "text[]"
+    },
+    {
+      "acl": null,
+      "column": "is_anonymous",
+      "default": "false",
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "reviews",
+      "type": "boolean"
+    },
+    {
+      "acl": null,
+      "column": "user_id",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": false,
+      "table": "reviews",
+      "type": "uuid"
+    },
+    {
+      "acl": null,
+      "column": "photo_urls",
+      "default": "'{}'::text[]",
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "reviews",
+      "type": "text[]"
+    },
+    {
+      "acl": null,
+      "column": "id",
+      "default": "gen_random_uuid()",
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "restock_alerts",
+      "type": "uuid"
+    },
+    {
+      "acl": null,
+      "column": "email",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "restock_alerts",
+      "type": "text"
+    },
+    {
+      "acl": null,
+      "column": "product_id",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "restock_alerts",
+      "type": "text"
+    },
+    {
+      "acl": null,
+      "column": "product_handle",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "restock_alerts",
+      "type": "text"
+    },
+    {
+      "acl": null,
+      "column": "size",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "restock_alerts",
+      "type": "text"
+    },
+    {
+      "acl": null,
+      "column": "color",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "restock_alerts",
+      "type": "text"
+    },
+    {
+      "acl": null,
+      "column": "notified",
+      "default": "false",
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "restock_alerts",
+      "type": "boolean"
+    },
+    {
+      "acl": null,
+      "column": "created_at",
+      "default": "now()",
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "restock_alerts",
+      "type": "timestamp with time zone"
+    },
+    {
+      "acl": null,
+      "column": "id",
+      "default": "gen_random_uuid()",
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "cart_snapshots",
+      "type": "uuid"
+    },
+    {
+      "acl": null,
+      "column": "user_id",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "cart_snapshots",
+      "type": "uuid"
+    },
+    {
+      "acl": null,
+      "column": "email",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "cart_snapshots",
+      "type": "text"
+    },
+    {
+      "acl": null,
+      "column": "items",
+      "default": "'[]'::jsonb",
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "cart_snapshots",
+      "type": "jsonb"
+    },
+    {
+      "acl": null,
+      "column": "reminder_sent",
+      "default": "false",
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "cart_snapshots",
+      "type": "boolean"
+    },
+    {
+      "acl": null,
+      "column": "updated_at",
+      "default": "now()",
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "cart_snapshots",
+      "type": "timestamp with time zone"
+    },
+    {
+      "acl": null,
+      "column": "id",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "profiles",
+      "type": "uuid"
+    },
+    {
+      "acl": null,
+      "column": "email",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "profiles",
+      "type": "text"
+    },
+    {
+      "acl": null,
+      "column": "first_name",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": false,
+      "table": "profiles",
+      "type": "text"
+    },
+    {
+      "acl": null,
+      "column": "last_name",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": false,
+      "table": "profiles",
+      "type": "text"
+    },
+    {
+      "acl": null,
+      "column": "avatar_url",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": false,
+      "table": "profiles",
+      "type": "text"
+    },
+    {
+      "acl": null,
+      "column": "created_at",
+      "default": "now()",
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "profiles",
+      "type": "timestamp with time zone"
+    },
+    {
+      "acl": null,
+      "column": "updated_at",
+      "default": "now()",
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "profiles",
+      "type": "timestamp with time zone"
+    },
+    {
+      "acl": null,
+      "column": "id",
+      "default": "gen_random_uuid()",
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "orders",
+      "type": "uuid"
+    },
+    {
+      "acl": null,
+      "column": "user_id",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": false,
+      "table": "orders",
+      "type": "uuid"
+    },
+    {
+      "acl": null,
+      "column": "shopify_order_id",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "orders",
+      "type": "text"
+    },
+    {
+      "acl": null,
+      "column": "shopify_order_number",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "orders",
+      "type": "text"
+    },
+    {
+      "acl": null,
+      "column": "email",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "orders",
+      "type": "text"
+    },
+    {
+      "acl": null,
+      "column": "phone",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": false,
+      "table": "orders",
+      "type": "text"
+    },
+    {
+      "acl": null,
+      "column": "financial_status",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": false,
+      "table": "orders",
+      "type": "text"
+    },
+    {
+      "acl": null,
+      "column": "fulfillment_status",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": false,
+      "table": "orders",
+      "type": "text"
+    },
+    {
+      "acl": null,
+      "column": "total_amount",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": false,
+      "table": "orders",
+      "type": "numeric"
+    },
+    {
+      "acl": null,
+      "column": "currency",
+      "default": "'USD'::text",
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "orders",
+      "type": "text"
+    },
+    {
+      "acl": null,
+      "column": "processed_at",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": false,
+      "table": "orders",
+      "type": "timestamp with time zone"
+    },
+    {
+      "acl": null,
+      "column": "created_at",
+      "default": "now()",
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "orders",
+      "type": "timestamp with time zone"
+    },
+    {
+      "acl": null,
+      "column": "updated_at",
+      "default": "now()",
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "orders",
+      "type": "timestamp with time zone"
+    },
+    {
+      "acl": null,
+      "column": "id",
+      "default": "gen_random_uuid()",
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "memberships",
+      "type": "uuid"
+    },
+    {
+      "acl": null,
+      "column": "user_id",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "memberships",
+      "type": "uuid"
+    },
+    {
+      "acl": null,
+      "column": "tier",
+      "default": "'bronze'::text",
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "memberships",
+      "type": "text"
+    },
+    {
+      "acl": null,
+      "column": "points",
+      "default": "0",
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "memberships",
+      "type": "integer"
+    },
+    {
+      "acl": null,
+      "column": "total_spent",
+      "default": "0",
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "memberships",
+      "type": "numeric"
+    },
+    {
+      "acl": null,
+      "column": "created_at",
+      "default": "now()",
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "memberships",
+      "type": "timestamp with time zone"
+    },
+    {
+      "acl": null,
+      "column": "updated_at",
+      "default": "now()",
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "memberships",
+      "type": "timestamp with time zone"
+    },
+    {
+      "acl": null,
+      "column": "id",
+      "default": "gen_random_uuid()",
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "wishlists",
+      "type": "uuid"
+    },
+    {
+      "acl": null,
+      "column": "user_id",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "wishlists",
+      "type": "uuid"
+    },
+    {
+      "acl": null,
+      "column": "product_id",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "wishlists",
+      "type": "text"
+    },
+    {
+      "acl": null,
+      "column": "product_handle",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "wishlists",
+      "type": "text"
+    },
+    {
+      "acl": null,
+      "column": "product_title",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "wishlists",
+      "type": "text"
+    },
+    {
+      "acl": null,
+      "column": "product_image",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": false,
+      "table": "wishlists",
+      "type": "text"
+    },
+    {
+      "acl": null,
+      "column": "product_price",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": false,
+      "table": "wishlists",
+      "type": "numeric"
+    },
+    {
+      "acl": null,
+      "column": "created_at",
+      "default": "now()",
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "wishlists",
+      "type": "timestamp with time zone"
+    },
+    {
+      "acl": null,
+      "column": "id",
+      "default": "gen_random_uuid()",
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "referrals",
+      "type": "uuid"
+    },
+    {
+      "acl": null,
+      "column": "referrer_id",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": false,
+      "table": "referrals",
+      "type": "uuid"
+    },
+    {
+      "acl": null,
+      "column": "code",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "referrals",
+      "type": "text"
+    },
+    {
+      "acl": null,
+      "column": "uses",
+      "default": "0",
+      "generated": "",
+      "identity": "",
+      "not_null": false,
+      "table": "referrals",
+      "type": "integer"
+    },
+    {
+      "acl": null,
+      "column": "rewards_earned",
+      "default": "0",
+      "generated": "",
+      "identity": "",
+      "not_null": false,
+      "table": "referrals",
+      "type": "numeric"
+    },
+    {
+      "acl": null,
+      "column": "created_at",
+      "default": "now()",
+      "generated": "",
+      "identity": "",
+      "not_null": false,
+      "table": "referrals",
+      "type": "timestamp with time zone"
+    },
+    {
+      "acl": null,
+      "column": "id",
+      "default": "gen_random_uuid()",
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "shipments",
+      "type": "uuid"
+    },
+    {
+      "acl": null,
+      "column": "order_id",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "shipments",
+      "type": "uuid"
+    },
+    {
+      "acl": null,
+      "column": "shopify_fulfillment_id",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": false,
+      "table": "shipments",
+      "type": "text"
+    },
+    {
+      "acl": null,
+      "column": "tracking_number",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": false,
+      "table": "shipments",
+      "type": "text"
+    },
+    {
+      "acl": null,
+      "column": "tracking_url",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": false,
+      "table": "shipments",
+      "type": "text"
+    },
+    {
+      "acl": null,
+      "column": "carrier",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": false,
+      "table": "shipments",
+      "type": "text"
+    },
+    {
+      "acl": null,
+      "column": "status",
+      "default": "'preparing'::text",
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "shipments",
+      "type": "text"
+    },
+    {
+      "acl": null,
+      "column": "estimated_delivery_at",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": false,
+      "table": "shipments",
+      "type": "timestamp with time zone"
+    },
+    {
+      "acl": null,
+      "column": "shipped_at",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": false,
+      "table": "shipments",
+      "type": "timestamp with time zone"
+    },
+    {
+      "acl": null,
+      "column": "delivered_at",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": false,
+      "table": "shipments",
+      "type": "timestamp with time zone"
+    },
+    {
+      "acl": null,
+      "column": "public_lookup_token",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "shipments",
+      "type": "text"
+    },
+    {
+      "acl": null,
+      "column": "created_at",
+      "default": "now()",
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "shipments",
+      "type": "timestamp with time zone"
+    },
+    {
+      "acl": null,
+      "column": "updated_at",
+      "default": "now()",
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "shipments",
+      "type": "timestamp with time zone"
+    },
+    {
+      "acl": null,
+      "column": "id",
+      "default": "gen_random_uuid()",
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "shipment_events",
+      "type": "uuid"
+    },
+    {
+      "acl": null,
+      "column": "shipment_id",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "shipment_events",
+      "type": "uuid"
+    },
+    {
+      "acl": null,
+      "column": "status",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "shipment_events",
+      "type": "text"
+    },
+    {
+      "acl": null,
+      "column": "title",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "shipment_events",
+      "type": "text"
+    },
+    {
+      "acl": null,
+      "column": "description",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": false,
+      "table": "shipment_events",
+      "type": "text"
+    },
+    {
+      "acl": null,
+      "column": "location",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": false,
+      "table": "shipment_events",
+      "type": "text"
+    },
+    {
+      "acl": null,
+      "column": "occurred_at",
+      "default": "now()",
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "shipment_events",
+      "type": "timestamp with time zone"
+    },
+    {
+      "acl": null,
+      "column": "created_at",
+      "default": "now()",
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "shipment_events",
+      "type": "timestamp with time zone"
+    },
+    {
+      "acl": null,
+      "column": "id",
+      "default": "gen_random_uuid()",
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "notification_logs",
+      "type": "uuid"
+    },
+    {
+      "acl": null,
+      "column": "order_id",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": false,
+      "table": "notification_logs",
+      "type": "uuid"
+    },
+    {
+      "acl": null,
+      "column": "shipment_id",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": false,
+      "table": "notification_logs",
+      "type": "uuid"
+    },
+    {
+      "acl": null,
+      "column": "channel",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "notification_logs",
+      "type": "text"
+    },
+    {
+      "acl": null,
+      "column": "event_type",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "notification_logs",
+      "type": "text"
+    },
+    {
+      "acl": null,
+      "column": "recipient",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "notification_logs",
+      "type": "text"
+    },
+    {
+      "acl": null,
+      "column": "provider_message_id",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": false,
+      "table": "notification_logs",
+      "type": "text"
+    },
+    {
+      "acl": null,
+      "column": "sent_at",
+      "default": "now()",
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "notification_logs",
+      "type": "timestamp with time zone"
+    },
+    {
+      "acl": null,
+      "column": "id",
+      "default": "gen_random_uuid()",
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "order_items",
+      "type": "uuid"
+    },
+    {
+      "acl": null,
+      "column": "order_id",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "order_items",
+      "type": "uuid"
+    },
+    {
+      "acl": null,
+      "column": "shopify_line_item_id",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "order_items",
+      "type": "text"
+    },
+    {
+      "acl": null,
+      "column": "shopify_variant_id",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": false,
+      "table": "order_items",
+      "type": "text"
+    },
+    {
+      "acl": null,
+      "column": "title",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "order_items",
+      "type": "text"
+    },
+    {
+      "acl": null,
+      "column": "variant_title",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": false,
+      "table": "order_items",
+      "type": "text"
+    },
+    {
+      "acl": null,
+      "column": "sku",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": false,
+      "table": "order_items",
+      "type": "text"
+    },
+    {
+      "acl": null,
+      "column": "quantity",
+      "default": "1",
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "order_items",
+      "type": "integer"
+    },
+    {
+      "acl": null,
+      "column": "price",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": false,
+      "table": "order_items",
+      "type": "numeric"
+    },
+    {
+      "acl": null,
+      "column": "product_type",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": false,
+      "table": "order_items",
+      "type": "text"
+    },
+    {
+      "acl": null,
+      "column": "vendor",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": false,
+      "table": "order_items",
+      "type": "text"
+    },
+    {
+      "acl": null,
+      "column": "return_category",
+      "default": "'general'::text",
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "order_items",
+      "type": "text"
+    },
+    {
+      "acl": null,
+      "column": "created_at",
+      "default": "now()",
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "order_items",
+      "type": "timestamp with time zone"
+    },
+    {
+      "acl": null,
+      "column": "updated_at",
+      "default": "now()",
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "order_items",
+      "type": "timestamp with time zone"
+    },
+    {
+      "acl": null,
+      "column": "id",
+      "default": "gen_random_uuid()",
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "return_requests",
+      "type": "uuid"
+    },
+    {
+      "acl": null,
+      "column": "user_id",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": false,
+      "table": "return_requests",
+      "type": "uuid"
+    },
+    {
+      "acl": null,
+      "column": "order_id",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "return_requests",
+      "type": "uuid"
+    },
+    {
+      "acl": null,
+      "column": "request_number",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "return_requests",
+      "type": "text"
+    },
+    {
+      "acl": null,
+      "column": "desired_resolution",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "return_requests",
+      "type": "text"
+    },
+    {
+      "acl": null,
+      "column": "reason",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "return_requests",
+      "type": "text"
+    },
+    {
+      "acl": null,
+      "column": "status",
+      "default": "'submitted'::text",
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "return_requests",
+      "type": "text"
+    },
+    {
+      "acl": null,
+      "column": "eligibility_status",
+      "default": "'review_required'::text",
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "return_requests",
+      "type": "text"
+    },
+    {
+      "acl": null,
+      "column": "policy_notes",
+      "default": "'{}'::text[]",
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "return_requests",
+      "type": "text[]"
+    },
+    {
+      "acl": null,
+      "column": "customer_note",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": false,
+      "table": "return_requests",
+      "type": "text"
+    },
+    {
+      "acl": null,
+      "column": "media_urls",
+      "default": "'{}'::text[]",
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "return_requests",
+      "type": "text[]"
+    },
+    {
+      "acl": null,
+      "column": "return_shipping_method",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": false,
+      "table": "return_requests",
+      "type": "text"
+    },
+    {
+      "acl": null,
+      "column": "return_carrier",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": false,
+      "table": "return_requests",
+      "type": "text"
+    },
+    {
+      "acl": null,
+      "column": "return_tracking_number",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": false,
+      "table": "return_requests",
+      "type": "text"
+    },
+    {
+      "acl": null,
+      "column": "return_tracking_url",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": false,
+      "table": "return_requests",
+      "type": "text"
+    },
+    {
+      "acl": null,
+      "column": "inspected_at",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": false,
+      "table": "return_requests",
+      "type": "timestamp with time zone"
+    },
+    {
+      "acl": null,
+      "column": "shopify_sync_status",
+      "default": "'pending'::text",
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "return_requests",
+      "type": "text"
+    },
+    {
+      "acl": null,
+      "column": "shopify_sync_error",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": false,
+      "table": "return_requests",
+      "type": "text"
+    },
+    {
+      "acl": null,
+      "column": "shopify_synced_at",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": false,
+      "table": "return_requests",
+      "type": "timestamp with time zone"
+    },
+    {
+      "acl": null,
+      "column": "admin_notes",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": false,
+      "table": "return_requests",
+      "type": "text"
+    },
+    {
+      "acl": null,
+      "column": "submitted_at",
+      "default": "now()",
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "return_requests",
+      "type": "timestamp with time zone"
+    },
+    {
+      "acl": null,
+      "column": "created_at",
+      "default": "now()",
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "return_requests",
+      "type": "timestamp with time zone"
+    },
+    {
+      "acl": null,
+      "column": "updated_at",
+      "default": "now()",
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "return_requests",
+      "type": "timestamp with time zone"
+    },
+    {
+      "acl": null,
+      "column": "id",
+      "default": "gen_random_uuid()",
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "gift_cards",
+      "type": "uuid"
+    },
+    {
+      "acl": null,
+      "column": "code",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "gift_cards",
+      "type": "text"
+    },
+    {
+      "acl": null,
+      "column": "amount",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "gift_cards",
+      "type": "numeric"
+    },
+    {
+      "acl": null,
+      "column": "balance",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "gift_cards",
+      "type": "numeric"
+    },
+    {
+      "acl": null,
+      "column": "recipient_email",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "gift_cards",
+      "type": "text"
+    },
+    {
+      "acl": null,
+      "column": "recipient_name",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": false,
+      "table": "gift_cards",
+      "type": "text"
+    },
+    {
+      "acl": null,
+      "column": "message",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": false,
+      "table": "gift_cards",
+      "type": "text"
+    },
+    {
+      "acl": null,
+      "column": "sender_name",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": false,
+      "table": "gift_cards",
+      "type": "text"
+    },
+    {
+      "acl": null,
+      "column": "expires_at",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "gift_cards",
+      "type": "timestamp with time zone"
+    },
+    {
+      "acl": null,
+      "column": "is_redeemed",
+      "default": "false",
+      "generated": "",
+      "identity": "",
+      "not_null": false,
+      "table": "gift_cards",
+      "type": "boolean"
+    },
+    {
+      "acl": null,
+      "column": "created_at",
+      "default": "now()",
+      "generated": "",
+      "identity": "",
+      "not_null": false,
+      "table": "gift_cards",
+      "type": "timestamp with time zone"
+    },
+    {
+      "acl": null,
+      "column": "id",
+      "default": "gen_random_uuid()",
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "return_request_items",
+      "type": "uuid"
+    },
+    {
+      "acl": null,
+      "column": "return_request_id",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "return_request_items",
+      "type": "uuid"
+    },
+    {
+      "acl": null,
+      "column": "order_item_id",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "return_request_items",
+      "type": "uuid"
+    },
+    {
+      "acl": null,
+      "column": "quantity",
+      "default": "1",
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "return_request_items",
+      "type": "integer"
+    },
+    {
+      "acl": null,
+      "column": "item_condition",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "return_request_items",
+      "type": "text"
+    },
+    {
+      "acl": null,
+      "column": "reason_detail",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": false,
+      "table": "return_request_items",
+      "type": "text"
+    },
+    {
+      "acl": null,
+      "column": "created_at",
+      "default": "now()",
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "return_request_items",
+      "type": "timestamp with time zone"
+    },
+    {
+      "acl": null,
+      "column": "id",
+      "default": "gen_random_uuid()",
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "return_request_events",
+      "type": "uuid"
+    },
+    {
+      "acl": null,
+      "column": "return_request_id",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "return_request_events",
+      "type": "uuid"
+    },
+    {
+      "acl": null,
+      "column": "event_type",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "return_request_events",
+      "type": "text"
+    },
+    {
+      "acl": null,
+      "column": "title",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "return_request_events",
+      "type": "text"
+    },
+    {
+      "acl": null,
+      "column": "description",
+      "default": null,
+      "generated": "",
+      "identity": "",
+      "not_null": false,
+      "table": "return_request_events",
+      "type": "text"
+    },
+    {
+      "acl": null,
+      "column": "metadata",
+      "default": "'{}'::jsonb",
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "return_request_events",
+      "type": "jsonb"
+    },
+    {
+      "acl": null,
+      "column": "created_at",
+      "default": "now()",
+      "generated": "",
+      "identity": "",
+      "not_null": true,
+      "table": "return_request_events",
+      "type": "timestamp with time zone"
+    }
+  ],
+  "constraints": [
+    {
+      "deferrable": false,
+      "definition": "PRIMARY KEY (id)",
+      "name": "addresses_pkey",
+      "table": "addresses",
+      "type": "p",
+      "validated": true
+    },
+    {
+      "deferrable": false,
+      "definition": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE",
+      "name": "addresses_user_id_fkey",
+      "table": "addresses",
+      "type": "f",
+      "validated": true
+    },
+    {
+      "deferrable": false,
+      "definition": "PRIMARY KEY (id)",
+      "name": "reviews_pkey",
+      "table": "reviews",
+      "type": "p",
+      "validated": true
+    },
+    {
+      "deferrable": false,
+      "definition": "CHECK (rating >= 1 AND rating <= 5)",
+      "name": "reviews_rating_check",
+      "table": "reviews",
+      "type": "c",
+      "validated": true
+    },
+    {
+      "deferrable": false,
+      "definition": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE SET NULL",
+      "name": "reviews_user_id_fkey",
+      "table": "reviews",
+      "type": "f",
+      "validated": true
+    },
+    {
+      "deferrable": false,
+      "definition": "PRIMARY KEY (id)",
+      "name": "restock_alerts_pkey",
+      "table": "restock_alerts",
+      "type": "p",
+      "validated": true
+    },
+    {
+      "deferrable": false,
+      "definition": "PRIMARY KEY (id)",
+      "name": "cart_snapshots_pkey",
+      "table": "cart_snapshots",
+      "type": "p",
+      "validated": true
+    },
+    {
+      "deferrable": false,
+      "definition": "FOREIGN KEY (user_id) REFERENCES auth.users(id)",
+      "name": "cart_snapshots_user_id_fkey",
+      "table": "cart_snapshots",
+      "type": "f",
+      "validated": true
+    },
+    {
+      "deferrable": false,
+      "definition": "UNIQUE (user_id)",
+      "name": "cart_snapshots_user_id_key",
+      "table": "cart_snapshots",
+      "type": "u",
+      "validated": true
+    },
+    {
+      "deferrable": false,
+      "definition": "FOREIGN KEY (id) REFERENCES auth.users(id)",
+      "name": "profiles_id_fkey",
+      "table": "profiles",
+      "type": "f",
+      "validated": true
+    },
+    {
+      "deferrable": false,
+      "definition": "PRIMARY KEY (id)",
+      "name": "profiles_pkey",
+      "table": "profiles",
+      "type": "p",
+      "validated": true
+    },
+    {
+      "deferrable": false,
+      "definition": "PRIMARY KEY (id)",
+      "name": "orders_pkey",
+      "table": "orders",
+      "type": "p",
+      "validated": true
+    },
+    {
+      "deferrable": false,
+      "definition": "UNIQUE (shopify_order_id)",
+      "name": "orders_shopify_order_id_key",
+      "table": "orders",
+      "type": "u",
+      "validated": true
+    },
+    {
+      "deferrable": false,
+      "definition": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE SET NULL",
+      "name": "orders_user_id_fkey",
+      "table": "orders",
+      "type": "f",
+      "validated": true
+    },
+    {
+      "deferrable": false,
+      "definition": "PRIMARY KEY (id)",
+      "name": "memberships_pkey",
+      "table": "memberships",
+      "type": "p",
+      "validated": true
+    },
+    {
+      "deferrable": false,
+      "definition": "CHECK (tier = ANY (ARRAY['bronze'::text, 'silver'::text, 'gold'::text]))",
+      "name": "memberships_tier_check",
+      "table": "memberships",
+      "type": "c",
+      "validated": true
+    },
+    {
+      "deferrable": false,
+      "definition": "FOREIGN KEY (user_id) REFERENCES auth.users(id)",
+      "name": "memberships_user_id_fkey",
+      "table": "memberships",
+      "type": "f",
+      "validated": true
+    },
+    {
+      "deferrable": false,
+      "definition": "UNIQUE (user_id)",
+      "name": "memberships_user_id_key",
+      "table": "memberships",
+      "type": "u",
+      "validated": true
+    },
+    {
+      "deferrable": false,
+      "definition": "PRIMARY KEY (id)",
+      "name": "wishlists_pkey",
+      "table": "wishlists",
+      "type": "p",
+      "validated": true
+    },
+    {
+      "deferrable": false,
+      "definition": "FOREIGN KEY (user_id) REFERENCES auth.users(id)",
+      "name": "wishlists_user_id_fkey",
+      "table": "wishlists",
+      "type": "f",
+      "validated": true
+    },
+    {
+      "deferrable": false,
+      "definition": "UNIQUE (user_id, product_id)",
+      "name": "wishlists_user_id_product_id_key",
+      "table": "wishlists",
+      "type": "u",
+      "validated": true
+    },
+    {
+      "deferrable": false,
+      "definition": "UNIQUE (code)",
+      "name": "referrals_code_key",
+      "table": "referrals",
+      "type": "u",
+      "validated": true
+    },
+    {
+      "deferrable": false,
+      "definition": "PRIMARY KEY (id)",
+      "name": "referrals_pkey",
+      "table": "referrals",
+      "type": "p",
+      "validated": true
+    },
+    {
+      "deferrable": false,
+      "definition": "FOREIGN KEY (referrer_id) REFERENCES auth.users(id)",
+      "name": "referrals_referrer_id_fkey",
+      "table": "referrals",
+      "type": "f",
+      "validated": true
+    },
+    {
+      "deferrable": false,
+      "definition": "FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE",
+      "name": "shipments_order_id_fkey",
+      "table": "shipments",
+      "type": "f",
+      "validated": true
+    },
+    {
+      "deferrable": false,
+      "definition": "PRIMARY KEY (id)",
+      "name": "shipments_pkey",
+      "table": "shipments",
+      "type": "p",
+      "validated": true
+    },
+    {
+      "deferrable": false,
+      "definition": "UNIQUE (public_lookup_token)",
+      "name": "shipments_public_lookup_token_key",
+      "table": "shipments",
+      "type": "u",
+      "validated": true
+    },
+    {
+      "deferrable": false,
+      "definition": "UNIQUE (shopify_fulfillment_id)",
+      "name": "shipments_shopify_fulfillment_id_key",
+      "table": "shipments",
+      "type": "u",
+      "validated": true
+    },
+    {
+      "deferrable": false,
+      "definition": "PRIMARY KEY (id)",
+      "name": "shipment_events_pkey",
+      "table": "shipment_events",
+      "type": "p",
+      "validated": true
+    },
+    {
+      "deferrable": false,
+      "definition": "FOREIGN KEY (shipment_id) REFERENCES shipments(id) ON DELETE CASCADE",
+      "name": "shipment_events_shipment_id_fkey",
+      "table": "shipment_events",
+      "type": "f",
+      "validated": true
+    },
+    {
+      "deferrable": false,
+      "definition": "CHECK (channel = ANY (ARRAY['email'::text, 'sms'::text]))",
+      "name": "notification_logs_channel_check",
+      "table": "notification_logs",
+      "type": "c",
+      "validated": true
+    },
+    {
+      "deferrable": false,
+      "definition": "FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE SET NULL",
+      "name": "notification_logs_order_id_fkey",
+      "table": "notification_logs",
+      "type": "f",
+      "validated": true
+    },
+    {
+      "deferrable": false,
+      "definition": "PRIMARY KEY (id)",
+      "name": "notification_logs_pkey",
+      "table": "notification_logs",
+      "type": "p",
+      "validated": true
+    },
+    {
+      "deferrable": false,
+      "definition": "FOREIGN KEY (shipment_id) REFERENCES shipments(id) ON DELETE SET NULL",
+      "name": "notification_logs_shipment_id_fkey",
+      "table": "notification_logs",
+      "type": "f",
+      "validated": true
+    },
+    {
+      "deferrable": false,
+      "definition": "FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE",
+      "name": "order_items_order_id_fkey",
+      "table": "order_items",
+      "type": "f",
+      "validated": true
+    },
+    {
+      "deferrable": false,
+      "definition": "UNIQUE (order_id, shopify_line_item_id)",
+      "name": "order_items_order_id_shopify_line_item_id_key",
+      "table": "order_items",
+      "type": "u",
+      "validated": true
+    },
+    {
+      "deferrable": false,
+      "definition": "PRIMARY KEY (id)",
+      "name": "order_items_pkey",
+      "table": "order_items",
+      "type": "p",
+      "validated": true
+    },
+    {
+      "deferrable": false,
+      "definition": "CHECK (quantity > 0)",
+      "name": "order_items_quantity_check",
+      "table": "order_items",
+      "type": "c",
+      "validated": true
+    },
+    {
+      "deferrable": false,
+      "definition": "CHECK (desired_resolution = ANY (ARRAY['cancel_order'::text, 'refund'::text, 'return_refund'::text, 'exchange'::text, 'reship'::text, 'partial_refund'::text]))",
+      "name": "return_requests_desired_resolution_check",
+      "table": "return_requests",
+      "type": "c",
+      "validated": true
+    },
+    {
+      "deferrable": false,
+      "definition": "CHECK (eligibility_status = ANY (ARRAY['eligible'::text, 'ineligible'::text, 'review_required'::text]))",
+      "name": "return_requests_eligibility_status_check",
+      "table": "return_requests",
+      "type": "c",
+      "validated": true
+    },
+    {
+      "deferrable": false,
+      "definition": "FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE",
+      "name": "return_requests_order_id_fkey",
+      "table": "return_requests",
+      "type": "f",
+      "validated": true
+    },
+    {
+      "deferrable": false,
+      "definition": "PRIMARY KEY (id)",
+      "name": "return_requests_pkey",
+      "table": "return_requests",
+      "type": "p",
+      "validated": true
+    },
+    {
+      "deferrable": false,
+      "definition": "CHECK (reason = ANY (ARRAY['quality_issue'::text, 'wrong_item'::text, 'missing_item'::text, 'damaged_in_transit'::text, 'not_as_expected'::text, 'changed_mind'::text, 'size_fit'::text, 'privacy_packaging'::text, 'other'::text]))",
+      "name": "return_requests_reason_check",
+      "table": "return_requests",
+      "type": "c",
+      "validated": true
+    },
+    {
+      "deferrable": false,
+      "definition": "UNIQUE (request_number)",
+      "name": "return_requests_request_number_key",
+      "table": "return_requests",
+      "type": "u",
+      "validated": true
+    },
+    {
+      "deferrable": false,
+      "definition": "CHECK (shopify_sync_status = ANY (ARRAY['pending'::text, 'synced'::text, 'failed'::text, 'skipped'::text]))",
+      "name": "return_requests_shopify_sync_status_check",
+      "table": "return_requests",
+      "type": "c",
+      "validated": true
+    },
+    {
+      "deferrable": false,
+      "definition": "CHECK (status = ANY (ARRAY['submitted'::text, 'needs_more_info'::text, 'approved'::text, 'rejected'::text, 'awaiting_customer_shipment'::text, 'customer_shipped'::text, 'received'::text, 'inspected'::text, 'refund_pending'::text, 'refunded'::text, 'exchange_pending'::text, 'exchanged'::text, 'reship_pending'::text, 'reshipped'::text, 'closed'::text]))",
+      "name": "return_requests_status_check",
+      "table": "return_requests",
+      "type": "c",
+      "validated": true
+    },
+    {
+      "deferrable": false,
+      "definition": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE SET NULL",
+      "name": "return_requests_user_id_fkey",
+      "table": "return_requests",
+      "type": "f",
+      "validated": true
+    },
+    {
+      "deferrable": false,
+      "definition": "UNIQUE (code)",
+      "name": "gift_cards_code_key",
+      "table": "gift_cards",
+      "type": "u",
+      "validated": true
+    },
+    {
+      "deferrable": false,
+      "definition": "PRIMARY KEY (id)",
+      "name": "gift_cards_pkey",
+      "table": "gift_cards",
+      "type": "p",
+      "validated": true
+    },
+    {
+      "deferrable": false,
+      "definition": "CHECK (item_condition = ANY (ARRAY['unopened_tags_attached'::text, 'opened_unused'::text, 'used'::text, 'damaged'::text, 'defective'::text]))",
+      "name": "return_request_items_item_condition_check",
+      "table": "return_request_items",
+      "type": "c",
+      "validated": true
+    },
+    {
+      "deferrable": false,
+      "definition": "FOREIGN KEY (order_item_id) REFERENCES order_items(id) ON DELETE RESTRICT",
+      "name": "return_request_items_order_item_id_fkey",
+      "table": "return_request_items",
+      "type": "f",
+      "validated": true
+    },
+    {
+      "deferrable": false,
+      "definition": "PRIMARY KEY (id)",
+      "name": "return_request_items_pkey",
+      "table": "return_request_items",
+      "type": "p",
+      "validated": true
+    },
+    {
+      "deferrable": false,
+      "definition": "CHECK (quantity > 0)",
+      "name": "return_request_items_quantity_check",
+      "table": "return_request_items",
+      "type": "c",
+      "validated": true
+    },
+    {
+      "deferrable": false,
+      "definition": "FOREIGN KEY (return_request_id) REFERENCES return_requests(id) ON DELETE CASCADE",
+      "name": "return_request_items_return_request_id_fkey",
+      "table": "return_request_items",
+      "type": "f",
+      "validated": true
+    },
+    {
+      "deferrable": false,
+      "definition": "UNIQUE (return_request_id, order_item_id)",
+      "name": "return_request_items_return_request_id_order_item_id_key",
+      "table": "return_request_items",
+      "type": "u",
+      "validated": true
+    },
+    {
+      "deferrable": false,
+      "definition": "PRIMARY KEY (id)",
+      "name": "return_request_events_pkey",
+      "table": "return_request_events",
+      "type": "p",
+      "validated": true
+    },
+    {
+      "deferrable": false,
+      "definition": "FOREIGN KEY (return_request_id) REFERENCES return_requests(id) ON DELETE CASCADE",
+      "name": "return_request_events_return_request_id_fkey",
+      "table": "return_request_events",
+      "type": "f",
+      "validated": true
+    }
+  ],
+  "indexes": [
+    {
+      "definition": "CREATE UNIQUE INDEX addresses_pkey ON public.addresses USING btree (id)",
+      "name": "addresses_pkey",
+      "ready": true,
+      "table": "addresses",
+      "valid": true
+    },
+    {
+      "definition": "CREATE INDEX addresses_user_idx ON public.addresses USING btree (user_id)",
+      "name": "addresses_user_idx",
+      "ready": true,
+      "table": "addresses",
+      "valid": true
+    },
+    {
+      "definition": "CREATE UNIQUE INDEX reviews_pkey ON public.reviews USING btree (id)",
+      "name": "reviews_pkey",
+      "ready": true,
+      "table": "reviews",
+      "valid": true
+    },
+    {
+      "definition": "CREATE INDEX reviews_user_pending_idx ON public.reviews USING btree (user_id, approved, created_at DESC)",
+      "name": "reviews_user_pending_idx",
+      "ready": true,
+      "table": "reviews",
+      "valid": true
+    },
+    {
+      "definition": "CREATE INDEX reviews_product_idx ON public.reviews USING btree (product_id)",
+      "name": "reviews_product_idx",
+      "ready": true,
+      "table": "reviews",
+      "valid": true
+    },
+    {
+      "definition": "CREATE INDEX reviews_approved_idx ON public.reviews USING btree (approved, product_id)",
+      "name": "reviews_approved_idx",
+      "ready": true,
+      "table": "reviews",
+      "valid": true
+    },
+    {
+      "definition": "CREATE UNIQUE INDEX restock_alerts_pkey ON public.restock_alerts USING btree (id)",
+      "name": "restock_alerts_pkey",
+      "ready": true,
+      "table": "restock_alerts",
+      "valid": true
+    },
+    {
+      "definition": "CREATE INDEX restock_product_idx ON public.restock_alerts USING btree (product_id, size, color, notified)",
+      "name": "restock_product_idx",
+      "ready": true,
+      "table": "restock_alerts",
+      "valid": true
+    },
+    {
+      "definition": "CREATE UNIQUE INDEX cart_snapshots_pkey ON public.cart_snapshots USING btree (id)",
+      "name": "cart_snapshots_pkey",
+      "ready": true,
+      "table": "cart_snapshots",
+      "valid": true
+    },
+    {
+      "definition": "CREATE UNIQUE INDEX cart_snapshots_user_id_key ON public.cart_snapshots USING btree (user_id)",
+      "name": "cart_snapshots_user_id_key",
+      "ready": true,
+      "table": "cart_snapshots",
+      "valid": true
+    },
+    {
+      "definition": "CREATE INDEX cart_snapshots_updated_idx ON public.cart_snapshots USING btree (updated_at) WHERE (reminder_sent = false)",
+      "name": "cart_snapshots_updated_idx",
+      "ready": true,
+      "table": "cart_snapshots",
+      "valid": true
+    },
+    {
+      "definition": "CREATE UNIQUE INDEX profiles_pkey ON public.profiles USING btree (id)",
+      "name": "profiles_pkey",
+      "ready": true,
+      "table": "profiles",
+      "valid": true
+    },
+    {
+      "definition": "CREATE UNIQUE INDEX orders_pkey ON public.orders USING btree (id)",
+      "name": "orders_pkey",
+      "ready": true,
+      "table": "orders",
+      "valid": true
+    },
+    {
+      "definition": "CREATE UNIQUE INDEX orders_shopify_order_id_key ON public.orders USING btree (shopify_order_id)",
+      "name": "orders_shopify_order_id_key",
+      "ready": true,
+      "table": "orders",
+      "valid": true
+    },
+    {
+      "definition": "CREATE INDEX orders_user_idx ON public.orders USING btree (user_id, created_at DESC)",
+      "name": "orders_user_idx",
+      "ready": true,
+      "table": "orders",
+      "valid": true
+    },
+    {
+      "definition": "CREATE INDEX orders_email_idx ON public.orders USING btree (lower(email), shopify_order_number)",
+      "name": "orders_email_idx",
+      "ready": true,
+      "table": "orders",
+      "valid": true
+    },
+    {
+      "definition": "CREATE INDEX orders_phone_idx ON public.orders USING btree (phone, shopify_order_number)",
+      "name": "orders_phone_idx",
+      "ready": true,
+      "table": "orders",
+      "valid": true
+    },
+    {
+      "definition": "CREATE UNIQUE INDEX memberships_pkey ON public.memberships USING btree (id)",
+      "name": "memberships_pkey",
+      "ready": true,
+      "table": "memberships",
+      "valid": true
+    },
+    {
+      "definition": "CREATE UNIQUE INDEX memberships_user_id_key ON public.memberships USING btree (user_id)",
+      "name": "memberships_user_id_key",
+      "ready": true,
+      "table": "memberships",
+      "valid": true
+    },
+    {
+      "definition": "CREATE UNIQUE INDEX wishlists_pkey ON public.wishlists USING btree (id)",
+      "name": "wishlists_pkey",
+      "ready": true,
+      "table": "wishlists",
+      "valid": true
+    },
+    {
+      "definition": "CREATE UNIQUE INDEX wishlists_user_id_product_id_key ON public.wishlists USING btree (user_id, product_id)",
+      "name": "wishlists_user_id_product_id_key",
+      "ready": true,
+      "table": "wishlists",
+      "valid": true
+    },
+    {
+      "definition": "CREATE INDEX wishlists_user_idx ON public.wishlists USING btree (user_id)",
+      "name": "wishlists_user_idx",
+      "ready": true,
+      "table": "wishlists",
+      "valid": true
+    },
+    {
+      "definition": "CREATE UNIQUE INDEX referrals_pkey ON public.referrals USING btree (id)",
+      "name": "referrals_pkey",
+      "ready": true,
+      "table": "referrals",
+      "valid": true
+    },
+    {
+      "definition": "CREATE UNIQUE INDEX referrals_code_key ON public.referrals USING btree (code)",
+      "name": "referrals_code_key",
+      "ready": true,
+      "table": "referrals",
+      "valid": true
+    },
+    {
+      "definition": "CREATE INDEX referrals_code_idx ON public.referrals USING btree (code)",
+      "name": "referrals_code_idx",
+      "ready": true,
+      "table": "referrals",
+      "valid": true
+    },
+    {
+      "definition": "CREATE INDEX referrals_referrer_idx ON public.referrals USING btree (referrer_id)",
+      "name": "referrals_referrer_idx",
+      "ready": true,
+      "table": "referrals",
+      "valid": true
+    },
+    {
+      "definition": "CREATE UNIQUE INDEX shipments_pkey ON public.shipments USING btree (id)",
+      "name": "shipments_pkey",
+      "ready": true,
+      "table": "shipments",
+      "valid": true
+    },
+    {
+      "definition": "CREATE UNIQUE INDEX shipments_shopify_fulfillment_id_key ON public.shipments USING btree (shopify_fulfillment_id)",
+      "name": "shipments_shopify_fulfillment_id_key",
+      "ready": true,
+      "table": "shipments",
+      "valid": true
+    },
+    {
+      "definition": "CREATE UNIQUE INDEX shipments_public_lookup_token_key ON public.shipments USING btree (public_lookup_token)",
+      "name": "shipments_public_lookup_token_key",
+      "ready": true,
+      "table": "shipments",
+      "valid": true
+    },
+    {
+      "definition": "CREATE INDEX shipments_order_idx ON public.shipments USING btree (order_id, created_at DESC)",
+      "name": "shipments_order_idx",
+      "ready": true,
+      "table": "shipments",
+      "valid": true
+    },
+    {
+      "definition": "CREATE INDEX shipments_token_idx ON public.shipments USING btree (public_lookup_token)",
+      "name": "shipments_token_idx",
+      "ready": true,
+      "table": "shipments",
+      "valid": true
+    },
+    {
+      "definition": "CREATE UNIQUE INDEX shipment_events_pkey ON public.shipment_events USING btree (id)",
+      "name": "shipment_events_pkey",
+      "ready": true,
+      "table": "shipment_events",
+      "valid": true
+    },
+    {
+      "definition": "CREATE INDEX shipment_events_shipment_idx ON public.shipment_events USING btree (shipment_id, occurred_at DESC)",
+      "name": "shipment_events_shipment_idx",
+      "ready": true,
+      "table": "shipment_events",
+      "valid": true
+    },
+    {
+      "definition": "CREATE UNIQUE INDEX notification_logs_pkey ON public.notification_logs USING btree (id)",
+      "name": "notification_logs_pkey",
+      "ready": true,
+      "table": "notification_logs",
+      "valid": true
+    },
+    {
+      "definition": "CREATE UNIQUE INDEX order_items_pkey ON public.order_items USING btree (id)",
+      "name": "order_items_pkey",
+      "ready": true,
+      "table": "order_items",
+      "valid": true
+    },
+    {
+      "definition": "CREATE UNIQUE INDEX order_items_order_id_shopify_line_item_id_key ON public.order_items USING btree (order_id, shopify_line_item_id)",
+      "name": "order_items_order_id_shopify_line_item_id_key",
+      "ready": true,
+      "table": "order_items",
+      "valid": true
+    },
+    {
+      "definition": "CREATE INDEX order_items_order_idx ON public.order_items USING btree (order_id)",
+      "name": "order_items_order_idx",
+      "ready": true,
+      "table": "order_items",
+      "valid": true
+    },
+    {
+      "definition": "CREATE UNIQUE INDEX return_requests_pkey ON public.return_requests USING btree (id)",
+      "name": "return_requests_pkey",
+      "ready": true,
+      "table": "return_requests",
+      "valid": true
+    },
+    {
+      "definition": "CREATE UNIQUE INDEX return_requests_request_number_key ON public.return_requests USING btree (request_number)",
+      "name": "return_requests_request_number_key",
+      "ready": true,
+      "table": "return_requests",
+      "valid": true
+    },
+    {
+      "definition": "CREATE INDEX return_requests_user_idx ON public.return_requests USING btree (user_id, created_at DESC)",
+      "name": "return_requests_user_idx",
+      "ready": true,
+      "table": "return_requests",
+      "valid": true
+    },
+    {
+      "definition": "CREATE INDEX return_requests_order_idx ON public.return_requests USING btree (order_id, created_at DESC)",
+      "name": "return_requests_order_idx",
+      "ready": true,
+      "table": "return_requests",
+      "valid": true
+    },
+    {
+      "definition": "CREATE UNIQUE INDEX gift_cards_pkey ON public.gift_cards USING btree (id)",
+      "name": "gift_cards_pkey",
+      "ready": true,
+      "table": "gift_cards",
+      "valid": true
+    },
+    {
+      "definition": "CREATE UNIQUE INDEX gift_cards_code_key ON public.gift_cards USING btree (code)",
+      "name": "gift_cards_code_key",
+      "ready": true,
+      "table": "gift_cards",
+      "valid": true
+    },
+    {
+      "definition": "CREATE INDEX gift_cards_code_idx ON public.gift_cards USING btree (code)",
+      "name": "gift_cards_code_idx",
+      "ready": true,
+      "table": "gift_cards",
+      "valid": true
+    },
+    {
+      "definition": "CREATE UNIQUE INDEX return_request_items_pkey ON public.return_request_items USING btree (id)",
+      "name": "return_request_items_pkey",
+      "ready": true,
+      "table": "return_request_items",
+      "valid": true
+    },
+    {
+      "definition": "CREATE UNIQUE INDEX return_request_items_return_request_id_order_item_id_key ON public.return_request_items USING btree (return_request_id, order_item_id)",
+      "name": "return_request_items_return_request_id_order_item_id_key",
+      "ready": true,
+      "table": "return_request_items",
+      "valid": true
+    },
+    {
+      "definition": "CREATE INDEX return_request_items_request_idx ON public.return_request_items USING btree (return_request_id)",
+      "name": "return_request_items_request_idx",
+      "ready": true,
+      "table": "return_request_items",
+      "valid": true
+    },
+    {
+      "definition": "CREATE UNIQUE INDEX return_request_events_pkey ON public.return_request_events USING btree (id)",
+      "name": "return_request_events_pkey",
+      "ready": true,
+      "table": "return_request_events",
+      "valid": true
+    },
+    {
+      "definition": "CREATE INDEX return_request_events_request_idx ON public.return_request_events USING btree (return_request_id, created_at DESC)",
+      "name": "return_request_events_request_idx",
+      "ready": true,
+      "table": "return_request_events",
+      "valid": true
+    }
+  ],
+  "policies": [
+    {
+      "check": null,
+      "command": "*",
+      "name": "addresses: user can manage own",
+      "permissive": true,
+      "roles": [
+        "PUBLIC"
+      ],
+      "schema": "public",
+      "table": "addresses",
+      "using": "(auth.uid() = user_id)"
+    },
+    {
+      "check": null,
+      "command": "r",
+      "name": "Users read own profile",
+      "permissive": true,
+      "roles": [
+        "PUBLIC"
+      ],
+      "schema": "public",
+      "table": "profiles",
+      "using": "(auth.uid() = id)"
+    },
+    {
+      "check": "(auth.uid() = id)",
+      "command": "a",
+      "name": "Users insert own profile",
+      "permissive": true,
+      "roles": [
+        "PUBLIC"
+      ],
+      "schema": "public",
+      "table": "profiles",
+      "using": null
+    },
+    {
+      "check": null,
+      "command": "w",
+      "name": "Users update own profile",
+      "permissive": true,
+      "roles": [
+        "PUBLIC"
+      ],
+      "schema": "public",
+      "table": "profiles",
+      "using": "(auth.uid() = id)"
+    },
+    {
+      "check": null,
+      "command": "r",
+      "name": "Users read own membership",
+      "permissive": true,
+      "roles": [
+        "PUBLIC"
+      ],
+      "schema": "public",
+      "table": "memberships",
+      "using": "(auth.uid() = user_id)"
+    },
+    {
+      "check": "(auth.uid() = user_id)",
+      "command": "a",
+      "name": "Users insert own membership",
+      "permissive": true,
+      "roles": [
+        "PUBLIC"
+      ],
+      "schema": "public",
+      "table": "memberships",
+      "using": null
+    },
+    {
+      "check": null,
+      "command": "w",
+      "name": "Users update own membership",
+      "permissive": true,
+      "roles": [
+        "PUBLIC"
+      ],
+      "schema": "public",
+      "table": "memberships",
+      "using": "(auth.uid() = user_id)"
+    },
+    {
+      "check": null,
+      "command": "r",
+      "name": "Users read own wishlist",
+      "permissive": true,
+      "roles": [
+        "PUBLIC"
+      ],
+      "schema": "public",
+      "table": "wishlists",
+      "using": "(auth.uid() = user_id)"
+    },
+    {
+      "check": "(auth.uid() = user_id)",
+      "command": "a",
+      "name": "Users add to wishlist",
+      "permissive": true,
+      "roles": [
+        "PUBLIC"
+      ],
+      "schema": "public",
+      "table": "wishlists",
+      "using": null
+    },
+    {
+      "check": null,
+      "command": "d",
+      "name": "Users remove from wishlist",
+      "permissive": true,
+      "roles": [
+        "PUBLIC"
+      ],
+      "schema": "public",
+      "table": "wishlists",
+      "using": "(auth.uid() = user_id)"
+    },
+    {
+      "check": null,
+      "command": "r",
+      "name": "Anyone reads approved reviews",
+      "permissive": true,
+      "roles": [
+        "PUBLIC"
+      ],
+      "schema": "public",
+      "table": "reviews",
+      "using": "(approved = true)"
+    },
+    {
+      "check": "(auth.role() = 'authenticated'::text)",
+      "command": "a",
+      "name": "Authenticated users write reviews",
+      "permissive": true,
+      "roles": [
+        "PUBLIC"
+      ],
+      "schema": "public",
+      "table": "reviews",
+      "using": null
+    },
+    {
+      "check": "true",
+      "command": "a",
+      "name": "Anyone can register restock alert",
+      "permissive": true,
+      "roles": [
+        "PUBLIC"
+      ],
+      "schema": "public",
+      "table": "restock_alerts",
+      "using": null
+    },
+    {
+      "check": "(auth.uid() = user_id)",
+      "command": "*",
+      "name": "Users manage own cart snapshot",
+      "permissive": true,
+      "roles": [
+        "PUBLIC"
+      ],
+      "schema": "public",
+      "table": "cart_snapshots",
+      "using": "(auth.uid() = user_id)"
+    },
+    {
+      "check": null,
+      "command": "r",
+      "name": "Users can read own profile",
+      "permissive": true,
+      "roles": [
+        "PUBLIC"
+      ],
+      "schema": "public",
+      "table": "profiles",
+      "using": "(auth.uid() = id)"
+    },
+    {
+      "check": null,
+      "command": "w",
+      "name": "Users can update own profile",
+      "permissive": true,
+      "roles": [
+        "PUBLIC"
+      ],
+      "schema": "public",
+      "table": "profiles",
+      "using": "(auth.uid() = id)"
+    },
+    {
+      "check": null,
+      "command": "r",
+      "name": "Users can read own membership",
+      "permissive": true,
+      "roles": [
+        "PUBLIC"
+      ],
+      "schema": "public",
+      "table": "memberships",
+      "using": "(auth.uid() = user_id)"
+    },
+    {
+      "check": null,
+      "command": "w",
+      "name": "Users can update own membership",
+      "permissive": true,
+      "roles": [
+        "PUBLIC"
+      ],
+      "schema": "public",
+      "table": "memberships",
+      "using": "(auth.uid() = user_id)"
+    },
+    {
+      "check": null,
+      "command": "r",
+      "name": "Users can read own wishlist",
+      "permissive": true,
+      "roles": [
+        "PUBLIC"
+      ],
+      "schema": "public",
+      "table": "wishlists",
+      "using": "(auth.uid() = user_id)"
+    },
+    {
+      "check": "(auth.uid() = user_id)",
+      "command": "a",
+      "name": "Users can insert into own wishlist",
+      "permissive": true,
+      "roles": [
+        "PUBLIC"
+      ],
+      "schema": "public",
+      "table": "wishlists",
+      "using": null
+    },
+    {
+      "check": null,
+      "command": "d",
+      "name": "Users can delete from own wishlist",
+      "permissive": true,
+      "roles": [
+        "PUBLIC"
+      ],
+      "schema": "public",
+      "table": "wishlists",
+      "using": "(auth.uid() = user_id)"
+    },
+    {
+      "check": null,
+      "command": "r",
+      "name": "Anyone can read approved reviews",
+      "permissive": true,
+      "roles": [
+        "PUBLIC"
+      ],
+      "schema": "public",
+      "table": "reviews",
+      "using": "(approved = true)"
+    },
+    {
+      "check": "(auth.role() = 'authenticated'::text)",
+      "command": "a",
+      "name": "Authenticated users can submit reviews",
+      "permissive": true,
+      "roles": [
+        "PUBLIC"
+      ],
+      "schema": "public",
+      "table": "reviews",
+      "using": null
+    },
+    {
+      "check": null,
+      "command": "w",
+      "name": "Service role can approve reviews",
+      "permissive": true,
+      "roles": [
+        "PUBLIC"
+      ],
+      "schema": "public",
+      "table": "reviews",
+      "using": "(auth.role() = 'service_role'::text)"
+    },
+    {
+      "check": null,
+      "command": "*",
+      "name": "Service role manages restock alerts",
+      "permissive": true,
+      "roles": [
+        "PUBLIC"
+      ],
+      "schema": "public",
+      "table": "restock_alerts",
+      "using": "(auth.role() = 'service_role'::text)"
+    },
+    {
+      "check": "true",
+      "command": "a",
+      "name": "Anyone can subscribe to restock alert",
+      "permissive": true,
+      "roles": [
+        "PUBLIC"
+      ],
+      "schema": "public",
+      "table": "restock_alerts",
+      "using": null
+    },
+    {
+      "check": null,
+      "command": "*",
+      "name": "Users can manage own cart snapshot",
+      "permissive": true,
+      "roles": [
+        "PUBLIC"
+      ],
+      "schema": "public",
+      "table": "cart_snapshots",
+      "using": "(auth.uid() = user_id)"
+    },
+    {
+      "check": null,
+      "command": "*",
+      "name": "Users can manage own addresses",
+      "permissive": true,
+      "roles": [
+        "PUBLIC"
+      ],
+      "schema": "public",
+      "table": "addresses",
+      "using": "(auth.uid() = user_id)"
+    },
+    {
+      "check": null,
+      "command": "r",
+      "name": "Anyone can look up a gift card by code",
+      "permissive": true,
+      "roles": [
+        "PUBLIC"
+      ],
+      "schema": "public",
+      "table": "gift_cards",
+      "using": "true"
+    },
+    {
+      "check": null,
+      "command": "*",
+      "name": "Service role manages gift cards",
+      "permissive": true,
+      "roles": [
+        "PUBLIC"
+      ],
+      "schema": "public",
+      "table": "gift_cards",
+      "using": "(auth.role() = 'service_role'::text)"
+    },
+    {
+      "check": null,
+      "command": "r",
+      "name": "Users can read own referral",
+      "permissive": true,
+      "roles": [
+        "PUBLIC"
+      ],
+      "schema": "public",
+      "table": "referrals",
+      "using": "(auth.uid() = referrer_id)"
+    },
+    {
+      "check": "(auth.uid() = referrer_id)",
+      "command": "a",
+      "name": "Users can create own referral",
+      "permissive": true,
+      "roles": [
+        "PUBLIC"
+      ],
+      "schema": "public",
+      "table": "referrals",
+      "using": null
+    },
+    {
+      "check": null,
+      "command": "*",
+      "name": "Service role manages referrals",
+      "permissive": true,
+      "roles": [
+        "PUBLIC"
+      ],
+      "schema": "public",
+      "table": "referrals",
+      "using": "(auth.role() = 'service_role'::text)"
+    },
+    {
+      "check": null,
+      "command": "r",
+      "name": "Users can read own orders",
+      "permissive": true,
+      "roles": [
+        "PUBLIC"
+      ],
+      "schema": "public",
+      "table": "orders",
+      "using": "(auth.uid() = user_id)"
+    },
+    {
+      "check": null,
+      "command": "*",
+      "name": "Service role manages orders",
+      "permissive": true,
+      "roles": [
+        "PUBLIC"
+      ],
+      "schema": "public",
+      "table": "orders",
+      "using": "(auth.role() = 'service_role'::text)"
+    },
+    {
+      "check": null,
+      "command": "r",
+      "name": "Users can read own shipments",
+      "permissive": true,
+      "roles": [
+        "PUBLIC"
+      ],
+      "schema": "public",
+      "table": "shipments",
+      "using": "(EXISTS ( SELECT 1\n   FROM orders\n  WHERE ((orders.id = shipments.order_id) AND (orders.user_id = auth.uid()))))"
+    },
+    {
+      "check": null,
+      "command": "*",
+      "name": "Service role manages shipments",
+      "permissive": true,
+      "roles": [
+        "PUBLIC"
+      ],
+      "schema": "public",
+      "table": "shipments",
+      "using": "(auth.role() = 'service_role'::text)"
+    },
+    {
+      "check": null,
+      "command": "r",
+      "name": "Users can read own shipment events",
+      "permissive": true,
+      "roles": [
+        "PUBLIC"
+      ],
+      "schema": "public",
+      "table": "shipment_events",
+      "using": "(EXISTS ( SELECT 1\n   FROM (shipments\n     JOIN orders ON ((orders.id = shipments.order_id)))\n  WHERE ((shipments.id = shipment_events.shipment_id) AND (orders.user_id = auth.uid()))))"
+    },
+    {
+      "check": null,
+      "command": "*",
+      "name": "Service role manages shipment events",
+      "permissive": true,
+      "roles": [
+        "PUBLIC"
+      ],
+      "schema": "public",
+      "table": "shipment_events",
+      "using": "(auth.role() = 'service_role'::text)"
+    },
+    {
+      "check": null,
+      "command": "*",
+      "name": "Service role manages notification logs",
+      "permissive": true,
+      "roles": [
+        "PUBLIC"
+      ],
+      "schema": "public",
+      "table": "notification_logs",
+      "using": "(auth.role() = 'service_role'::text)"
+    },
+    {
+      "check": null,
+      "command": "r",
+      "name": "Users can read own order items",
+      "permissive": true,
+      "roles": [
+        "PUBLIC"
+      ],
+      "schema": "public",
+      "table": "order_items",
+      "using": "(EXISTS ( SELECT 1\n   FROM orders\n  WHERE ((orders.id = order_items.order_id) AND (orders.user_id = auth.uid()))))"
+    },
+    {
+      "check": null,
+      "command": "*",
+      "name": "Service role manages order items",
+      "permissive": true,
+      "roles": [
+        "PUBLIC"
+      ],
+      "schema": "public",
+      "table": "order_items",
+      "using": "(auth.role() = 'service_role'::text)"
+    },
+    {
+      "check": null,
+      "command": "r",
+      "name": "Users can read own return requests",
+      "permissive": true,
+      "roles": [
+        "PUBLIC"
+      ],
+      "schema": "public",
+      "table": "return_requests",
+      "using": "(auth.uid() = user_id)"
+    },
+    {
+      "check": null,
+      "command": "*",
+      "name": "Service role manages return requests",
+      "permissive": true,
+      "roles": [
+        "PUBLIC"
+      ],
+      "schema": "public",
+      "table": "return_requests",
+      "using": "(auth.role() = 'service_role'::text)"
+    },
+    {
+      "check": null,
+      "command": "r",
+      "name": "Users can read own return request items",
+      "permissive": true,
+      "roles": [
+        "PUBLIC"
+      ],
+      "schema": "public",
+      "table": "return_request_items",
+      "using": "(EXISTS ( SELECT 1\n   FROM return_requests\n  WHERE ((return_requests.id = return_request_items.return_request_id) AND (return_requests.user_id = auth.uid()))))"
+    },
+    {
+      "check": null,
+      "command": "*",
+      "name": "Service role manages return request items",
+      "permissive": true,
+      "roles": [
+        "PUBLIC"
+      ],
+      "schema": "public",
+      "table": "return_request_items",
+      "using": "(auth.role() = 'service_role'::text)"
+    },
+    {
+      "check": null,
+      "command": "r",
+      "name": "Users can read own return request events",
+      "permissive": true,
+      "roles": [
+        "PUBLIC"
+      ],
+      "schema": "public",
+      "table": "return_request_events",
+      "using": "(EXISTS ( SELECT 1\n   FROM return_requests\n  WHERE ((return_requests.id = return_request_events.return_request_id) AND (return_requests.user_id = auth.uid()))))"
+    },
+    {
+      "check": null,
+      "command": "*",
+      "name": "Service role manages return request events",
+      "permissive": true,
+      "roles": [
+        "PUBLIC"
+      ],
+      "schema": "public",
+      "table": "return_request_events",
+      "using": "(auth.role() = 'service_role'::text)"
+    },
+    {
+      "check": "((bucket_id = 'returns'::text) AND (auth.role() = 'authenticated'::text) AND ((storage.foldername(name))[1] = (auth.uid())::text))",
+      "command": "a",
+      "name": "Users can upload own return media",
+      "permissive": true,
+      "roles": [
+        "PUBLIC"
+      ],
+      "schema": "storage",
+      "table": "objects",
+      "using": null
+    },
+    {
+      "check": null,
+      "command": "r",
+      "name": "Users can read own return media",
+      "permissive": true,
+      "roles": [
+        "PUBLIC"
+      ],
+      "schema": "storage",
+      "table": "objects",
+      "using": "((bucket_id = 'returns'::text) AND ((auth.role() = 'service_role'::text) OR ((storage.foldername(name))[1] = (auth.uid())::text)))"
+    },
+    {
+      "check": "((bucket_id = 'ugc'::text) AND (auth.role() = 'authenticated'::text) AND ((storage.foldername(name))[1] = 'reviews'::text))",
+      "command": "a",
+      "name": "Authenticated users can upload review media",
+      "permissive": true,
+      "roles": [
+        "PUBLIC"
+      ],
+      "schema": "storage",
+      "table": "objects",
+      "using": null
+    },
+    {
+      "check": null,
+      "command": "r",
+      "name": "Anyone can view review media",
+      "permissive": true,
+      "roles": [
+        "PUBLIC"
+      ],
+      "schema": "storage",
+      "table": "objects",
+      "using": "(bucket_id = 'ugc'::text)"
+    },
+    {
+      "check": null,
+      "command": "r",
+      "name": "Users can read own reviews",
+      "permissive": true,
+      "roles": [
+        "PUBLIC"
+      ],
+      "schema": "public",
+      "table": "reviews",
+      "using": "(auth.uid() = user_id)"
+    }
+  ],
+  "functions": [
+    {
+      "acl": [
+        "=X/postgres",
+        "postgres=X/postgres",
+        "anon=X/postgres",
+        "authenticated=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "args": "",
+      "config": null,
+      "definition": "CREATE OR REPLACE FUNCTION public.handle_new_membership()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\nAS $function$\nBEGIN\n  INSERT INTO public.memberships (user_id)\n  VALUES (new.id)\n  ON CONFLICT (user_id) DO NOTHING;\n  RETURN new;\nEND;\n$function$\n",
+      "language": "plpgsql",
+      "name": "handle_new_membership",
+      "owner": "postgres",
+      "return_type": "trigger",
+      "security_definer": true,
+      "volatility": "v"
+    },
+    {
+      "acl": [
+        "=X/postgres",
+        "postgres=X/postgres",
+        "anon=X/postgres",
+        "authenticated=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "args": "",
+      "config": null,
+      "definition": "CREATE OR REPLACE FUNCTION public.handle_new_user()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\nAS $function$\nBEGIN\n  INSERT INTO public.profiles (id, email, first_name, last_name, avatar_url)\n  VALUES (\n    new.id,\n    new.email,\n    new.raw_user_meta_data->>'first_name',\n    new.raw_user_meta_data->>'last_name',\n    new.raw_user_meta_data->>'avatar_url'\n  )\n  ON CONFLICT (id) DO NOTHING;\n  RETURN new;\nEND;\n$function$\n",
+      "language": "plpgsql",
+      "name": "handle_new_user",
+      "owner": "postgres",
+      "return_type": "trigger",
+      "security_definer": true,
+      "volatility": "v"
+    },
+    {
+      "acl": [
+        "=X/postgres",
+        "postgres=X/postgres",
+        "anon=X/postgres",
+        "authenticated=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "args": "",
+      "config": null,
+      "definition": "CREATE OR REPLACE FUNCTION public.set_updated_at()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  NEW.updated_at = now();\n  RETURN NEW;\nEND;\n$function$\n",
+      "language": "plpgsql",
+      "name": "set_updated_at",
+      "owner": "postgres",
+      "return_type": "trigger",
+      "security_definer": false,
+      "volatility": "v"
+    }
+  ],
+  "triggers": [
+    {
+      "definition": "CREATE TRIGGER addresses_updated_at BEFORE UPDATE ON addresses FOR EACH ROW EXECUTE FUNCTION set_updated_at()",
+      "enabled": "O",
+      "name": "addresses_updated_at",
+      "schema": "public",
+      "table": "addresses"
+    },
+    {
+      "definition": "CREATE TRIGGER on_auth_user_created AFTER INSERT ON auth.users FOR EACH ROW EXECUTE FUNCTION handle_new_user()",
+      "enabled": "O",
+      "name": "on_auth_user_created",
+      "schema": "auth",
+      "table": "users"
+    },
+    {
+      "definition": "CREATE TRIGGER on_auth_user_created_membership AFTER INSERT ON auth.users FOR EACH ROW EXECUTE FUNCTION handle_new_membership()",
+      "enabled": "O",
+      "name": "on_auth_user_created_membership",
+      "schema": "auth",
+      "table": "users"
+    },
+    {
+      "definition": "CREATE TRIGGER orders_updated_at BEFORE UPDATE ON orders FOR EACH ROW EXECUTE FUNCTION set_updated_at()",
+      "enabled": "O",
+      "name": "orders_updated_at",
+      "schema": "public",
+      "table": "orders"
+    },
+    {
+      "definition": "CREATE TRIGGER shipments_updated_at BEFORE UPDATE ON shipments FOR EACH ROW EXECUTE FUNCTION set_updated_at()",
+      "enabled": "O",
+      "name": "shipments_updated_at",
+      "schema": "public",
+      "table": "shipments"
+    },
+    {
+      "definition": "CREATE TRIGGER order_items_updated_at BEFORE UPDATE ON order_items FOR EACH ROW EXECUTE FUNCTION set_updated_at()",
+      "enabled": "O",
+      "name": "order_items_updated_at",
+      "schema": "public",
+      "table": "order_items"
+    },
+    {
+      "definition": "CREATE TRIGGER return_requests_updated_at BEFORE UPDATE ON return_requests FOR EACH ROW EXECUTE FUNCTION set_updated_at()",
+      "enabled": "O",
+      "name": "return_requests_updated_at",
+      "schema": "public",
+      "table": "return_requests"
+    }
+  ],
+  "buckets": [
+    {
+      "allowed_mime_types": null,
+      "file_size_limit": null,
+      "id": "ugc",
+      "public": true
+    },
+    {
+      "allowed_mime_types": null,
+      "file_size_limit": null,
+      "id": "returns",
+      "public": false
+    }
+  ]
+}
