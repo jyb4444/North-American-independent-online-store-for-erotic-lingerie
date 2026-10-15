@@ -12,16 +12,25 @@ import ContextTranslateMenu from '@/components/layout/ContextTranslateMenu';
 import FirstFreeSignupModal from '@/components/promotion/FirstFreeSignupModal';
 import MobileBottomNav from '@/components/layout/MobileBottomNav';
 import NewsletterSlide from '@/components/ui/NewsletterSlide';
+import { AGE_GATE_PREPAINT_SCRIPT } from '@/lib/popups';
 
 export const metadata: Metadata = {
-  title: { default: 'Velour — Premium Intimate Apparel', template: '%s | Velour' },
-  description: 'Discover luxurious intimate apparel with private fit guidance and saved style tools.',
+  title: { default: 'Self Love — Premium Intimate Apparel', template: '%s | Self Love' },
+  description: 'Discover luxurious intimate apparel with discreet shopping and curated essentials.',
+  icons: {
+    icon: '/logo.png',
+    apple: '/logo.png',
+  },
   robots: { index: true, follow: true },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    // suppressHydrationWarning: the <head> script may add data-age-verified before hydration.
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: AGE_GATE_PREPAINT_SCRIPT }} />
+      </head>
       <body className="font-sans bg-wine-950 text-ivory antialiased">
         <AnalyticsProvider>
           <AgeGate />

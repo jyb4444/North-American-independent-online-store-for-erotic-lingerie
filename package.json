@@ -6,12 +6,23 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test:db:start": "supabase start",
+    "test:db:stop": "supabase stop",
+    "test:security": "playwright test tests/api/security.spec.ts",
+    "test:security:strict": "STRICT=1 playwright test tests/api/security.spec.ts",
+    "test:e2e": "playwright test",
+    "test:report": "playwright show-report",
+    "test:api": "playwright test --project=api",
+    "test:unit": "node --import tsx --test tests/unit/*.test.ts",
+    "test:migrations": "python3 tests/migrations/verify.py"
   },
   "dependencies": {
     "@shopify/hydrogen-react": "^2026.4.2",
     "@supabase/ssr": "^0.10.3",
     "@supabase/supabase-js": "^2.107.0",
+    "@upstash/ratelimit": "^2.2.0",
+    "@upstash/redis": "^1.39.0",
     "embla-carousel-autoplay": "^8.6.0",
     "embla-carousel-react": "^8.6.0",
     "framer-motion": "^12.40.0",
@@ -24,6 +35,7 @@
     "zustand": "^5.0.14"
   },
   "devDependencies": {
+    "@playwright/test": "^1.64.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
@@ -31,6 +43,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.2.7",
     "tailwindcss": "^4",
+    "tsx": "^4.23.15",
     "typescript": "^5.9.3"
   }
 }

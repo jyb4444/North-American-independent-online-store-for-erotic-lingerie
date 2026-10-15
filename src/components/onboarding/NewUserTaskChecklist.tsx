@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Check, ChevronRight, X } from 'lucide-react';
 import { useOnboardingTasks, type OnboardingTaskId } from '@/hooks/useOnboardingTasks';
 import { track } from '@/lib/analytics';
+import { TRY_ON_PRODUCT_PATH } from '@/lib/featured';
 
 type Props = {
   source: 'home' | 'account' | 'membership';
@@ -14,9 +15,9 @@ type Props = {
 const TASK_LINKS: Partial<Record<OnboardingTaskId, string>> = {
   account_created: '/login?mode=signup',
   first_item_saved: '/collections/all',
-  fit_profile_saved: '/products/lace-halter-babydoll-set',
-  ai_preview_tried: '/products/lace-halter-babydoll-set',
-  ai_look_saved: '/products/lace-halter-babydoll-set',
+  fit_profile_saved: TRY_ON_PRODUCT_PATH,
+  ai_preview_tried: TRY_ON_PRODUCT_PATH,
+  ai_look_saved: TRY_ON_PRODUCT_PATH,
 };
 
 export default function NewUserTaskChecklist({ source, className = '' }: Props) {

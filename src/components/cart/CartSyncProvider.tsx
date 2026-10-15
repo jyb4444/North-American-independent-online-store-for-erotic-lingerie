@@ -22,7 +22,7 @@ export default function CartSyncProvider() {
       .from('cart_snapshots')
       .select('items')
       .eq('user_id', userId)
-      .single();
+      .maybeSingle(); // most users have no saved cart yet
 
     if (!data?.items) return;
 
@@ -69,14 +69,40 @@ export default function CartSyncProvider() {
         restoreCartFromSupabase(session.user.id);
       }
 
-      // Clear restored flag on sign out
+      // On sign out, forget the bag on this device so the next person using it cannot see it.
+      // The signed-in user's copy stays in cart_snapshots and is restored at their next sign-in
+      // (the sync effect skips writes while nobody is signed in).
       if (event === 'SIGNED_OUT') {
         hasRestoredRef.current = false;
+        useCartStore.getState().clearCart();
       }
     });
 
     return () => subscription.unsubscribe();
   // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // After returning from Shopify checkout: clear the bag only if the order was placed.
+  // Shopify deletes a cart when it becomes an order; it also deletes abandoned carts after
+  // ~10 days, so a missing cart only means "ordered" for a recent checkout.
+  useEffect(() => {
+    const pending = useCartStore.getState().pendingCheckout;
+    if (!pending) return;
+    const ORDER_WINDOW_MS = 9 * 24 * 60 * 60 * 1000;
+
+    fetch('/api/shopify/cart/status', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cartId: pending.cartId }),
+    })
+      .then((res) => (res.ok ? res.json() as Promise<{ exists: boolean }> : null))
+      .then((status) => {
+        if (!status || status.exists) return;
+        const store = useCartStore.getState();
+        if (Date.now() - pending.startedAt < ORDER_WINDOW_MS) store.clearCart();
+        else store.setPendingCheckout(null);
+      })
+      .catch(() => { /* keep the bag; try again on the next page load */ });
   }, []);
 
   // Save cart to Supabase for logged-in users (debounced 2s)

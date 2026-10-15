@@ -18,6 +18,7 @@ function publicOrder(order: Awaited<ReturnType<typeof lookupOrder>>) {
       shippedAt: shipment.shipped_at,
       deliveredAt: shipment.delivered_at,
       events: shipment.shipment_events.map((event) => ({
+        id: event.id,
         status: event.status,
         title: event.title,
         description: event.description,
@@ -29,7 +30,7 @@ function publicOrder(order: Awaited<ReturnType<typeof lookupOrder>>) {
 }
 
 export async function POST(req: Request) {
-  const { allowed } = rateLimit(`track:${getClientIp(req)}`, { limit: 12, windowMs: 60 * 60_000 });
+  const { allowed } = await rateLimit(`track:${getClientIp(req)}`, { limit: 12, windowMs: 60 * 60_000 });
   if (!allowed) return NextResponse.json({ error: 'Too many requests.' }, { status: 429 });
 
   let body: { token?: string; orderNumber?: string; email?: string; phone?: string };

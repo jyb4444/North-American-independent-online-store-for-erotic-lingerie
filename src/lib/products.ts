@@ -22,6 +22,7 @@ type ShopifyVariant = {
   title: string;
   sku: string | null;
   quantityAvailable?: number | null;
+  availableForSale?: boolean;
   selectedOptions: ShopifySelectedOption[];
   price: ShopifyMoney;
   image: ShopifyImage | null;
@@ -71,6 +72,10 @@ type CollectionProductsResponse = {
 };
 
 const SIZE_VALUES = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'Free Size'] as const;
+
+// In stock but the exact quantity is unknown (the Storefront token may not have inventory
+// access). Large enough that no "only N left" scarcity message is shown.
+const IN_STOCK_QUANTITY_UNKNOWN = 999;
 const COLOR_HEX: Record<string, string> = {
   black: '#0a0a0a',
   white: '#f5ede0',
@@ -150,7 +155,7 @@ function mapShopifyProduct(product: ShopifyProduct): Product {
       size,
       color,
       colorHex: colorHex(color),
-      stock: node.quantityAvailable ?? 50,
+      stock: node.availableForSale === false ? 0 : node.quantityAvailable ?? IN_STOCK_QUANTITY_UNKNOWN,
       sku: node.sku || `${product.handle}-${index + 1}`,
       shopifyVariantId: node.id,
     };
@@ -167,7 +172,8 @@ function mapShopifyProduct(product: ShopifyProduct): Product {
     category,
     tags,
     variants,
-    rating: 4.7,
+    // Real values come from approved reviews (getReviewStats); never invent a rating.
+    rating: 0,
     reviewCount: 0,
     isNew: tags.includes('new-arrival') || tags.includes('new') || isRecent,
     isBestseller: tags.includes('bestseller') || tags.includes('best-seller'),
@@ -176,11 +182,16 @@ function mapShopifyProduct(product: ShopifyProduct): Product {
   };
 }
 
+// The full product list backs listings, related products, search and the catalog API. It
+// changes rarely, so it is reused for a few minutes instead of being refetched per request.
+// Single product pages still fetch their product live (getProductByHandle).
+const PRODUCT_LIST_REVALIDATE_SECONDS = 300;
+
 async function getShopifyProducts(first = 50): Promise<Product[]> {
   const data = await shopifyFetch<ProductsResponse>({
     query: GET_PRODUCTS,
     variables: { first },
-    cache: 'no-store',
+    revalidate: PRODUCT_LIST_REVALIDATE_SECONDS,
   });
 
   return data.products.edges.map(({ node }) => mapShopifyProduct(node));
@@ -293,10 +304,37 @@ export async function getAllCollections(): Promise<Collection[]> {
   }
 }
 
+// Product pages link to /collections/<category> (breadcrumbs). collectionFilter() already
+// lists a category's products, so any category present in the catalogue is a valid collection.
+async function categoryCollection(handle: string): Promise<Collection | undefined> {
+  const products = await getAllProducts();
+  if (!products.some((product) => product.category === handle)) return undefined;
+  const title = handle.split('-').map((word) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+  return { id: `category-${handle}`, handle, title, productCount: 0 };
+}
+
 export async function getCollectionByHandle(handle: string): Promise<Collection | undefined> {
   const local = mockGetCollection(handle);
-  if (local || !hasShopifyConfig()) return local;
+  if (local) return local;
 
-  const collections = await getAllCollections();
-  return collections.find((collection) => collection.handle === handle);
+  if (hasShopifyConfig()) {
+    const collections = await getAllCollections();
+    const shopifyCollection = collections.find((collection) => collection.handle === handle);
+    if (shopifyCollection) return shopifyCollection;
+  }
+
+  return categoryCollection(handle);
+}
+
+/** Average rating and count of approved reviews for one product. */
+export async function getReviewStats(productId: string): Promise<{ rating: number; reviewCount: number }> {
+  const { createAdminClient } = await import('@/lib/supabase/server');
+  const { data, error } = await createAdminClient()
+    .from('reviews')
+    .select('rating')
+    .eq('product_id', productId)
+    .eq('approved', true);
+  if (error || !data?.length) return { rating: 0, reviewCount: 0 };
+  const total = data.reduce((sum, review) => sum + Number(review.rating), 0);
+  return { rating: Math.round((total / data.length) * 10) / 10, reviewCount: data.length };
 }

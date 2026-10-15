@@ -1,0 +1,230 @@
+import crypto from 'node:crypto';
+/**
+ * Regression tests for defects fixed after the E2E review (docs/testing/TEST_PLAN.md §0):
+ * D10 cron auth, D13 login redirect, D14 welcome email, D15–D17 returns, D23 OAuth setup,
+ * D24 webhook JSON, D27 SEO, D28 logo size, D32 AI preview input.
+ */
+import fs from 'node:fs';
+import path from 'node:path';
+import { expect, test, type APIRequestContext } from '@playwright/test';
+import { admin, pkceCallbackCode, sessionCookieHeader, signShopifyWebhook, TEST_PASSWORD } from '../helpers/supabase';
+import { SEED, USERS, userIdFor } from '../helpers/seed';
+import { clearOutbox, readOutbox } from '../helpers/outbox';
+
+test.describe('D10 abandoned-cart cron authorization', () => {
+  test('accepts the Bearer header Vercel Cron sends', async ({ request }) => {
+    const res = await request.get('/api/cron/abandoned-cart', {
+      headers: { authorization: `Bearer ${process.env.CRON_SECRET}` },
+    });
+    expect(res.status()).toBe(200);
+  });
+
+  test('rejects a missing or wrong secret', async ({ request }) => {
+    expect((await request.get('/api/cron/abandoned-cart')).status()).toBe(401);
+    expect((await request.get('/api/cron/abandoned-cart', { headers: { authorization: 'Bearer nope' } })).status()).toBe(401);
+  });
+});
+
+test('D13 a signed-in visitor sent to /login?redirectTo= goes back to that page', async ({ request }) => {
+  const res = await request.get('/login?redirectTo=%2Forders', {
+    headers: { cookie: await sessionCookieHeader(USERS.alice) },
+    maxRedirects: 0,
+  });
+  expect(res.status()).toBeGreaterThanOrEqual(300);
+  expect(new URL(res.headers().location, 'http://x').pathname).toBe('/orders');
+
+  const offsite = await request.get('/login?redirectTo=%2F%2Fevil.example', {
+    headers: { cookie: await sessionCookieHeader(USERS.alice) },
+    maxRedirects: 0,
+  });
+  expect(new URL(offsite.headers().location, 'http://localhost:3100').host).toBe('localhost:3100');
+});
+
+test('D14 the welcome email is sent once, not on every sign-in link', async ({ request, baseURL }) => {
+  const email = `welcome-${Date.now()}@test.local`;
+  const { data } = await admin().auth.admin.createUser({ email, password: TEST_PASSWORD, email_confirm: true });
+  await clearOutbox();
+
+  for (let i = 0; i < 2; i++) {
+    const { code, cookieHeader } = await pkceCallbackCode(email, baseURL!);
+    await request.get(`/auth/callback?code=${encodeURIComponent(code)}`, { headers: { cookie: cookieHeader }, maxRedirects: 0 });
+  }
+  const welcomes = (await readOutbox()).filter((mail) => mail.to === email && /wardrobe is ready/i.test(mail.subject));
+  await admin().auth.admin.deleteUser(data.user!.id);
+  expect(welcomes).toHaveLength(1);
+});
+
+test.describe('D15–D17 return requests', () => {
+  let orderId: string;
+  let robeId: string;
+  let thongId: string;
+  let cookie: string;
+
+  async function submit(request: APIRequestContext, body: Record<string, unknown>) {
+    return request.post('/api/returns', { headers: { cookie }, data: { orderId, desiredResolution: 'return_refund', reason: 'size_fit', ...body } });
+  }
+  const item = (orderItemId: string, quantity: unknown = 1, extra: Record<string, unknown> = {}) =>
+    ({ orderItemId, quantity, itemCondition: 'unopened_tags_attached', ...extra });
+
+  test.beforeAll(async () => {
+    const { data: order } = await admin().from('orders').select('id, order_items(id, title)').eq('shopify_order_id', SEED.aliceOrderShopifyId).single();
+    orderId = order!.id;
+    robeId = order!.order_items.find((i: { title: string }) => i.title === 'E2E Satin Robe')!.id;
+    thongId = order!.order_items.find((i: { title: string }) => i.title === 'E2E Lace Thong')!.id;
+    cookie = await sessionCookieHeader(USERS.alice);
+  });
+  test.beforeEach(async () => {
+    await admin().from('return_requests').delete().eq('order_id', orderId);
+  });
+
+  for (const quantity of [0, -1, 1.5, '2']) {
+    test(`quantity ${JSON.stringify(quantity)} is rejected`, async ({ request }) => {
+      const res = await submit(request, { items: [item(robeId, quantity)] });
+      expect(res.status()).toBe(400);
+      expect((await res.json()).error).toMatch(/whole number/);
+    });
+  }
+
+  test('the same item cannot be listed twice in one request', async ({ request }) => {
+    const res = await submit(request, { items: [item(robeId), item(robeId)] });
+    expect(res.status()).toBe(400);
+  });
+
+  test('items already in an open request cannot be requested again; cancelling frees them', async ({ request }) => {
+    expect((await submit(request, { items: [item(robeId, 2)] })).status()).toBe(200);
+    const again = await submit(request, { items: [item(robeId, 1)] });
+    expect(again.status()).toBe(400);
+    expect((await again.json()).error).toMatch(/already part of an open request/);
+
+    const { data: open } = await admin().from('return_requests').select('id').eq('order_id', orderId).single();
+    expect((await request.post(`/api/returns/${open!.id}/cancel`, { headers: { cookie } })).status()).toBe(200);
+    expect((await submit(request, { items: [item(robeId, 1)] })).status()).toBe(200);
+  });
+
+  test('invalid reasons and conditions get a clear message', async ({ request }) => {
+    const reason = await submit(request, { reason: 'because', items: [item(robeId)] });
+    const condition = await submit(request, { items: [item(robeId, 1, { itemCondition: 'pristine' })] });
+    expect((await reason.json()).error).toBe('Choose a valid reason.');
+    expect((await condition.json()).error).toBe('Choose a valid item condition.');
+  });
+
+  test('photos must come from the customer\'s own upload folder', async ({ request }) => {
+    const bobId = await userIdFor(USERS.bob);
+    const res = await submit(request, { items: [item(robeId)], mediaUrls: [`${bobId}/private.jpg`] });
+    expect(res.status()).toBe(400);
+  });
+
+  test('D16 the 30-day window runs from delivery, not from the order date', async ({ request }) => {
+    const aliceId = await userIdFor(USERS.alice);
+    const daysAgo = (days: number) => new Date(Date.now() - days * 86_400_000).toISOString();
+    const db = admin();
+    const ids: string[] = [];
+    try {
+      for (const [label, deliveredDaysAgo] of [['late', 5], ['old', 40]] as const) {
+        const { data: order } = await db.from('orders').insert({
+          user_id: aliceId, shopify_order_id: `e2e-window-${label}-${Date.now()}`, shopify_order_number: `W${label}`,
+          email: USERS.alice, processed_at: daysAgo(45),
+        }).select('id').single();
+        ids.push(order!.id);
+        const { data: line } = await db.from('order_items').insert({
+          order_id: order!.id, shopify_line_item_id: `e2e-window-${label}`, title: `Window ${label}`, quantity: 1,
+        }).select('id').single();
+        await db.from('shipments').insert({
+          order_id: order!.id, status: 'delivered', delivered_at: daysAgo(deliveredDaysAgo), public_lookup_token: `tok-window-${label}-${Date.now()}`,
+        });
+        const res = await request.post('/api/returns', {
+          headers: { cookie },
+          data: { orderId: order!.id, desiredResolution: 'return_refund', reason: 'changed_mind', items: [item(line!.id)] },
+        });
+        const { request: created } = await res.json();
+        expect(created.eligibility_status, `${label}: delivered ${deliveredDaysAgo} days ago`).toBe(label === 'late' ? 'eligible' : 'ineligible');
+      }
+    } finally {
+      await db.from('orders').delete().in('id', ids);
+    }
+  });
+
+  test('return tracking requires a number and only accepts http(s) links', async ({ request }) => {
+    expect((await submit(request, { items: [item(thongId)], reason: 'wrong_item' })).status()).toBe(200);
+    const { data: created } = await admin().from('return_requests').select('id').eq('order_id', orderId).single();
+    await admin().from('return_requests').update({ status: 'approved' }).eq('id', created!.id);
+    const url = `/api/returns/${created!.id}/tracking`;
+
+    const missing = await request.post(url, { headers: { cookie }, data: {} });
+    expect((await missing.json()).error).toBe('Enter the return tracking number.');
+    const script = await request.post(url, { headers: { cookie }, data: { trackingNumber: '1Z999', trackingUrl: 'javascript:alert(1)' } });
+    expect(script.status()).toBe(400);
+    const ok = await request.post(url, { headers: { cookie }, data: { trackingNumber: '1Z999', carrier: 'UPS', trackingUrl: 'https://www.ups.com/track?tracknum=1Z999' } });
+    expect(ok.status()).toBe(200);
+    expect((await ok.json()).request.status).toBe('customer_shipped');
+  });
+});
+
+test('D23 the Shopify OAuth setup tool is off unless explicitly enabled', async ({ request }) => {
+  expect((await request.get('/api/shopify/oauth/start?shop=e2e-store.myshopify.com', { maxRedirects: 0 })).status()).toBe(404);
+  expect((await request.get('/api/shopify/oauth/callback?code=x&shop=e2e-store.myshopify.com&state=y&hmac=z')).status()).toBe(404);
+});
+
+test('D24 a signed webhook with malformed JSON is a 400, not a crash', async ({ request }) => {
+  const body = '{"id": 1, ';
+  const res = await request.post('/api/shopify/webhook', {
+    headers: { 'x-shopify-shop-domain': 'e2e-store.myshopify.com', 'x-shopify-event-id': crypto.randomUUID(), 'x-shopify-topic': 'orders/create', 'x-shopify-hmac-sha256': signShopifyWebhook(body), 'content-type': 'application/json' },
+    data: Buffer.from(body), // raw bytes: Playwright would re-serialize an invalid JSON string
+  });
+  expect(res.status()).toBe(400);
+});
+
+test.describe('D32 AI preview input', () => {
+  const refused = [
+    'a 16 year old girl, petite',
+    'a teen with an hourglass figure',
+    'a schoolgirl, slim',
+    'a naked woman, tall',
+  ];
+  for (const bodyDescription of refused) {
+    test(`refuses "${bodyDescription}"`, async ({ request }) => {
+      const res = await request.post('/api/ai-preview', {
+        headers: { 'x-forwarded-for': `198.51.100.${refused.indexOf(bodyDescription) + 1}` },
+        data: { productTitle: 'Lace Set', bodyDescription },
+      });
+      expect(res.status()).toBe(400);
+    });
+  }
+
+  test('a normal description passes validation (then needs the AI provider)', async ({ request }) => {
+    const res = await request.post('/api/ai-preview', {
+      headers: { 'x-forwarded-for': '198.51.100.50' },
+      data: { productTitle: 'Lace Set', bodyDescription: 'a tall woman with an hourglass figure, warm medium skin tone' },
+    });
+    expect(res.status()).toBe(503); // HF_TOKEN is not configured in tests
+  });
+});
+
+test.describe('D27 search engines', () => {
+  test('robots.txt keeps private pages out and points to the sitemap', async ({ request }) => {
+    const robots = await (await request.get('/robots.txt')).text();
+    for (const path of ['/account', '/orders', '/returns', '/track', '/login', '/api/']) {
+      expect(robots).toContain(`Disallow: ${path}`);
+    }
+    expect(robots).toContain('Sitemap: http://localhost:3100/sitemap.xml');
+  });
+
+  test('sitemap lists pages, collections and products', async ({ request }) => {
+    const sitemap = await (await request.get('/sitemap.xml')).text();
+    expect(sitemap).toContain('<loc>http://localhost:3100/pages/faq</loc>');
+    expect(sitemap).toContain('<loc>http://localhost:3100/collections/all</loc>');
+    expect(sitemap).toContain('<loc>http://localhost:3100/products/bow-corset-garter-set</loc>');
+  });
+
+  test('private pages are noindex, shop pages are not', async ({ request }) => {
+    const noindex = (html: string) => /<meta name="robots" content="noindex, nofollow"/.test(html);
+    expect(noindex(await (await request.get('/login')).text())).toBe(true);
+    expect(noindex(await (await request.get(`/track/${SEED.aliceTrackingToken}`)).text())).toBe(true);
+    expect(noindex(await (await request.get('/products/bow-corset-garter-set')).text())).toBe(false);
+  });
+});
+
+test('D28 the logo used on every page and email is small', () => {
+  const bytes = fs.statSync(path.resolve(__dirname, '../../public/logo.png')).size;
+  expect(bytes).toBeLessThan(200_000);
+});

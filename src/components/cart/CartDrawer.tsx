@@ -1,7 +1,7 @@
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowRight, Gift, Heart, Ruler, ShoppingBag, Sparkles, Trash2, X, Check } from 'lucide-react';
+import { ArrowRight, Gift, Heart, ShoppingBag, Sparkles, Trash2, X, Check } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useCartStore } from '@/store/cart';
@@ -10,11 +10,12 @@ import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import FitConfidenceBadge from '@/components/product/FitConfidenceBadge';
 import PrivacyTrustBar from '@/components/ui/PrivacyTrustBar';
-import { MOCK_PRODUCTS } from '@/mock/products';
+import { useCatalog } from '@/hooks/useCatalog';
 import { createClient } from '@/lib/supabase/client';
 import { notifyWishlistChanged, useWishlistSummary } from '@/hooks/useWishlistSummary';
 import { useFitProfile } from '@/hooks/useFitProfile';
 import type { CartItem, Product } from '@/types';
+import { TRY_ON_PRODUCT_PATH } from '@/lib/featured';
 
 function isShopifyVariantGid(value?: string) {
   return !!value && value.startsWith('gid://shopify/ProductVariant/');
@@ -24,20 +25,17 @@ function isShopifyVariantGid(value?: string) {
 function CheckoutButton({
   items,
   totalPrice,
-  hasCheckoutDomain,
-  onClose,
+  giftCardCode,
 }: {
   items: CartItem[];
   totalPrice: number;
-  hasCheckoutDomain: boolean;
-  onClose: () => void;
+  giftCardCode?: string;
 }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const setPendingCheckout = useCartStore((state) => state.setPendingCheckout);
 
   async function handleCheckout() {
-    if (!hasCheckoutDomain) { onClose(); return; }
-
     const shopifyLines = items
       .map((item) => ({
         merchandiseId: [item.shopifyVariantId, item.variantId].find(isShopifyVariantGid),
@@ -52,10 +50,13 @@ function CheckoutButton({
       const res = await fetch('/api/shopify/cart', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ lines: shopifyLines, items }),
+        body: JSON.stringify({ lines: shopifyLines, items, giftCardCode }),
       });
-      const data = await res.json() as { checkoutUrl?: string; error?: string };
+      const data = await res.json() as { checkoutUrl?: string; cartId?: string; error?: string };
       if (data.checkoutUrl) {
+        // Keep the bag: the shopper may come back without paying. CartSyncProvider clears it
+        // once Shopify reports this cart was turned into an order.
+        if (data.cartId) setPendingCheckout({ cartId: data.cartId, startedAt: Date.now() });
         window.location.href = data.checkoutUrl;
       } else {
         throw new Error(data.error ?? 'Unknown error');
@@ -76,7 +77,7 @@ function CheckoutButton({
         disabled={loading}
         className="w-full border border-gold-400 py-3.5 text-xs font-medium uppercase tracking-[0.2em] text-gold-400 transition hover:bg-gold-400 hover:text-wine-950 disabled:opacity-60 disabled:cursor-wait"
       >
-        {loading ? 'Preparing checkout...' : hasCheckoutDomain ? 'Continue Privately' : 'Keep Planning Privately'}
+        {loading ? 'Preparing checkout...' : 'Go to checkout'}
       </button>
     </div>
   );
@@ -89,8 +90,10 @@ type CartRecommendation = {
 };
 
 export default function CartDrawer() {
-  const { items, isOpen, closeCart, removeItem, updateQuantity, totalPrice, effectiveTotal, giftCard, applyGiftCard, removeGiftCard } = useCartStore();
+  const { items, isOpen, closeCart, removeItem, updateQuantity, totalPrice, giftCard, applyGiftCard, removeGiftCard } = useCartStore();
   const addItem = useCartStore((s) => s.addItem);
+  // Live catalogue for recommendations and fit hints, loaded the first time the bag opens.
+  const { products: catalog } = useCatalog(isOpen);
   const { hasProfile, getFitResult } = useFitProfile();
   const wishlistSummary = useWishlistSummary(3);
   const router = useRouter();
@@ -108,10 +111,25 @@ export default function CartDrawer() {
     setGcState('checking');
     setGcError('');
     try {
-      const res = await fetch(`/api/gift-card?code=${encodeURIComponent(code)}`);
-      const data = await res.json() as { balance?: number; error?: string };
-      if (!res.ok || !data.balance) throw new Error(data.error ?? 'Invalid code');
-      applyGiftCard(code, data.balance);
+      // Shopify is the source of truth for gift cards: build a cart with the code and read
+      // back what Shopify actually applied.
+      const res = await fetch('/api/shopify/cart', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ items, giftCardCode: code }),
+      });
+      const data = await res.json() as {
+        appliedGiftCards?: { lastCharacters: string; balance: { amount: string; currencyCode: string } }[];
+        error?: string;
+      };
+      const applied = data.appliedGiftCards?.[0];
+      if (!res.ok || !applied) throw new Error(data.error ?? 'Invalid code');
+      applyGiftCard({
+        code,
+        lastCharacters: applied.lastCharacters,
+        balance: Number(applied.balance.amount),
+        currencyCode: applied.balance.currencyCode,
+      });
       setGcInput('');
       setGcState('idle');
     } catch (err) {
@@ -119,14 +137,11 @@ export default function CartDrawer() {
       setGcState('error');
     }
   }
-  const hasCheckoutDomain = !!process.env.NEXT_PUBLIC_SHOPIFY_DOMAIN
-    && process.env.NEXT_PUBLIC_SHOPIFY_DOMAIN !== 'your-store.myshopify.com';
-
   const cartProducts = useMemo(
     () => items
-      .map((item) => MOCK_PRODUCTS.find((product) => product.id === item.productId))
+      .map((item) => catalog.find((product) => product.id === item.productId))
       .filter((product): product is Product => !!product),
-    [items]
+    [catalog, items]
   );
 
   const recommendations = useMemo<CartRecommendation[]>(() => {
@@ -141,24 +156,24 @@ export default function CartDrawer() {
       }
     }
 
-    MOCK_PRODUCTS
+    catalog
       .filter((product) => cartCategories.has(product.category))
       .forEach((product) => addRecommendation(product, 'category_match'));
 
     if (picked.size < 3) {
-      MOCK_PRODUCTS
+      catalog
         .filter((product) => product.tags.some((tag) => cartTags.has(tag)))
         .forEach((product) => addRecommendation(product, 'soft_match'));
     }
 
     if (picked.size < 3) {
-      MOCK_PRODUCTS
+      catalog
         .filter((product) => product.isBestseller || product.isNew)
         .forEach((product) => addRecommendation(product, 'featured'));
     }
 
     return Array.from(picked.values()).slice(0, 3);
-  }, [cartProducts, items]);
+  }, [catalog, cartProducts, items]);
 
   useEffect(() => {
     if (isOpen && items.length > 0) {
@@ -168,11 +183,11 @@ export default function CartDrawer() {
 
   const fitSummarySignature = useMemo(() => (
     items.map((item) => {
-      const product = MOCK_PRODUCTS.find((p) => p.id === item.productId);
+      const product = catalog.find((p) => p.id === item.productId);
       const result = product ? getFitResult(product) : null;
       return `${item.productId}:${result?.recommendedSize ?? 'none'}`;
     }).join('|')
-  ), [getFitResult, items]);
+  ), [catalog, getFitResult, items]);
 
   useEffect(() => {
     if (!isOpen || items.length === 0) return;
@@ -223,7 +238,7 @@ export default function CartDrawer() {
   }
 
   function findProduct(item: CartItem) {
-    return MOCK_PRODUCTS.find((product) => product.id === item.productId);
+    return catalog.find((product) => product.id === item.productId);
   }
 
   function handleFitCtaClick(product?: Product) {
@@ -372,6 +387,9 @@ export default function CartDrawer() {
             exit={{ x: '100%' }}
             transition={{ type: 'spring', stiffness: 300, damping: 35 }}
             className="fixed right-0 top-0 z-50 flex h-full w-full max-w-md flex-col border-l border-gold-600/20 bg-wine-900 shadow-2xl"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Shopping bag"
           >
             {/* Header */}
             <div className="flex items-center justify-between border-b border-gold-600/20 px-6 py-5">
@@ -427,7 +445,7 @@ export default function CartDrawer() {
                     )}
                     {!hasProfile && (
                       <Link
-                        href="/products/lace-halter-babydoll-set"
+                        href={TRY_ON_PRODUCT_PATH}
                         onClick={() => handleEmptyGuidanceClick('try_fit_advisor')}
                         className="flex w-full items-center justify-center gap-2 border border-dashed border-gold-600/40 py-3 text-xs uppercase tracking-widest text-ivory-muted transition hover:border-gold-400 hover:text-gold-400"
                       >
@@ -440,22 +458,6 @@ export default function CartDrawer() {
                 </div>
               ) : (
                 <div className="space-y-6">
-                  <div className="border border-gold-600/20 bg-wine-950/35 px-4 py-3">
-                    <div className="flex items-start gap-3">
-                      <Ruler size={15} className="mt-0.5 flex-shrink-0 text-gold-400" />
-                      <div>
-                        <p className="text-xs font-medium uppercase tracking-widest text-gold-400">
-                          Fit guidance
-                        </p>
-                        <p className="mt-1 text-xs leading-relaxed text-ivory-dim">
-                          {hasProfile
-                            ? 'Fit guidance is based on your private profile.'
-                            : 'Add your private fit profile for size guidance while you compare styles.'}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
                   <ul className="space-y-5">
                     {items.map((item) => (
                       (() => {
@@ -503,6 +505,7 @@ export default function CartDrawer() {
                               <div className="flex items-center gap-3 border border-wine-700 px-3 py-1">
                                 <button
                                   onClick={() => updateQuantity(item.variantId, item.quantity - 1)}
+                                  aria-label="Decrease quantity"
                                   className="text-ivory-muted hover:text-gold-400 transition"
                                 >
                                   −
@@ -510,6 +513,7 @@ export default function CartDrawer() {
                                 <span className="w-4 text-center text-sm text-ivory">{item.quantity}</span>
                                 <button
                                   onClick={() => updateQuantity(item.variantId, item.quantity + 1)}
+                                  aria-label="Increase quantity"
                                   className="text-ivory-muted hover:text-gold-400 transition"
                                 >
                                   +
@@ -521,6 +525,7 @@ export default function CartDrawer() {
                                 </span>
                                 <button
                                   onClick={() => handleRemove(item.variantId)}
+                                  aria-label="Remove item"
                                   className="text-wine-600 hover:text-crimson-400 transition"
                                 >
                                   <Trash2 size={13} />
@@ -630,27 +635,22 @@ export default function CartDrawer() {
                     <div className="flex items-center gap-2">
                       <Check size={12} className="text-green-400" />
                       <span className="text-xs text-ivory-muted">
-                        Gift card <span className="font-mono text-ivory">{giftCard.code}</span>
+                        Gift card <span className="font-mono text-ivory">••••{giftCard.lastCharacters}</span>
+                        <span className="block text-[11px] text-ivory-dim">
+                          Balance {new Intl.NumberFormat('en-US', { style: 'currency', currency: giftCard.currencyCode }).format(giftCard.balance)} · deducted at checkout
+                        </span>
                       </span>
                     </div>
                     <div className="flex items-center gap-3">
-                      <span className="text-xs text-green-400">−${Math.min(giftCard.balance, totalPrice()).toFixed(2)}</span>
                       <button
                         onClick={removeGiftCard}
                         className="text-wine-600 transition hover:text-crimson-400"
                         title="Remove gift card"
+                        aria-label="Remove gift card"
                       >
                         <X size={12} />
                       </button>
                     </div>
-                  </div>
-                )}
-
-                {/* Effective total (only show when gift card is applied) */}
-                {giftCard && (
-                  <div className="flex justify-between border-t border-gold-600/15 pt-3">
-                    <span className="text-xs uppercase tracking-widest text-ivory-muted">Total</span>
-                    <span className="font-serif text-lg font-light text-gold-400">${effectiveTotal().toFixed(2)}</span>
                   </div>
                 )}
 
@@ -666,7 +666,8 @@ export default function CartDrawer() {
                           onChange={(e) => { setGcInput(e.target.value.toUpperCase()); setGcError(''); }}
                           onKeyDown={(e) => { if (e.key === 'Enter') handleApplyGiftCard(); }}
                           placeholder="Gift card code"
-                          maxLength={19}
+                          aria-label="Gift card code"
+                          maxLength={64}
                           className="w-full border border-wine-700 bg-wine-800 py-2 pl-8 pr-3 text-xs font-mono text-ivory placeholder-ivory-dim/50 focus:border-gold-400 focus:outline-none transition"
                         />
                       </div>
@@ -685,19 +686,16 @@ export default function CartDrawer() {
                 )}
 
                 <p className="text-xs text-ivory-dim">
-                  {hasCheckoutDomain
-                    ? 'Review your private bag before continuing.'
-                    : 'Keep planning your private look. Your bag stays private in this browser.'}
+                  Review your bag before continuing to secure checkout.
                 </p>
                 <p className="text-[11px] text-ivory-dim">
-                  Billing appears as <span className="text-ivory">VLR APPAREL</span> — discreet on all statements.
+                  Billing appears discreetly on all statements.
                 </p>
                 <PrivacyTrustBar context="cart" compact />
                 <CheckoutButton
                   items={items}
                   totalPrice={totalPrice()}
-                  hasCheckoutDomain={hasCheckoutDomain}
-                  onClose={closeCart}
+                  giftCardCode={giftCard?.code}
                 />
                 <button
                   onClick={closeCart}

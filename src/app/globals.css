@@ -59,3 +59,8 @@ h1, h2, h3, h4 {
 ::-webkit-scrollbar-track { background: #f5f5f5; }
 ::-webkit-scrollbar-thumb { background: #999999; border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: #111111; }
+
+/* Returning visitors who passed the age gate: hide the server-rendered gate before paint. */
+html[data-age-verified] .age-gate {
+  display: none;
+}

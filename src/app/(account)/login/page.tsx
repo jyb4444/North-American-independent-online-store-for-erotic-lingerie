@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { createClient } from '@/lib/supabase/client';
+import { safeRedirectPath } from '@/lib/redirect';
 import { Eye, EyeOff } from 'lucide-react';
 
 type Mode = 'signin' | 'signup';
@@ -42,7 +44,8 @@ export default function LoginPage() {
     if (mode === 'signin') {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) { setError(error.message); setLoading(false); return; }
-      router.push('/account');
+      // Return to the page that required sign-in (set by proxy.ts as ?redirectTo=).
+      router.push(safeRedirectPath(new URLSearchParams(window.location.search).get('redirectTo')));
       router.refresh();
     } else {
       const { error } = await supabase.auth.signUp({
@@ -53,20 +56,13 @@ export default function LoginPage() {
             first_name: firstName,
             last_name: lastName,
             first_free_offer_reserved: new URLSearchParams(window.location.search).get('offer') === 'first-free',
+            // Credited server-side in /auth/callback once the email is confirmed.
+            ...(referralCode.trim() ? { referral_code: referralCode.trim().toUpperCase() } : {}),
           },
           emailRedirectTo: `${window.location.origin}/auth/callback`,
         },
       });
       if (error) { setError(error.message); setLoading(false); return; }
-
-      // Apply referral code if provided
-      if (referralCode.trim()) {
-        await fetch('/api/referral', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ code: referralCode.trim() }),
-        }).catch(() => {}); // Non-blocking — don't fail signup on referral error
-      }
 
       setSuccess('Check your email to confirm your account, then sign in.');
       setLoading(false);
@@ -76,7 +72,11 @@ export default function LoginPage() {
   async function handleGoogle() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: `${window.location.origin}/auth/callback` },
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(
+          safeRedirectPath(new URLSearchParams(window.location.search).get('redirectTo')),
+        )}`,
+      },
     });
     if (error) setError(error.message);
   }
@@ -92,11 +92,19 @@ export default function LoginPage() {
       <div className="w-full max-w-sm">
         {/* Brand */}
         <div className="mb-8 text-center">
-          <p className="font-serif text-3xl font-light italic text-gold-400">Velour</p>
+          <Image
+            src="/logo.png"
+            alt="Self Love"
+            width={84}
+            height={84}
+            className="mx-auto h-20 w-20 rounded-full object-cover"
+            priority
+          />
+          <p className="mt-3 text-sm font-semibold uppercase tracking-[0.24em] text-ivory">Self Love</p>
           <div className="mx-auto mt-3 h-px w-10 bg-gold-600/50" />
-          <p className="mt-3 text-xs font-medium uppercase tracking-[0.3em] text-ivory-muted">
+          <h1 className="mt-3 text-xs font-medium uppercase tracking-[0.3em] text-ivory-muted">
             {mode === 'signin' ? 'Welcome Back' : 'Create Account'}
-          </p>
+          </h1>
         </div>
 
         <div className="border border-gold-600/30 bg-wine-900 p-8">
@@ -125,10 +133,11 @@ export default function LoginPage() {
             {mode === 'signup' && (
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="mb-1.5 block text-xs font-medium uppercase tracking-widest text-ivory-muted">
+                  <label htmlFor="login-first-name" className="mb-1.5 block text-xs font-medium uppercase tracking-widest text-ivory-muted">
                     First Name
                   </label>
                   <input
+                    id="login-first-name"
                     type="text"
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
@@ -138,10 +147,11 @@ export default function LoginPage() {
                   />
                 </div>
                 <div>
-                  <label className="mb-1.5 block text-xs font-medium uppercase tracking-widest text-ivory-muted">
+                  <label htmlFor="login-last-name" className="mb-1.5 block text-xs font-medium uppercase tracking-widest text-ivory-muted">
                     Last Name
                   </label>
                   <input
+                    id="login-last-name"
                     type="text"
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
@@ -154,10 +164,11 @@ export default function LoginPage() {
 
             {/* Email */}
             <div>
-              <label className="mb-1.5 block text-xs font-medium uppercase tracking-widest text-ivory-muted">
+              <label htmlFor="login-email" className="mb-1.5 block text-xs font-medium uppercase tracking-widest text-ivory-muted">
                 Email
               </label>
               <input
+                    id="login-email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -169,11 +180,12 @@ export default function LoginPage() {
 
             {/* Password */}
             <div>
-              <label className="mb-1.5 block text-xs font-medium uppercase tracking-widest text-ivory-muted">
+              <label htmlFor="login-password" className="mb-1.5 block text-xs font-medium uppercase tracking-widest text-ivory-muted">
                 Password
               </label>
               <div className="relative">
                 <input
+                    id="login-password"
                   type={showPw ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -185,6 +197,7 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={() => setShowPw((v) => !v)}
+                  aria-label={showPw ? 'Hide password' : 'Show password'}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-ivory-dim hover:text-gold-400 transition"
                 >
                   {showPw ? <EyeOff size={14} /> : <Eye size={14} />}
@@ -195,19 +208,20 @@ export default function LoginPage() {
             {/* Referral code (signup only) */}
             {mode === 'signup' && (
               <div>
-                <label className="mb-1.5 block text-xs font-medium uppercase tracking-widest text-ivory-muted">
+                <label htmlFor="login-referral" className="mb-1.5 block text-xs font-medium uppercase tracking-widest text-ivory-muted">
                   Referral Code <span className="text-ivory-dim">(optional)</span>
                 </label>
                 <input
+                  id="login-referral"
                   type="text"
                   value={referralCode}
                   onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
                   maxLength={19}
-                  placeholder="VLR-XXXXXX-XXXX"
+                  placeholder="SL-XXXXXX-XXXX"
                   className="w-full border border-wine-700 bg-wine-800 px-3 py-2.5 font-mono text-sm text-ivory placeholder-ivory-dim/50 focus:border-gold-400 focus:outline-none transition"
                 />
                 <p className="mt-1 text-[11px] text-ivory-dim">
-                  Have a friend&rsquo;s code? You&rsquo;ll both receive $10 store credit.
+                  Have a friend&rsquo;s code? Get $10 off your first order of $30+ after you confirm your email.
                 </p>
               </div>
             )}

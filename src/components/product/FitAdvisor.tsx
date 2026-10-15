@@ -35,13 +35,14 @@ function NumberInput({ label, unit, value, onChange, min, max }: {
   label: string; unit: string; value: number;
   onChange: (v: number) => void; min: number; max: number;
 }) {
+  const id = `fit-${label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
   return (
     <div>
-      <label className="mb-1.5 block text-xs font-medium uppercase tracking-widest text-ivory-muted">
+      <label htmlFor={id} className="mb-1.5 block text-xs font-medium uppercase tracking-widest text-ivory-muted">
         {label}
       </label>
       <div className="flex items-center border border-wine-700 bg-wine-800 focus-within:border-gold-400 transition">
-        <input
+        <input id={id}
           type="number"
           value={value}
           min={min} max={max}

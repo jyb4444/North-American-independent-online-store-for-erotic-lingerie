@@ -25,6 +25,7 @@ const PRODUCT_FRAGMENT = `
           id
           title
           sku
+          availableForSale
           selectedOptions { name value }
           price { amount currencyCode }
           image { url altText }

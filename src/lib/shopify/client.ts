@@ -7,7 +7,8 @@ function getShopifyConfig() {
   }
 
   return {
-    endpoint: `https://${domain}/api/2026-01/graphql.json`,
+    // E2E_SHOPIFY_STOREFRONT_URL is only set by the test environment (local mock Storefront API).
+    endpoint: process.env.E2E_SHOPIFY_STOREFRONT_URL || `https://${domain}/api/2026-01/graphql.json`,
     token,
   };
 }
@@ -20,10 +21,13 @@ export async function shopifyFetch<T>({
   query,
   variables,
   cache = 'force-cache',
+  revalidate,
 }: {
   query: string;
   variables?: Record<string, unknown>;
   cache?: RequestCache;
+  /** Seconds to reuse the response across requests; takes precedence over `cache`. */
+  revalidate?: number;
 }): Promise<T> {
   const config = getShopifyConfig();
   if (!config) {
@@ -37,7 +41,7 @@ export async function shopifyFetch<T>({
       'X-Shopify-Storefront-Access-Token': config.token,
     },
     body: JSON.stringify({ query, variables }),
-    cache,
+    ...(revalidate !== undefined ? { next: { revalidate } } : { cache }),
   });
 
   if (!res.ok) {

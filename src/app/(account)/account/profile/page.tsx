@@ -36,7 +36,7 @@ export default function ProfilePage() {
       setFirstName(user.user_metadata?.first_name ?? '');
       setLastName(user.user_metadata?.last_name ?? '');
     });
-  }, []);
+  }, [router, supabase]);
 
   async function handleProfileSave(e: React.FormEvent) {
     e.preventDefault();
@@ -111,10 +111,10 @@ export default function ProfilePage() {
         <form onSubmit={handleProfileSave} className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="mb-1.5 block text-xs font-medium uppercase tracking-widest text-ivory-muted">
+              <label htmlFor="profile-first-name" className="mb-1.5 block text-xs font-medium uppercase tracking-widest text-ivory-muted">
                 First Name
               </label>
-              <input
+              <input id="profile-first-name"
                 type="text"
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
@@ -122,10 +122,10 @@ export default function ProfilePage() {
               />
             </div>
             <div>
-              <label className="mb-1.5 block text-xs font-medium uppercase tracking-widest text-ivory-muted">
+              <label htmlFor="profile-last-name" className="mb-1.5 block text-xs font-medium uppercase tracking-widest text-ivory-muted">
                 Last Name
               </label>
-              <input
+              <input id="profile-last-name"
                 type="text"
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
@@ -135,10 +135,10 @@ export default function ProfilePage() {
           </div>
 
           <div>
-            <label className="mb-1.5 block text-xs font-medium uppercase tracking-widest text-ivory-muted">
+            <label htmlFor="profile-email" className="mb-1.5 block text-xs font-medium uppercase tracking-widest text-ivory-muted">
               Email
             </label>
-            <input
+            <input id="profile-email"
               type="email"
               value={email}
               disabled
@@ -175,11 +175,11 @@ export default function ProfilePage() {
             { label: 'Confirm New Password', value: confirmPw, setter: setConfirmPw },
           ].map(({ label, value, setter }) => (
             <div key={label}>
-              <label className="mb-1.5 block text-xs font-medium uppercase tracking-widest text-ivory-muted">
+              <label htmlFor={`profile-${label.toLowerCase().replace(/ /g, '-')}`} className="mb-1.5 block text-xs font-medium uppercase tracking-widest text-ivory-muted">
                 {label}
               </label>
               <div className="relative">
-                <input
+                <input id={`profile-${label.toLowerCase().replace(/ /g, '-')}`}
                   type={showPw ? 'text' : 'password'}
                   value={value}
                   onChange={(e) => setter(e.target.value)}
@@ -189,6 +189,7 @@ export default function ProfilePage() {
                 />
                 {label === 'Current Password' && (
                   <button type="button" onClick={() => setShowPw((v) => !v)}
+                    aria-label={showPw ? 'Hide passwords' : 'Show passwords'}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-ivory-dim hover:text-gold-400 transition">
                     {showPw ? <EyeOff size={13} /> : <Eye size={13} />}
                   </button>

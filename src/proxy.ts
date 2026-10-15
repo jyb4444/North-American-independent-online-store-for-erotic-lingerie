@@ -1,7 +1,8 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
+import { safeRedirectPath } from '@/lib/redirect';
 
-const PROTECTED = ['/account', '/orders'];
+const PROTECTED = ['/account', '/orders', '/returns'];
 
 export default async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
@@ -41,11 +42,10 @@ export default async function proxy(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  // Redirect logged-in users away from login page
+  // Redirect logged-in users away from login page (back to where they were headed)
   if (request.nextUrl.pathname === '/login' && user) {
-    const accountUrl = request.nextUrl.clone();
-    accountUrl.pathname = '/account';
-    return NextResponse.redirect(accountUrl);
+    const target = safeRedirectPath(request.nextUrl.searchParams.get('redirectTo'));
+    return NextResponse.redirect(new URL(target, request.url));
   }
 
   return response;

@@ -17,6 +17,7 @@ export type PublicTrackingOrder = {
     shippedAt: string | null;
     deliveredAt: string | null;
     events: {
+      id: string;
       status: string;
       title: string;
       description: string | null;
@@ -90,6 +91,11 @@ export default function TrackingLookup({
       <div className="mb-8">
         <p className="mb-2 text-xs font-medium uppercase tracking-[0.3em] text-gold-400">Private Tracking</p>
         <h1 className="font-serif text-4xl font-light text-ivory">Order Status</h1>
+        <p className="mt-3 max-w-2xl text-sm leading-6 text-ivory-dim">
+          Status updates come from the Self Love order system. For the most recent carrier scan,
+          open the Carrier Page when a tracking number is available. If your package looks delayed
+          or unusual, contact support and we will help review it.
+        </p>
       </div>
 
       <form onSubmit={onSubmit} className="mb-8 border border-gold-600/20 bg-wine-900 p-5">
@@ -191,8 +197,8 @@ export default function TrackingLookup({
               </div>
 
               <div className="mt-5 space-y-4">
-                {shipment.events.map((event) => (
-                  <div key={`${event.status}-${event.occurredAt}`} className="flex gap-3">
+                {shipment.events.map((event, eventIndex) => (
+                  <div key={event.id || `${event.status}-${event.occurredAt}-${eventIndex}`} className="flex gap-3">
                     <CheckCircle2 size={16} className="mt-0.5 flex-shrink-0 text-gold-400" />
                     <div>
                       <p className="text-sm font-medium text-ivory">{event.title}</p>

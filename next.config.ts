@@ -1,17 +1,33 @@
 import type { NextConfig } from 'next';
 
+// Origins from configuration, so the CSP follows the Supabase project and PostHog region in use
+// (e.g. a local Supabase stack in tests, or an EU PostHog host).
+function origin(url: string | undefined): string[] {
+  try {
+    return url ? [new URL(url).origin] : [];
+  } catch {
+    return [];
+  }
+}
+const supabaseOrigins = origin(process.env.NEXT_PUBLIC_SUPABASE_URL);
+const supabaseSocketOrigins = supabaseOrigins.map((value) => value.replace(/^http/, 'ws'));
+const posthogOrigins = origin(process.env.NEXT_PUBLIC_POSTHOG_HOST);
+
 const CSP = [
   "default-src 'self'",
   "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://us-assets.i.posthog.com https://app.posthog.com",
   "style-src 'self' 'unsafe-inline'",
   "font-src 'self'",
-  "img-src 'self' data: blob: https://images.unsplash.com https://placehold.co https://cdn.shopify.com https://*.googleusercontent.com https://img.clerk.com https://images.clerk.dev https://*.supabase.co",
-  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://us.i.posthog.com https://app.posthog.com https://us-assets.i.posthog.com",
+  ["img-src 'self' data: blob: https://images.unsplash.com https://placehold.co https://cdn.shopify.com https://*.googleusercontent.com https://img.clerk.com https://images.clerk.dev https://*.supabase.co", ...supabaseOrigins].join(' '),
+  ["connect-src 'self' https://*.supabase.co wss://*.supabase.co https://us.i.posthog.com https://app.posthog.com https://us-assets.i.posthog.com", ...supabaseOrigins, ...supabaseSocketOrigins, ...posthogOrigins].join(' '),
   "frame-ancestors 'none'",
   "form-action 'self'",
 ].join('; ');
 
 const nextConfig: NextConfig = {
+  // E2E builds use a separate directory so they never clobber the dev/prod `.next`.
+  distDir: process.env.NEXT_DIST_DIR || '.next',
+
   images: {
     remotePatterns: [
       { hostname: 'placehold.co' },

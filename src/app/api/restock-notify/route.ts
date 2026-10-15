@@ -3,7 +3,7 @@ import { createAdminClient } from '@/lib/supabase/server';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
 
 export async function POST(req: Request) {
-  const { allowed } = rateLimit(`restock:${getClientIp(req)}`, { limit: 10, windowMs: 60 * 60_000 });
+  const { allowed } = await rateLimit(`restock:${getClientIp(req)}`, { limit: 10, windowMs: 60 * 60_000 });
   if (!allowed) return NextResponse.json({ error: 'Too many requests.' }, { status: 429 });
 
   let body: { email?: string; product_id?: string; product_handle?: string; size?: string; color?: string };

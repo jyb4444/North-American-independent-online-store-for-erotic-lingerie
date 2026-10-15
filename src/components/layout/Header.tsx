@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { useCartStore } from '@/store/cart';
-import { ShoppingBag, Search, Menu, X, LogIn, User, Package, Crown, LogOut } from 'lucide-react';
+import { ShoppingBag, Search, Menu, X, LogIn, User, Package, LogOut, PackageSearch, RotateCcw } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
@@ -11,7 +11,8 @@ import SearchModal from '@/components/ui/SearchModal';
 import HeaderWishlistLink from '@/components/wishlist/HeaderWishlistLink';
 
 export default function Header() {
-  const totalItems = useCartStore((s) => s.totalItems);
+  // Subscribe to the count itself so the badge re-renders when the bag changes.
+  const itemCount = useCartStore((s) => s.items.reduce((sum, item) => sum + item.quantity, 0));
   const openCart = useCartStore((s) => s.openCart);
   const [mounted, setMounted] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -27,12 +28,8 @@ export default function Header() {
   const userMenuRef = useRef<HTMLDivElement>(null);
   const navItems = [
     { href: '/collections/all', label: 'Shop ALL' },
-    { href: '/collections/new-arrivals', label: 'New In' },
-    { href: '/sale', label: 'Sale', highlight: true },
-    { href: '/collections/sets', label: 'Sets' },
-    { href: '/collections/first-free', label: 'First Free' },
-    { href: '/membership', label: 'Membership' },
-    { href: '/pages/about', label: 'About Us' },
+    { href: '/sale', label: 'SALES', highlight: true },
+    { href: '/collections/hosiery', label: 'Hosiery' },
   ];
 
   useEffect(() => {
@@ -78,8 +75,18 @@ export default function Header() {
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
 
         {/* Logo */}
-        <Link href="/" className="font-serif text-xl font-light italic tracking-widest text-gold-400">
-          Velour
+        <Link href="/" className="flex items-center gap-2">
+          <Image
+            src="/logo.png"
+            alt="Self Love"
+            width={38}
+            height={38}
+            priority
+            className="h-9 w-9 rounded-full object-cover"
+          />
+          <span className="text-sm font-semibold uppercase tracking-[0.22em] text-ivory">
+            Self Love
+          </span>
         </Link>
 
         {/* Desktop Nav */}
@@ -96,7 +103,7 @@ export default function Header() {
 
         {/* Icons */}
         <div className="flex items-center gap-5">
-          <button onClick={() => setSearchOpen(true)} className="text-ivory-muted transition hover:text-gold-400">
+          <button onClick={() => setSearchOpen(true)} aria-label="Search" className="text-ivory-muted transition hover:text-gold-400">
             <Search size={17} />
           </button>
           <SearchModal open={searchOpen} onClose={() => setSearchOpen(false)} />
@@ -138,8 +145,9 @@ export default function Header() {
                   <nav className="py-1">
                     {[
                       { href: '/account', icon: User, label: 'My Account' },
-                      { href: '/account/orders', icon: Package, label: 'Private Activity' },
-                      { href: '/account/membership', icon: Crown, label: 'Style Tools' },
+                      { href: '/account/orders', icon: Package, label: 'Order History' },
+                      { href: '/returns', icon: RotateCcw, label: 'Return Items' },
+                      { href: '/track', icon: PackageSearch, label: 'Track Package' },
                     ].map(({ href, icon: Icon, label }) => (
                       <Link key={href} href={href} onClick={() => setUserMenuOpen(false)}
                         className="flex items-center gap-3 px-4 py-2.5 text-xs text-ivory-muted transition hover:bg-wine-800 hover:text-gold-400">
@@ -162,11 +170,11 @@ export default function Header() {
           )}
 
           {/* Cart */}
-          <button onClick={openCart} className="relative text-ivory-muted transition hover:text-gold-400">
+          <button onClick={openCart} aria-label="Open bag" className="relative text-ivory-muted transition hover:text-gold-400">
             <ShoppingBag size={17} />
-            {mounted && totalItems() > 0 && (
+            {mounted && itemCount > 0 && (
               <span className="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-gold-400 text-[10px] font-bold text-wine-950">
-                {totalItems()}
+                {itemCount}
               </span>
             )}
           </button>
@@ -201,6 +209,18 @@ export default function Header() {
                 <Link href="/account" onClick={() => setMobileOpen(false)}
                   className="block py-2.5 text-xs uppercase tracking-widest text-ivory-muted hover:text-gold-400">
                   My Account
+                </Link>
+                <Link href="/account/orders" onClick={() => setMobileOpen(false)}
+                  className="block py-2.5 text-xs uppercase tracking-widest text-ivory-muted hover:text-gold-400">
+                  Order History
+                </Link>
+                <Link href="/returns" onClick={() => setMobileOpen(false)}
+                  className="block py-2.5 text-xs uppercase tracking-widest text-ivory-muted hover:text-gold-400">
+                  Return Items
+                </Link>
+                <Link href="/track" onClick={() => setMobileOpen(false)}
+                  className="block py-2.5 text-xs uppercase tracking-widest text-ivory-muted hover:text-gold-400">
+                  Track Package
                 </Link>
                 <button onClick={handleSignOut}
                   className="block py-2.5 text-xs uppercase tracking-widest text-ivory-dim hover:text-crimson-400">

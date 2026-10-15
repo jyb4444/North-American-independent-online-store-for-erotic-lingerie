@@ -1,19 +1,12 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Package, Crown, MapPin, Heart, ChevronRight, UserCog } from 'lucide-react';
+import { Package, MapPin, Heart, ChevronRight, UserCog, PackageSearch } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
-import { getOrdersForUser } from '@/lib/logistics';
+import { getOrdersForUser, syncShopifyOrdersForUser } from '@/lib/logistics';
 import LocalLookbookPanel from '@/components/ai/LocalLookbookPanel';
 import NewUserTaskChecklist from '@/components/onboarding/NewUserTaskChecklist';
-import DailyRewardCard from '@/components/rewards/DailyRewardCard';
 import WishlistReminderBanner from '@/components/wishlist/WishlistReminderBanner';
-
-function getTier(name: string) {
-  if (name === 'gold') return { name: 'Gold', color: 'text-yellow-400', border: 'border-yellow-400/40', bg: 'bg-yellow-400/10', next: null };
-  if (name === 'silver') return { name: 'Silver', color: 'text-zinc-300', border: 'border-zinc-300/40', bg: 'bg-zinc-300/10', next: 'Gold' };
-  return { name: 'Bronze', color: 'text-gold-400', border: 'border-gold-400/40', bg: 'bg-gold-400/10', next: 'Silver' };
-}
 
 function formatDate(value: string | null) {
   if (!value) return 'Pending';
@@ -39,23 +32,18 @@ export default async function AccountPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
-  // Fetch membership from DB
-  const { data: membership } = await supabase
-    .from('memberships')
-    .select('tier')
-    .eq('user_id', user.id)
-    .single();
-
-  const tier = getTier((membership as { tier?: string } | null)?.tier ?? 'bronze');
-
   const displayName = user.user_metadata?.first_name ?? user.email?.split('@')[0] ?? 'Member';
   const avatarUrl = user.user_metadata?.avatar_url as string | undefined;
+
+  if (user.email) {
+    await syncShopifyOrdersForUser({ userId: user.id, email: user.email, limit: 5 });
+  }
 
   const orders = (await getOrdersForUser(user.id)).slice(0, 3);
 
   const quickLinks = [
-    { href: '/account/orders', icon: Package, label: 'Style Activity', sub: 'Private history' },
-    { href: '/account/membership', icon: Crown, label: 'Style Tools', sub: `${tier.name} preview` },
+    { href: '/account/orders', icon: Package, label: 'Order History', sub: 'Purchases and returns' },
+    { href: '/track', icon: PackageSearch, label: 'Track Package', sub: 'Order status lookup' },
     { href: '/account/wishlist', icon: Heart, label: 'Wishlist', sub: 'Saved styles' },
     { href: '/account/addresses', icon: MapPin, label: 'Details', sub: 'Private account info' },
     { href: '/account/profile', icon: UserCog, label: 'Edit Profile', sub: 'Account preferences' },
@@ -86,7 +74,6 @@ export default async function AccountPage() {
 
       <div className="mb-6 space-y-4">
         <NewUserTaskChecklist source="account" />
-        <DailyRewardCard source="account" compact />
         <WishlistReminderBanner source="account" />
         <LocalLookbookPanel source="account" />
       </div>
@@ -94,22 +81,6 @@ export default async function AccountPage() {
       <div className="grid gap-6 md:grid-cols-3">
         {/* Left column */}
         <div className="space-y-5 md:col-span-1">
-
-          {/* Membership card */}
-          <div className={`relative overflow-hidden border ${tier.border} bg-wine-900 p-6`}>
-            <span className="absolute right-4 top-4 font-serif text-lg text-gold-600/20 select-none">✦</span>
-            <p className="mb-1 text-xs font-medium uppercase tracking-[0.3em] text-ivory-dim">Membership</p>
-            <p className={`font-serif text-2xl font-light italic ${tier.color}`}>{tier.name}</p>
-
-            <div className="mt-4 flex items-baseline gap-2">
-              <span className="font-serif text-xl text-gold-400">Private</span>
-              <span className="text-xs uppercase tracking-widest text-ivory-dim">style tools</span>
-            </div>
-            <Link href="/account/membership" className="mt-4 block text-xs uppercase tracking-widest text-gold-400/70 transition hover:text-gold-400">
-              View setup tools →
-            </Link>
-          </div>
-
           {/* Quick links */}
           <div className="border border-gold-600/20 bg-wine-900">
             {quickLinks.map(({ href, icon: Icon, label, sub }, i) => (
@@ -131,7 +102,7 @@ export default async function AccountPage() {
         {/* Right column */}
         <div className="md:col-span-2">
           <div className="mb-5 flex items-center justify-between">
-            <h2 className="font-serif text-xl font-light text-ivory">Private Activity</h2>
+            <h2 className="font-serif text-xl font-light text-ivory">Order History</h2>
             <Link href="/account/orders" className="text-xs uppercase tracking-widest text-gold-400/70 transition hover:text-gold-400">
               View all →
             </Link>
@@ -165,36 +136,6 @@ export default async function AccountPage() {
             </div>
           )}
 
-          {/* Tier perks */}
-          <div className={`mt-6 border ${tier.border} ${tier.bg} p-5`}>
-            <div className="mb-3 flex items-center gap-2">
-              <Crown size={14} className={tier.color} />
-              <p className={`text-xs font-medium uppercase tracking-[0.2em] ${tier.color}`}>{tier.name} Style Tools</p>
-            </div>
-            <ul className="space-y-1.5 text-xs text-ivory-muted">
-              {tier.name === 'Bronze' && <>
-                <li>✦ Private wishlist tools</li>
-                <li>✦ Early access to new arrivals</li>
-                <li>✦ Saved fit guidance</li>
-              </>}
-              {tier.name === 'Silver' && <>
-                <li>✦ Private wishlist tools</li>
-                <li>✦ Fit-guided style setup</li>
-                <li>✦ Priority styling support</li>
-              </>}
-              {tier.name === 'Gold' && <>
-                <li>✦ Private wishlist tools</li>
-                <li>✦ Saved AI look references</li>
-                <li>✦ Dedicated styling support</li>
-                <li>✦ First access to limited editions</li>
-              </>}
-            </ul>
-            {tier.next && (
-              <p className="mt-3 text-xs text-ivory-dim">
-                Continue your private setup to preview more guided style tools.
-              </p>
-            )}
-          </div>
         </div>
       </div>
     </div>

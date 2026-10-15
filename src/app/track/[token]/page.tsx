@@ -18,6 +18,7 @@ function publicOrder(order: Awaited<ReturnType<typeof lookupOrder>>): PublicTrac
       shippedAt: shipment.shipped_at,
       deliveredAt: shipment.delivered_at,
       events: shipment.shipment_events.map((event) => ({
+        id: event.id,
         status: event.status,
         title: event.title,
         description: event.description,

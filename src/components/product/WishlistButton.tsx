@@ -109,8 +109,6 @@ export default function WishlistButton({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           type: 'wishlist_reminder',
-          productTitle: product.title,
-          productImage: product.images[0] ?? '',
           productHandle: product.handle,
         }),
       }).catch(() => {});

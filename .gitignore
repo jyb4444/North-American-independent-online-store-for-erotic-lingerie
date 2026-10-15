@@ -49,3 +49,12 @@ next-env.d.ts
 
 # clerk configuration (can include secrets)
 /.clerk/
+
+# e2e / playwright
+/.next-e2e/
+/test-results/
+/playwright-report/
+/tests/.auth/
+/.e2e-outbox/
+
+/.next-e2e-legacy/

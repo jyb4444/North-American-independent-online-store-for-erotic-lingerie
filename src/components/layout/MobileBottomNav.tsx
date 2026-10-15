@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Search, ShoppingBag, User } from 'lucide-react';
+import { Home, Search, ShoppingBag, User, PackageSearch } from 'lucide-react';
 import { useCartStore } from '@/store/cart';
 import { useState, useEffect } from 'react';
 import SearchModal from '@/components/ui/SearchModal';
@@ -10,13 +10,15 @@ import SearchModal from '@/components/ui/SearchModal';
 const tabs = [
   { href: '/', icon: Home, label: 'Home' },
   { href: null, icon: Search, label: 'Search', isSearch: true },
+  { href: '/track', icon: PackageSearch, label: 'Track' },
   { href: null, icon: ShoppingBag, label: 'Bag', isCart: true },
   { href: '/account', icon: User, label: 'Account' },
 ] as const;
 
 export default function MobileBottomNav() {
   const pathname = usePathname();
-  const totalItems = useCartStore((s) => s.totalItems);
+  // Subscribe to the count itself so the badge re-renders when the bag changes.
+  const itemCount = useCartStore((s) => s.items.reduce((sum, item) => sum + item.quantity, 0));
   const openCart = useCartStore((s) => s.openCart);
   const [mounted, setMounted] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -49,9 +51,9 @@ export default function MobileBottomNav() {
                 >
                   <div className="relative">
                     <Icon size={19} />
-                    {mounted && totalItems() > 0 && (
+                    {mounted && itemCount > 0 && (
                       <span className="absolute -right-1.5 -top-1.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-gold-400 text-[8px] font-bold text-wine-950">
-                        {totalItems()}
+                        {itemCount}
                       </span>
                     )}
                   </div>

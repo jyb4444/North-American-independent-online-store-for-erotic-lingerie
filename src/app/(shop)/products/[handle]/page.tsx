@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import ProductPageClient from './ProductPageClient';
-import { getAllProducts, getProductByHandle } from '@/lib/products';
+import { getAllProducts, getProductByHandle, getReviewStats } from '@/lib/products';
 
 type Props = { params: Promise<{ handle: string }> };
 
@@ -8,9 +8,10 @@ export const dynamic = 'force-dynamic';
 
 export default async function ProductPage({ params }: Props) {
   const { handle } = await params;
-  const product = await getProductByHandle(handle);
+  const found = await getProductByHandle(handle);
 
-  if (!product) notFound();
+  if (!found) notFound();
+  const product = { ...found, ...(await getReviewStats(found.id)) };
 
   const relatedProducts = (await getAllProducts())
     .filter((item) => item.id !== product.id)

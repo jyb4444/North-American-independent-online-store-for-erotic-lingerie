@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import type { Product } from '@/types';
-import { MOCK_PRODUCTS } from '@/mock/products';
+import { useCatalog } from '@/hooks/useCatalog';
 
 const STORAGE_KEY = 'velour_recently_viewed';
 const MAX_ITEMS = 8;
@@ -31,9 +31,10 @@ export function useRecentlyViewed(excludeId?: string) {
     });
   }, []);
 
+  const { products: catalog } = useCatalog(ids.length > 0);
   const products: Product[] = ids
     .filter((id) => id !== excludeId)
-    .map((id) => MOCK_PRODUCTS.find((p) => p.id === id))
+    .map((id) => catalog.find((p) => p.id === id))
     .filter((p): p is Product => p !== undefined)
     .slice(0, 6);
 
