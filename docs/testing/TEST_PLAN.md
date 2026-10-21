@@ -60,7 +60,7 @@
   - 新用户确认邮箱后，获得 welcome 折扣码；
   - 被推荐人的第一笔订单付款后，推荐人获得 thanks 折扣码；
   - 两类奖励都可重放、幂等，Shopify 创建失败会自动重试。
-  
+
   由 `tests/api/referral-rewards.spec.ts` 覆盖。此外修复了推荐页分享链接指向不存在的 `/signup` 的问题。
 - **上线前需要配置：** 见 `docs/setup/upstash-and-shopify-discounts.md`。
 
