@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useCartStore } from '@/store/cart';
 import { ShoppingBag, Search, Menu, X, LogIn, User, Package, LogOut, PackageSearch } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
@@ -13,6 +13,7 @@ import HeaderWishlistLink from '@/components/wishlist/HeaderWishlistLink';
 
 export default function Header() {
   const pathname = usePathname();
+  const router = useRouter();
   // Subscribe to the count itself so the badge re-renders when the bag changes.
   const itemCount = useCartStore((s) => s.items.reduce((sum, item) => sum + item.quantity, 0));
   const openCart = useCartStore((s) => s.openCart);
@@ -61,9 +62,16 @@ export default function Header() {
 
   async function handleSignOut() {
     const supabase = createClient();
-    await supabase.auth.signOut();
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      console.error('Sign out failed:', error.message);
+      return;
+    }
     setUser(null);
     setUserMenuOpen(false);
+    setMobileOpen(false);
+    router.replace('/');
+    router.refresh();
   }
 
   const displayName = user?.user_metadata?.first_name

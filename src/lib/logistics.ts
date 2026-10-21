@@ -1,5 +1,6 @@
 import crypto from 'crypto';
 import { createAdminClient } from '@/lib/supabase/server';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { sendShipmentCreatedEmail } from '@/lib/email';
 import { shopifyAdminFetch } from '@/lib/shopify/admin';
 
@@ -578,8 +579,10 @@ export async function getShipmentById(shipmentId: string): Promise<ShipmentWithE
   return sortShipment(data as ShipmentWithEvents);
 }
 
-export async function getOrdersForUser(userId: string): Promise<OrderWithShipments[]> {
-  const supabase = createAdminClient();
+export async function getOrdersForUser(
+  userId: string,
+  supabase: SupabaseClient = createAdminClient(),
+): Promise<OrderWithShipments[]> {
   const { data, error } = await supabase
     .from('orders')
     .select('*, order_items(*), shipments(*, shipment_events(*))')

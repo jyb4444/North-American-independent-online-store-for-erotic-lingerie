@@ -10,11 +10,21 @@ export default async function OrdersPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
-  if (user.email) {
-    await syncShopifyOrdersForUser({ userId: user.id, email: user.email });
+  let syncUnavailable = false;
+  if (user.email && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    try {
+      await syncShopifyOrdersForUser({ userId: user.id, email: user.email });
+    } catch (error) {
+      syncUnavailable = true;
+      console.error('Order history sync failed:', error);
+    }
+  } else if (user.email) {
+    syncUnavailable = true;
   }
 
-  const orders = await getOrdersForUser(user.id);
+  // Customer reads use their authenticated client and the orders RLS policy. This keeps
+  // already-linked orders available even when the optional server-side Shopify sync is down.
+  const orders = await getOrdersForUser(user.id, supabase);
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6">
@@ -34,6 +44,12 @@ export default async function OrdersPage() {
           Account
         </Link>
       </div>
+
+      {syncUnavailable && (
+        <p role="status" className="mb-6 border border-gold-600/30 bg-gold-400/10 px-4 py-3 text-sm text-ivory-muted">
+          Your saved orders are shown below. New Shopify orders may take a little longer to appear.
+        </p>
+      )}
 
       <OrderHistoryClient orders={orders} />
     </div>
