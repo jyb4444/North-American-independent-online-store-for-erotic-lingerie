@@ -36,7 +36,15 @@ async function due() {
 }
 async function queueWelcome(f:Awaited<ReturnType<typeof friend>>) {expect((await admin().rpc('queue_referral_welcome',{p_user_id:f.id,p_amount:10,p_minimum:30})).error).toBeNull();}
 test.beforeAll(async()=>{bobId=await userIdFor(USERS.bob);});
-test.beforeEach(async()=>{await resetShopifyMock();await clearOutbox();await admin().from('referral_webhook_events').delete().neq('event_id','');await admin().from('referral_rewards').delete().neq('code','');await admin().from('referrals').update({uses:0,rewards_earned:0}).eq('code',SEED.bobReferralCode);});
+test.beforeEach(async()=>{
+ await resetShopifyMock();await clearOutbox();
+ await admin().from('referral_webhook_events').delete().neq('event_id','');
+ await admin().from('referral_rewards').delete().neq('code','');
+ // These stable IDs make the Shopify mock deterministic. Remove only their local rows so a
+ // previous suite run cannot make the order timestamp guard reject the next run as stale.
+ await admin().from('orders').delete().in('shopify_order_id',['gid://shopify/Order/8001','gid://shopify/Order/8002']);
+ await admin().from('referrals').update({uses:0,rewards_earned:0}).eq('code',SEED.bobReferralCode);
+});
 test.afterAll(async()=>{await admin().from('referral_webhook_events').delete().neq('event_id','');for(const id of ids) { for(const [table,column] of [['profiles','id'],['memberships','user_id'],['wishlists','user_id'],['cart_snapshots','user_id'],['referrals','referrer_id']]) await admin().from(table).delete().eq(column,id); expect((await admin().auth.admin.deleteUser(id)).error).toBeNull(); } await admin().from('referrals').update({uses:0,rewards_earned:0}).eq('code',SEED.bobReferralCode);});
 
 test('welcome callback queues once; cron issues a customer-only code and independent email',async({request,baseURL})=>{
