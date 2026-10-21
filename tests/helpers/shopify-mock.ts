@@ -5,6 +5,7 @@ type RecordedRequest = { query: string; variables?: { input?: CartCreateInput; h
 export type CartCreateInput = {
   lines: { merchandiseId: string; quantity: number; attributes?: { key: string; value: string }[] }[];
   giftCardCodes?: string[];
+  buyerIdentity?: { email?: string };
 };
 
 export const GIFT_CARD_VARIANT = {

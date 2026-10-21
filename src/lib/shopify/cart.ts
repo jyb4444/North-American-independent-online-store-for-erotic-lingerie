@@ -78,8 +78,14 @@ export function normalizeGiftCardCode(code: string): string {
  * expired or empty card is not reported as an error, it is simply missing from
  * `appliedGiftCards`, so every requested code is checked against that list.
  */
-export async function createShopifyCart(input: { lines: CartLine[]; giftCardCodes?: string[] }) {
+export async function createShopifyCart(input: {
+  lines: CartLine[];
+  giftCardCodes?: string[];
+  buyerEmail?: string;
+  buyerIp?: string;
+}) {
   const giftCardCodes = (input.giftCardCodes ?? []).map(normalizeGiftCardCode).filter(Boolean);
+  const buyerEmail = input.buyerEmail?.trim().toLowerCase();
 
   const data = await shopifyFetch<CartCreateResult>({
     query: CREATE_CART_MUTATION,
@@ -87,9 +93,11 @@ export async function createShopifyCart(input: { lines: CartLine[]; giftCardCode
       input: {
         lines: input.lines,
         ...(giftCardCodes.length > 0 ? { giftCardCodes } : {}),
+        ...(buyerEmail ? { buyerIdentity: { email: buyerEmail } } : {}),
       },
     },
     cache: 'no-store',
+    buyerIp: input.buyerIp,
   });
 
   const { cart, userErrors } = data.cartCreate;

@@ -22,12 +22,15 @@ export async function shopifyFetch<T>({
   variables,
   cache = 'force-cache',
   revalidate,
+  buyerIp,
 }: {
   query: string;
   variables?: Record<string, unknown>;
   cache?: RequestCache;
   /** Seconds to reuse the response across requests; takes precedence over `cache`. */
   revalidate?: number;
+  /** Original buyer IP for server-side cart requests and authenticated checkout continuity. */
+  buyerIp?: string;
 }): Promise<T> {
   const config = getShopifyConfig();
   if (!config) {
@@ -39,6 +42,7 @@ export async function shopifyFetch<T>({
     headers: {
       'Content-Type': 'application/json',
       'X-Shopify-Storefront-Access-Token': config.token,
+      ...(buyerIp ? { 'Shopify-Storefront-Buyer-IP': buyerIp } : {}),
     },
     body: JSON.stringify({ query, variables }),
     ...(revalidate !== undefined ? { next: { revalidate } } : { cache }),
