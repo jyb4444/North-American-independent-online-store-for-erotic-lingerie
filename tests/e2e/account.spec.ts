@@ -73,11 +73,23 @@ test.describe('authentication', () => {
     await page.getByLabel('Last Name').fill('Shopper');
     await page.getByLabel('Email').fill(email);
     await page.getByLabel('Password', { exact: true }).fill('Test1234!');
+    await page.getByLabel('Confirm Password').fill('Test1234!');
     await page.locator('form').getByRole('button', { name: 'Create Account' }).click();
     await expect(page.getByText(/check your email/i)).toBeVisible();
 
     const { data } = await admin().from('profiles').select('first_name, last_name').eq('email', email).single();
     expect(data).toEqual({ first_name: 'New', last_name: 'Shopper' });
+  });
+
+  test('signup rejects passwords that do not match', async ({ page }) => {
+    await page.goto('/login?mode=signup');
+    await page.getByLabel('First Name').fill('New');
+    await page.getByLabel('Email').fill(`mismatch-${Date.now()}@test.local`);
+    await page.getByLabel('Password', { exact: true }).fill('Test1234!');
+    await page.getByLabel('Confirm Password').fill('Different123!');
+    await page.locator('form').getByRole('button', { name: 'Create Account' }).click();
+    await expect(page.getByText('Passwords do not match.')).toBeVisible();
+    await expect(page).toHaveURL(/\/login\?mode=signup$/);
   });
 });
 

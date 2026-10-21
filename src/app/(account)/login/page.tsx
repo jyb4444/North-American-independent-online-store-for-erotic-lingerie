@@ -15,6 +15,7 @@ export default function LoginPage() {
   const [mode, setMode] = useState<Mode>('signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [showPw, setShowPw] = useState(false);
@@ -42,6 +43,12 @@ export default function LoginPage() {
     setSuccess('');
     setLoading(true);
 
+    if (mode === 'signup' && password !== confirmPassword) {
+      setError('Passwords do not match.');
+      setLoading(false);
+      return;
+    }
+
     if (mode === 'signin') {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) { setError(error.message); setLoading(false); return; }
@@ -65,7 +72,7 @@ export default function LoginPage() {
       });
       if (error) { setError(error.message); setLoading(false); return; }
 
-      setSuccess('Check your email to confirm your account, then sign in.');
+      setSuccess('Check your email to confirm your account, then sign in. If the email is already registered, sign in instead.');
       setLoading(false);
     }
   }
@@ -117,7 +124,7 @@ export default function LoginPage() {
             {(['signin', 'signup'] as Mode[]).map((m) => (
               <button
                 key={m}
-                onClick={() => { setMode(m); setError(''); setSuccess(''); }}
+                onClick={() => { setMode(m); setConfirmPassword(''); setError(''); setSuccess(''); }}
                 className={`flex-1 py-2.5 text-xs font-medium uppercase tracking-widest transition ${
                   mode === m
                     ? 'bg-gold-400 text-wine-950'
@@ -205,6 +212,25 @@ export default function LoginPage() {
                 </button>
               </div>
             </div>
+
+            {mode === 'signup' && (
+              <div>
+                <label htmlFor="login-confirm-password" className="mb-1.5 block text-xs font-medium uppercase tracking-widest text-ivory-muted">
+                  Confirm Password
+                </label>
+                <input
+                  id="login-confirm-password"
+                  type={showPw ? 'text' : 'password'}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
+                  minLength={8}
+                  autoComplete="new-password"
+                  className="w-full border border-wine-700 bg-wine-800 px-3 py-2.5 text-sm text-ivory placeholder-ivory-dim focus:border-gold-400 focus:outline-none transition"
+                  placeholder="••••••••"
+                />
+              </div>
+            )}
 
             {/* Referral code (signup only) */}
             {mode === 'signup' && (
