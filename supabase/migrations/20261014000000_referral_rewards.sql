@@ -1,7 +1,4 @@
 -- ============================================================
-
-BEGIN;
-SET LOCAL lock_timeout = '5s';
 -- Referral rewards as Shopify discount codes (D40)
 --
 --  * The new account gets a "welcome" code once its email is confirmed and it redeemed a
@@ -37,9 +34,7 @@ CREATE TRIGGER referral_rewards_updated_at
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
 ALTER TABLE referral_rewards ENABLE ROW LEVEL SECURITY;
-REVOKE ALL ON referral_rewards FROM PUBLIC, anon, authenticated, service_role;
-GRANT SELECT, INSERT, UPDATE, DELETE ON referral_rewards TO service_role;
-GRANT SELECT ON referral_rewards TO authenticated;
+REVOKE INSERT, UPDATE, DELETE ON referral_rewards FROM anon, authenticated;
 
 DROP POLICY IF EXISTS "Users can read own referral rewards" ON referral_rewards;
 CREATE POLICY "Users can read own referral rewards"
@@ -84,5 +79,3 @@ $$;
 
 REVOKE ALL ON FUNCTION public.claim_referrer_reward(uuid, numeric) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.claim_referrer_reward(uuid, numeric) TO service_role;
-
-COMMIT;

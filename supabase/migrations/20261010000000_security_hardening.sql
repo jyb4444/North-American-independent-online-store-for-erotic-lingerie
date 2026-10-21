@@ -1,7 +1,4 @@
 -- ============================================================
-
-BEGIN;
-SET LOCAL lock_timeout = '5s';
 -- Security hardening — see docs/testing/TEST_PLAN.md §0
 -- Verified by tests/api/security.spec.ts (SEC-01 … SEC-08).
 -- ============================================================
@@ -71,8 +68,7 @@ CREATE TABLE IF NOT EXISTS referral_redemptions (
 );
 
 ALTER TABLE referral_redemptions ENABLE ROW LEVEL SECURITY;
-REVOKE ALL ON referral_redemptions FROM PUBLIC, anon, authenticated, service_role;
-GRANT SELECT, INSERT, UPDATE, DELETE ON referral_redemptions TO service_role;
+REVOKE ALL ON referral_redemptions FROM anon, authenticated;
 -- No policies: service role only.
 
 CREATE OR REPLACE FUNCTION public.redeem_referral(p_code text, p_user_id uuid)
@@ -111,5 +107,3 @@ $$;
 
 REVOKE ALL ON FUNCTION public.redeem_referral(text, uuid) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.redeem_referral(text, uuid) TO service_role;
-
-COMMIT;

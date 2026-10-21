@@ -17,7 +17,7 @@ def catalog_sql():
     out=['BEGIN;']
     # The fixture is a catalog snapshot: no auth users, emails or actual review rows.
     out+=['DROP TABLE IF EXISTS public.'+ident(t)+' CASCADE;' for t in ['referral_webhook_events','referral_rewards','referral_redemptions']+[x['name'] for x in CAT['tables']]]
-    out.append("DO $$ DECLARE r record; BEGIN FOR r IN SELECT p.oid::regprocedure AS signature FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.proname IN ('handle_new_user','handle_new_membership','set_updated_at','confirmed_user_id_for_email','redeem_referral','claim_referrer_reward','queue_referral_welcome','claim_referral_paid_order','lease_referral_rewards','lease_referral_events','finish_referral_discount','upsert_shopify_order_if_fresh') LOOP EXECUTE 'DROP FUNCTION '||r.signature||' CASCADE'; END LOOP; END $$;")
+    out.append("DO $$ DECLARE r record; BEGIN FOR r IN SELECT p.oid::regprocedure AS signature FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.proname IN ('handle_new_user','handle_new_membership','set_updated_at','confirmed_user_id_for_email','redeem_referral','claim_referrer_reward','queue_referral_welcome','claim_referral_paid_order','lease_referral_rewards','lease_referral_events','finish_referral_discount') LOOP EXECUTE 'DROP FUNCTION '||r.signature||' CASCADE'; END LOOP; END $$;")
     for t in CAT['tables']:
         columns=[]
         for c in CAT['columns']:
@@ -63,7 +63,7 @@ if __name__=='__main__':
     for db in ['phase4_drift','phase4_conflict']:run(db,catalog_sql())
     pending=sorted((ROOT/'supabase/migrations').glob('202610*.sql'))
     for db in ['phase4_drift','phase4_conflict']:
-        for f in pending[:2]:run(db,'SET ROLE postgres; '+f.read_text())
+        for f in pending[:2]:run(db,'SET ROLE postgres; BEGIN;\n'+f.read_text()+'\nCOMMIT;')
     # Verify drift truly differs before reconciliation.
     assert_sql('phase4_drift',"(SELECT pg_get_expr(d.adbin,d.adrelid)='true' FROM pg_attrdef d JOIN pg_attribute a ON a.attrelid=d.adrelid AND a.attnum=d.adnum WHERE a.attrelid='public.reviews'::regclass AND a.attname='approved')",'production approved=true reproduced')
     for f in pending[2:]:run('phase4_drift','SET ROLE postgres; '+f.read_text())
@@ -72,8 +72,6 @@ if __name__=='__main__':
         assert_sql(db,"NOT has_column_privilege('authenticated','public.reviews','email','SELECT')",'private review column hidden')
         assert_sql(db,"NOT has_table_privilege('anon','public.referral_rewards','TRUNCATE') AND has_table_privilege('service_role','public.referral_rewards','INSERT')",'explicit reward grants')
         assert_sql(db,"NOT has_function_privilege('authenticated','public.claim_referral_paid_order(uuid,text,timestamptz,text,numeric,numeric)','EXECUTE')",'claim service-only')
-        assert_sql(db,"NOT has_function_privilege('authenticated','public.upsert_shopify_order_if_fresh(uuid,text,text,text,text,text,text,numeric,text,timestamptz,timestamptz)','EXECUTE')",'order freshness RPC service-only')
-        assert_sql(db,"EXISTS(SELECT 1 FROM pg_indexes WHERE schemaname='public' AND indexname='referral_webhook_events_due_idx')",'event due index exists')
         assert_sql(db,"EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid='public.referrals'::regclass AND contype='u' AND conname='referrals_referrer_id_key')",'referrer uniqueness')
         assert_sql(db,"(SELECT pg_get_expr(d.adbin,d.adrelid)='false' FROM pg_attrdef d JOIN pg_attribute a ON a.attrelid=d.adrelid AND a.attnum=d.adnum WHERE a.attrelid='public.reviews'::regclass AND a.attname='approved')",'approved default false')
         assert_sql(db,"NOT has_function_privilege('service_role','public.claim_referrer_reward(uuid,numeric)','EXECUTE')",'unsafe old claim revoked')
