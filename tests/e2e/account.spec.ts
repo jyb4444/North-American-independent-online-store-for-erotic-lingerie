@@ -30,6 +30,7 @@ test.describe('authentication', () => {
 
     await page.getByRole('banner').getByRole('button', { name: /alice/i }).click();
     await page.getByRole('button', { name: 'Sign Out' }).click();
+    await expect(page).toHaveURL(/\/$/);
     await expect(page.getByRole('banner').getByText('Sign In')).toBeVisible();
 
     await page.goto('/account');
