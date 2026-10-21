@@ -37,7 +37,7 @@ test('a return can be requested, viewed and cancelled', async ({ page }) => {
   await page.getByRole('button', { name: 'Select E2E Satin Robe' }).click();
   await page.locator('select').filter({ has: page.locator('option', { hasText: 'Quality issue' }) }).selectOption({ label: 'Size or fit' });
   await page.getByRole('button', { name: 'Submit Request' }).click();
-  await expect(page.getByText(/Request RMA-\d{8}-[0-9A-F]{6} submitted\./)).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Return Started' })).toBeVisible();
 
   const { data: request } = await admin()
     .from('return_requests')
@@ -45,6 +45,7 @@ test('a return can be requested, viewed and cancelled', async ({ page }) => {
     .eq('order_id', await aliceOrderId())
     .single();
   expect(request).toMatchObject({ status: 'submitted', eligibility_status: 'eligible' });
+  await expect(page.getByText(request!.request_number).first()).toBeVisible();
 
   await page.goto('/returns');
   await page.getByText(request!.request_number).first().click();
@@ -63,11 +64,12 @@ test('an underwear return for a change of mind is rejected with the hygiene poli
   await page.getByRole('button', { name: 'Select E2E Lace Thong' }).click();
   await page.locator('select').filter({ has: page.locator('option', { hasText: 'Quality issue' }) }).selectOption({ label: 'Changed mind' });
   await page.getByRole('button', { name: 'Submit Request' }).click();
-  await expect(page.getByText(/submitted\./)).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Return Started' })).toBeVisible();
 
   const { data } = await admin().from('return_requests').select('status, policy_notes').eq('order_id', await aliceOrderId()).single();
   expect(data!.status).toBe('rejected');
   expect(data!.policy_notes.join(' ')).toMatch(/final sale for hygiene/);
+  await expect(page.getByText(/E2E Lace Thong: underwear\/bottom intimate items are final sale for hygiene reasons\./i)).toBeVisible();
 });
 
 test.describe('package tracking', () => {
