@@ -36,6 +36,10 @@ function CheckoutButton({
   const setPendingCheckout = useCartStore((state) => state.setPendingCheckout);
 
   async function handleCheckout() {
+    if (items.some((item) => !item.size?.trim() || !item.color?.trim())) {
+      setError('Choose a size and color for every item before checkout.');
+      return;
+    }
     const shopifyLines = items
       .map((item) => ({
         merchandiseId: [item.shopifyVariantId, item.variantId].find(isShopifyVariantGid),
@@ -91,7 +95,6 @@ type CartRecommendation = {
 
 export default function CartDrawer() {
   const { items, isOpen, closeCart, removeItem, updateQuantity, totalPrice, giftCard, applyGiftCard, removeGiftCard } = useCartStore();
-  const addItem = useCartStore((s) => s.addItem);
   // Live catalogue for recommendations and fit hints, loaded the first time the bag opens.
   const { products: catalog } = useCatalog(isOpen);
   const { hasProfile, getFitResult } = useFitProfile();
@@ -332,33 +335,6 @@ export default function CartDrawer() {
     closeCart();
   }
 
-  function handleRecommendationAdd(recommendation: CartRecommendation) {
-    const variant = recommendation.product.variants[0];
-    if (!variant) return;
-
-    addItem({
-      variantId: variant.id,
-      productId: recommendation.product.id,
-      title: recommendation.product.title,
-      image: recommendation.product.images[0],
-      price: recommendation.product.price,
-      size: variant.size,
-      color: variant.color,
-      colorHex: variant.colorHex,
-      quantity: 1,
-      shopifyVariantId: isShopifyVariantGid(variant.shopifyVariantId ?? variant.id)
-        ? variant.shopifyVariantId ?? variant.id
-        : undefined,
-    });
-    track.addedToCart(recommendation.product, variant, 1);
-    track.cartRecommendationAdded({
-      product_id: recommendation.product.id,
-      product_handle: recommendation.product.handle,
-      source: 'cart_drawer',
-      recommendation_type: recommendation.type,
-    });
-  }
-
   function handleEmptyGuidanceClick(action: 'continue_shopping' | 'view_saved_styles' | 'try_fit_advisor') {
     track.emptyCartGuidanceClicked({
       action,
@@ -572,7 +548,6 @@ export default function CartDrawer() {
                       <div className="mt-4 space-y-3">
                         {recommendations.map((recommendation) => {
                           const { product } = recommendation;
-                          const variant = product.variants[0];
                           return (
                             <div key={product.id} className="flex gap-3 border border-wine-800 bg-wine-950/25 p-2.5">
                               <Link
@@ -599,15 +574,13 @@ export default function CartDrawer() {
                                   >
                                     View item
                                   </Link>
-                                  {variant && (
-                                    <button
-                                      type="button"
-                                      onClick={() => handleRecommendationAdd(recommendation)}
-                                      className="text-[10px] uppercase tracking-widest text-gold-400 transition hover:text-gold-300"
-                                    >
-                                      Add to bag
-                                    </button>
-                                  )}
+                                  <Link
+                                    href={`/products/${product.handle}`}
+                                    onClick={() => handleRecommendationClick(recommendation)}
+                                    className="text-[10px] uppercase tracking-widest text-gold-400 transition hover:text-gold-300"
+                                  >
+                                    Choose options
+                                  </Link>
                                 </div>
                               </div>
                             </div>

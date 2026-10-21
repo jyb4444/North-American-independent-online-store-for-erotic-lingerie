@@ -422,7 +422,7 @@ export default function FitAdvisor({ open, onClose, product, onSelectSize }: Pro
                     onClick={() => { onSelectSize(result.recommendedSize); onClose(); }}
                     className="w-full border border-gold-400 py-4 text-xs font-medium uppercase tracking-[0.2em] text-gold-400 transition hover:bg-gold-400 hover:text-wine-950"
                   >
-                    Select Size {result.recommendedSize} & Add to Bag
+                    Use Recommended Size {result.recommendedSize}
                   </button>
 
                   <button onClick={() => setStep(0)} className="w-full text-xs uppercase tracking-widest text-ivory-dim hover:text-gold-400 transition">

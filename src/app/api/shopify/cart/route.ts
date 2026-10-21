@@ -53,6 +53,15 @@ export async function POST(req: NextRequest) {
   if (items.some((item) => toQuantity(item?.quantity) === null)) {
     return NextResponse.json({ error: 'Invalid item quantity.' }, { status: 400 });
   }
+  if (items.some((item) =>
+    typeof item?.size !== 'string' || !item.size.trim() ||
+    typeof item?.color !== 'string' || !item.color.trim()
+  )) {
+    return NextResponse.json(
+      { error: 'Choose a size and color for every item before checkout.' },
+      { status: 400 }
+    );
+  }
 
   const giftCardCode = typeof body.giftCardCode === 'string' ? body.giftCardCode.trim() : '';
   if (giftCardCode.length > 64) {
@@ -65,7 +74,7 @@ export async function POST(req: NextRequest) {
 
     if (cartLines.length === 0) {
       return NextResponse.json(
-        { error: 'Your bag contains old local test items. Please remove and re-add the product.' },
+        { error: 'This product is not connected to Shopify checkout yet. Please choose a Shopify-synced product.' },
         { status: 400 }
       );
     }
