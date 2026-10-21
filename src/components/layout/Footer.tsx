@@ -116,7 +116,6 @@ export default function Footer() {
             <p className="mb-5 text-xs font-medium uppercase tracking-[0.3em] text-ivory-muted">Account</p>
             <ul className="space-y-2.5 text-xs">
               {[['My Account', '/account'], ['Order History', '/account/orders'],
-                ['Return Items', '/returns'],
                 ['Track Package', '/track'],
                 ['Gift Cards', '/pages/gift-card'],
                 ['Referral Program', '/pages/referral']].map(([label, href]) => (

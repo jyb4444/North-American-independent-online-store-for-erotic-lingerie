@@ -4,7 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useCartStore } from '@/store/cart';
-import { ShoppingBag, Search, Menu, X, LogIn, User, Package, LogOut, PackageSearch, RotateCcw } from 'lucide-react';
+import { ShoppingBag, Search, Menu, X, LogIn, User, Package, LogOut, PackageSearch } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
@@ -158,7 +158,6 @@ export default function Header() {
                     {[
                       { href: '/account', icon: User, label: 'My Account' },
                       { href: '/account/orders', icon: Package, label: 'Order History' },
-                      { href: '/returns', icon: RotateCcw, label: 'Return Items' },
                       { href: '/track', icon: PackageSearch, label: 'Track Package' },
                     ].map(({ href, icon: Icon, label }) => (
                       <Link key={href} href={href} onClick={() => setUserMenuOpen(false)}
@@ -228,10 +227,6 @@ export default function Header() {
                 <Link href="/account/orders" onClick={() => setMobileOpen(false)}
                   className="block py-2.5 text-xs uppercase tracking-widest text-ivory-muted hover:text-gold-400">
                   Order History
-                </Link>
-                <Link href="/returns" onClick={() => setMobileOpen(false)}
-                  className="block py-2.5 text-xs uppercase tracking-widest text-ivory-muted hover:text-gold-400">
-                  Return Items
                 </Link>
                 <Link href="/track" onClick={() => setMobileOpen(false)}
                   className="block py-2.5 text-xs uppercase tracking-widest text-ivory-muted hover:text-gold-400">

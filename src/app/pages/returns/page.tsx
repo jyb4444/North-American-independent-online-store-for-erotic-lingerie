@@ -66,11 +66,11 @@ export default function ReturnsPage() {
           </div>
           <ol className="space-y-3 text-xs">
             {[
-              'Open your order from Private Activity and choose Manage / Return.',
-              'Select the item, reason, preferred resolution, condition, photos, and details.',
-              'The system checks the policy window and hygiene restrictions before merchant review.',
-              'If approved, we provide return instructions. For the first version, customers self-ship and add tracking.',
-              'After warehouse inspection, eligible refunds, exchanges, or reshipments are processed by the merchant.',
+              'Open the order in Order History and choose Request a Return.',
+              'Select the item and tell us what happened. Add photos for damage, defects, or a wrong item.',
+              'Wait for our review email. Do not ship anything before the request is approved.',
+              'If approved, follow the emailed return instructions and send the parcel using a trackable service.',
+              'After the item arrives and passes inspection, we process the approved refund or exchange through Shopify.',
             ].map((step, i) => (
               <li key={step} className="flex items-start gap-3">
                 <span className="flex-shrink-0 font-serif text-base text-gold-400">{i + 1}.</span>
@@ -94,8 +94,8 @@ export default function ReturnsPage() {
             <Truck size={18} className="mb-3 text-gold-400" />
             <h2 className="mb-2 font-serif text-lg font-light text-ivory">Refund Method</h2>
             <p className="text-xs">
-              Refunds return to the original payment method after approval and inspection. We also sync return activity back to Shopify
-              so order records and reporting stay aligned.
+              Refunds return to the original payment method only after approval and inspection. Submitting a request does not guarantee
+              approval and does not trigger an automatic refund.
             </p>
           </div>
         </section>

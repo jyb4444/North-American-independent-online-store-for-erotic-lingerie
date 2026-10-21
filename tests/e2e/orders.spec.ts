@@ -36,7 +36,7 @@ test('a return can be requested, viewed and cancelled', async ({ page }) => {
 
   await page.getByRole('button', { name: 'Select E2E Satin Robe' }).click();
   await page.locator('select').filter({ has: page.locator('option', { hasText: 'Quality issue' }) }).selectOption({ label: 'Size or fit' });
-  await page.getByRole('button', { name: 'Submit Request' }).click();
+  await page.getByRole('button', { name: 'Submit for Review' }).click();
   await expect(page.getByRole('heading', { name: 'Return Started' })).toBeVisible();
 
   const { data: request } = await admin()
@@ -63,7 +63,7 @@ test('an underwear return for a change of mind is rejected with the hygiene poli
 
   await page.getByRole('button', { name: 'Select E2E Lace Thong' }).click();
   await page.locator('select').filter({ has: page.locator('option', { hasText: 'Quality issue' }) }).selectOption({ label: 'Changed mind' });
-  await page.getByRole('button', { name: 'Submit Request' }).click();
+  await page.getByRole('button', { name: 'Submit for Review' }).click();
   await expect(page.getByRole('heading', { name: 'Return Started' })).toBeVisible();
 
   const { data } = await admin().from('return_requests').select('status, policy_notes').eq('order_id', await aliceOrderId()).single();

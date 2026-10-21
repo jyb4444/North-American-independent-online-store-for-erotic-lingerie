@@ -49,7 +49,7 @@ export default async function ReturnsPage() {
           </Link>
           <h1 className="font-serif text-4xl font-light text-ivory">Return Items</h1>
           <p className="mt-2 max-w-xl text-sm text-ivory-dim">
-            Review every return request in one place, open the full RMA, or jump back to the related order.
+            Review requests submitted from your orders. We will email you when a decision or shipping instruction is ready.
           </p>
         </div>
         <Link
@@ -100,9 +100,6 @@ export default async function ReturnsPage() {
                 <div className="flex flex-wrap gap-2">
                   <span className={`border px-2.5 py-1.5 text-[10px] uppercase tracking-widest ${statusTone(request.status)}`}>
                     {label(request.status)}
-                  </span>
-                  <span className="border border-gold-600/30 px-2.5 py-1.5 text-[10px] uppercase tracking-widest text-ivory-dim">
-                    {label(request.eligibility_status)}
                   </span>
                 </div>
               </div>

@@ -5,7 +5,6 @@ import { createClient } from '@/lib/supabase/server';
 import { canCancelReturnRequest, getReturnRequestForUser, getSignedReturnMediaUrls, isSafeTrackingUrl } from '@/lib/returns';
 import CancelReturnRequestButton from '@/components/returns/CancelReturnRequestButton';
 import ReturnPhotoGallery from '@/components/returns/ReturnPhotoGallery';
-import ReturnTrackingForm from '@/components/returns/ReturnTrackingForm';
 
 function formatDate(value: string | null) {
   if (!value) return 'Pending';
@@ -18,10 +17,6 @@ function formatDate(value: string | null) {
 
 function label(value: string | null) {
   return value ? value.replace(/_/g, ' ') : 'Preparing';
-}
-
-function canAddTracking(status: string) {
-  return ['approved', 'awaiting_customer_shipment', 'customer_shipped'].includes(status);
 }
 
 function statusTone(status: string) {
@@ -62,12 +57,6 @@ export default async function ReturnDetailPage({
           <div className="flex flex-wrap gap-2 lg:justify-end">
             <span className={`border px-2.5 py-1.5 text-[10px] uppercase tracking-widest ${statusTone(request.status)}`}>
               {label(request.status)}
-            </span>
-            <span className="border border-gold-600/30 px-2.5 py-1.5 text-[10px] uppercase tracking-widest text-ivory-dim">
-              {label(request.eligibility_status)}
-            </span>
-            <span className="border border-gold-600/30 px-2.5 py-1.5 text-[10px] uppercase tracking-widest text-ivory-dim">
-              Shopify {label(request.shopify_sync_status)}
             </span>
           </div>
           {canCancelReturnRequest(request.status) && <CancelReturnRequestButton requestId={request.id} />}
@@ -172,7 +161,7 @@ export default async function ReturnDetailPage({
           </div>
         </section>
 
-        {(request.return_tracking_number || canAddTracking(request.status)) && (
+        {request.return_tracking_number && (
           <section className="border border-gold-600/20 bg-wine-900 p-6 lg:col-span-12">
             <h2 className="font-serif text-xl font-light text-ivory">Return Shipment</h2>
             {request.return_tracking_number && (
@@ -185,7 +174,9 @@ export default async function ReturnDetailPage({
                 )}
               </div>
             )}
-            {canAddTracking(request.status) && <ReturnTrackingForm requestId={request.id} />}
+            <p className="mt-4 text-xs leading-relaxed text-ivory-dim">
+              Send any tracking updates by replying to your return approval email.
+            </p>
           </section>
         )}
       </div>
