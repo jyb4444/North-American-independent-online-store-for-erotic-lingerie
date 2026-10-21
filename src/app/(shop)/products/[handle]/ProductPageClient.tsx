@@ -21,48 +21,16 @@ type Props = {
   relatedProducts: Product[];
 };
 
-const DISCOUNT_WINDOW_MS = 12 * 60 * 60 * 1000;
-
 function isShopifyVariantGid(value?: string) {
   return !!value && value.startsWith('gid://shopify/ProductVariant/');
 }
 
-function formatRemaining(ms: number) {
-  const seconds = Math.max(0, Math.floor(ms / 1000));
-  const hours = Math.floor(seconds / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-  const secs = seconds % 60;
-  return [hours, minutes, secs].map((value) => value.toString().padStart(2, '0')).join(':');
-}
-
-function DiscountCountdown({ productId }: { productId: string }) {
-  const [remaining, setRemaining] = useState<number | null>(null);
-
-  useEffect(() => {
-    const key = `velour_discount_countdown_${productId}`;
-    let end = Number(window.localStorage.getItem(key));
-    if (!Number.isFinite(end) || end <= Date.now()) {
-      end = Date.now() + DISCOUNT_WINDOW_MS;
-      window.localStorage.setItem(key, String(end));
-    }
-
-    function tick() {
-      setRemaining(Math.max(0, end - Date.now()));
-    }
-
-    tick();
-    const id = window.setInterval(tick, 1000);
-    return () => window.clearInterval(id);
-  }, [productId]);
-
-  if (remaining === null || remaining <= 0) return null;
-
-  return (
-    <div className="border border-crimson-400/30 bg-crimson-950/20 px-4 py-3">
-      <p className="text-xs font-medium uppercase tracking-[0.22em] text-crimson-400">Discount ends in</p>
-      <p className="mt-1 font-serif text-2xl font-light text-ivory">{formatRemaining(remaining)}</p>
-    </div>
-  );
+function productDetailBullets(description: string) {
+  return description
+    .split(/(?<=[.!?])\s+/)
+    .map((sentence) => sentence.trim())
+    .filter((sentence) => sentence.length > 24)
+    .slice(0, 5);
 }
 
 export default function ProductPageClient({ product, relatedProducts }: Props) {
@@ -115,6 +83,7 @@ export default function ProductPageClient({ product, relatedProducts }: Props) {
     ? Math.round(((product.compareAtPrice - product.price) / product.compareAtPrice) * 100)
     : null;
   const categoryLabel = product.category.charAt(0).toUpperCase() + product.category.slice(1);
+  const details = productDetailBullets(product.description);
 
   return (
     <div className="mx-auto max-w-7xl px-4 pb-28 pt-14 sm:px-6 md:pb-14">
@@ -130,6 +99,7 @@ export default function ProductPageClient({ product, relatedProducts }: Props) {
           video={product.video}
           productId={product.id}
           title={product.title}
+          altTexts={product.imageAltTexts}
           modelMeasurements={product.modelMeasurements}
         />
 
@@ -148,20 +118,24 @@ export default function ProductPageClient({ product, relatedProducts }: Props) {
               </div>
             </div>
 
-            <div className="mt-3 flex items-center gap-2">
-              <div className="flex">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <Star
-                    key={i}
-                    size={13}
-                    className={i < Math.round(product.rating) ? 'fill-gold-400 text-gold-400' : 'text-wine-700'}
-                  />
-                ))}
+            {product.reviewCount > 0 ? (
+              <div className="mt-3 flex items-center gap-2">
+                <div className="flex" aria-label={`Rated ${product.rating} out of 5`}>
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <Star
+                      key={i}
+                      size={13}
+                      className={i < Math.round(product.rating) ? 'fill-gold-400 text-gold-400' : 'text-wine-700'}
+                    />
+                  ))}
+                </div>
+                <span className="text-xs text-ivory-dim">
+                  {product.rating} ({product.reviewCount} {product.reviewCount === 1 ? 'review' : 'reviews'})
+                </span>
               </div>
-              <span className="text-xs text-ivory-dim">
-                {product.rating} ({product.reviewCount} reviews)
-              </span>
-            </div>
+            ) : (
+              <p className="mt-3 text-xs text-ivory-dim">No reviews yet</p>
+            )}
 
             <div className="mt-5 flex items-baseline gap-3">
               <span className="font-serif text-3xl font-light text-gold-400">${product.price.toFixed(2)}</span>
@@ -177,8 +151,36 @@ export default function ProductPageClient({ product, relatedProducts }: Props) {
           </div>
 
           <div className="h-px bg-gold-600/20" />
+
+          <section className="space-y-5">
+            <div>
+              <h2 className="text-base font-semibold text-ivory">About this item</h2>
+              <p className="mt-3 text-[15px] font-light leading-7 text-ivory-muted">{product.description}</p>
+              {details.length > 1 && (
+                <ul className="mt-4 space-y-3">
+                  {details.map((detail) => (
+                    <li key={detail} className="flex gap-3 text-[15px] leading-7 text-ivory-muted">
+                      <span className="mt-3 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-gold-400" />
+                      <span>{detail}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            <div className="grid gap-3 border-y border-gold-600/15 py-4 sm:grid-cols-2">
+              <div>
+                <p className="text-xs font-medium uppercase tracking-widest text-ivory-muted">Material</p>
+                <p className="mt-1 text-sm leading-6 text-ivory-muted">{product.material}</p>
+              </div>
+              <div>
+                <p className="text-xs font-medium uppercase tracking-widest text-ivory-muted">Care</p>
+                <p className="mt-1 text-sm leading-6 text-ivory-muted">{product.careInstructions}</p>
+              </div>
+            </div>
+          </section>
+
           <VariantSelector product={product} onVariantChange={setSelectedVariant} />
-          {product.compareAtPrice && <DiscountCountdown productId={product.id} />}
           <FitConfidenceBadge product={product} variant="pdp" onOpenFitAdvisor={() => setFitAdvisorOpen(true)} />
 
           <div>
@@ -212,18 +214,6 @@ export default function ProductPageClient({ product, relatedProducts }: Props) {
             <ShoppingBag size={15} />
             {added ? 'Added to Bag' : selectedVariant ? 'Add to Bag' : 'Select Size & Color'}
           </button>
-
-          <div className="space-y-4 border-t border-gold-600/20 pt-6 text-sm">
-            <p className="font-light leading-relaxed text-ivory-muted">{product.description}</p>
-            <p className="text-xs text-ivory-dim">
-              <span className="uppercase tracking-widest text-ivory-muted">Material - </span>
-              {product.material}
-            </p>
-            <p className="text-xs text-ivory-dim">
-              <span className="uppercase tracking-widest text-ivory-muted">Care - </span>
-              {product.careInstructions}
-            </p>
-          </div>
         </div>
       </div>
 

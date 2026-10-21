@@ -5,6 +5,7 @@ import { useAiLookbook } from '@/hooks/useAiLookbook';
 import { useFitProfile } from '@/hooks/useFitProfile';
 import { useWishlistSummary } from '@/hooks/useWishlistSummary';
 import { track } from '@/lib/analytics';
+import { TRY_ON_PRODUCT_PATH } from '@/lib/featured';
 
 export const DAILY_REWARD_STORAGE_KEY = 'velour_daily_reward_ui_v1';
 const DAILY_REWARD_CHANGED_EVENT = 'velour_daily_reward_changed';
@@ -91,7 +92,7 @@ function createReward(type: DailyRewardType, date: string): DailyReward {
       title: "Today's fit guidance",
       description: 'Between sizes? Choose the softer fit for comfort, or the closer fit for a sculpted look.',
       ctaLabel: 'Try Fit Advisor',
-      ctaHref: '/products/lace-halter-babydoll-set',
+      ctaHref: TRY_ON_PRODUCT_PATH,
     };
   }
 
@@ -111,7 +112,7 @@ function createReward(type: DailyRewardType, date: string): DailyReward {
       title: 'Try a private AI preview',
       description: 'Preview a look before saving it. AI previews are not saved unless you choose.',
       ctaLabel: 'Try AI Preview',
-      ctaHref: '/products/lace-halter-babydoll-set',
+      ctaHref: TRY_ON_PRODUCT_PATH,
     };
   }
 

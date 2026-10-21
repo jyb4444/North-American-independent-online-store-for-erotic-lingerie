@@ -46,6 +46,7 @@ export type Database = {
       reviews: {
         Row: {
           id: string;
+          user_id: string | null;
           product_id: string;
           product_handle: string;
           rating: number;
@@ -54,19 +55,26 @@ export type Database = {
           email: string;
           verified_purchase: boolean;
           approved: boolean;
+          photo_urls: string[];
+          video_urls: string[];
+          is_anonymous: boolean;
           created_at: string;
         };
         Insert: {
+          user_id?: string | null;
           product_id: string;
           product_handle: string;
           rating: number;
           body: string;
           nickname: string;
           email: string;
+          photo_urls?: string[];
+          video_urls?: string[];
+          is_anonymous?: boolean;
           verified_purchase?: boolean;
           approved?: boolean;
         };
-        Update: { approved?: boolean };
+        Update: { approved?: boolean; verified_purchase?: boolean; user_id?: string | null };
       };
       restock_alerts: {
         Row: {
@@ -191,6 +199,49 @@ export type Database = {
           updated_at?: string;
         };
       };
+      order_items: {
+        Row: {
+          id: string;
+          order_id: string;
+          shopify_line_item_id: string;
+          shopify_variant_id: string | null;
+          title: string;
+          variant_title: string | null;
+          sku: string | null;
+          quantity: number;
+          price: number | null;
+          product_type: string | null;
+          vendor: string | null;
+          return_category: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          order_id: string;
+          shopify_line_item_id: string;
+          shopify_variant_id?: string | null;
+          title: string;
+          variant_title?: string | null;
+          sku?: string | null;
+          quantity?: number;
+          price?: number | null;
+          product_type?: string | null;
+          vendor?: string | null;
+          return_category?: string;
+        };
+        Update: {
+          shopify_variant_id?: string | null;
+          title?: string;
+          variant_title?: string | null;
+          sku?: string | null;
+          quantity?: number;
+          price?: number | null;
+          product_type?: string | null;
+          vendor?: string | null;
+          return_category?: string;
+          updated_at?: string;
+        };
+      };
       shipments: {
         Row: {
           id: string;
@@ -270,6 +321,108 @@ export type Database = {
           event_type: string;
           recipient: string;
           provider_message_id?: string | null;
+        };
+        Update: never;
+      };
+      return_requests: {
+        Row: {
+          id: string;
+          user_id: string | null;
+          order_id: string;
+          request_number: string;
+          desired_resolution: 'cancel_order' | 'refund' | 'return_refund' | 'exchange' | 'reship' | 'partial_refund';
+          reason: 'quality_issue' | 'wrong_item' | 'missing_item' | 'damaged_in_transit' | 'not_as_expected' | 'changed_mind' | 'size_fit' | 'privacy_packaging' | 'other';
+          status: 'submitted' | 'needs_more_info' | 'approved' | 'rejected' | 'awaiting_customer_shipment' | 'customer_shipped' | 'received' | 'inspected' | 'refund_pending' | 'refunded' | 'exchange_pending' | 'exchanged' | 'reship_pending' | 'reshipped' | 'closed';
+          eligibility_status: 'eligible' | 'ineligible' | 'review_required';
+          policy_notes: string[];
+          customer_note: string | null;
+          media_urls: string[];
+          return_shipping_method: string | null;
+          return_carrier: string | null;
+          return_tracking_number: string | null;
+          return_tracking_url: string | null;
+          inspected_at: string | null;
+          shopify_sync_status: 'pending' | 'synced' | 'failed' | 'skipped';
+          shopify_sync_error: string | null;
+          shopify_synced_at: string | null;
+          admin_notes: string | null;
+          submitted_at: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          user_id?: string | null;
+          order_id: string;
+          request_number: string;
+          desired_resolution: 'cancel_order' | 'refund' | 'return_refund' | 'exchange' | 'reship' | 'partial_refund';
+          reason: 'quality_issue' | 'wrong_item' | 'missing_item' | 'damaged_in_transit' | 'not_as_expected' | 'changed_mind' | 'size_fit' | 'privacy_packaging' | 'other';
+          status?: 'submitted' | 'needs_more_info' | 'approved' | 'rejected' | 'awaiting_customer_shipment' | 'customer_shipped' | 'received' | 'inspected' | 'refund_pending' | 'refunded' | 'exchange_pending' | 'exchanged' | 'reship_pending' | 'reshipped' | 'closed';
+          eligibility_status?: 'eligible' | 'ineligible' | 'review_required';
+          policy_notes?: string[];
+          customer_note?: string | null;
+          media_urls?: string[];
+          return_shipping_method?: string | null;
+          return_carrier?: string | null;
+          return_tracking_number?: string | null;
+          return_tracking_url?: string | null;
+          shopify_sync_status?: 'pending' | 'synced' | 'failed' | 'skipped';
+          shopify_sync_error?: string | null;
+          shopify_synced_at?: string | null;
+          admin_notes?: string | null;
+        };
+        Update: {
+          status?: 'submitted' | 'needs_more_info' | 'approved' | 'rejected' | 'awaiting_customer_shipment' | 'customer_shipped' | 'received' | 'inspected' | 'refund_pending' | 'refunded' | 'exchange_pending' | 'exchanged' | 'reship_pending' | 'reshipped' | 'closed';
+          eligibility_status?: 'eligible' | 'ineligible' | 'review_required';
+          policy_notes?: string[];
+          customer_note?: string | null;
+          media_urls?: string[];
+          return_shipping_method?: string | null;
+          return_carrier?: string | null;
+          return_tracking_number?: string | null;
+          return_tracking_url?: string | null;
+          inspected_at?: string | null;
+          shopify_sync_status?: 'pending' | 'synced' | 'failed' | 'skipped';
+          shopify_sync_error?: string | null;
+          shopify_synced_at?: string | null;
+          admin_notes?: string | null;
+          updated_at?: string;
+        };
+      };
+      return_request_items: {
+        Row: {
+          id: string;
+          return_request_id: string;
+          order_item_id: string;
+          quantity: number;
+          item_condition: 'unopened_tags_attached' | 'opened_unused' | 'used' | 'damaged' | 'defective';
+          reason_detail: string | null;
+          created_at: string;
+        };
+        Insert: {
+          return_request_id: string;
+          order_item_id: string;
+          quantity?: number;
+          item_condition: 'unopened_tags_attached' | 'opened_unused' | 'used' | 'damaged' | 'defective';
+          reason_detail?: string | null;
+        };
+        Update: never;
+      };
+      return_request_events: {
+        Row: {
+          id: string;
+          return_request_id: string;
+          event_type: string;
+          title: string;
+          description: string | null;
+          metadata: unknown;
+          created_at: string;
+        };
+        Insert: {
+          return_request_id: string;
+          event_type: string;
+          title: string;
+          description?: string | null;
+          metadata?: unknown;
         };
         Update: never;
       };

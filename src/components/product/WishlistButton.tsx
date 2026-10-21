@@ -24,6 +24,7 @@ export default function WishlistButton({
 }: Props) {
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [updating, setUpdating] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [insertError, setInsertError] = useState('');
   // For icon variant: briefly flash an error state
@@ -35,7 +36,8 @@ export default function WishlistButton({
   const { markTaskCompleted } = useOnboardingTasks();
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      const user = session?.user;
       if (!user) {
         setLoading(false);
         return;
@@ -65,25 +67,33 @@ export default function WishlistButton({
   }
 
   async function toggle() {
-    if (!userId) {
+    if (!userId || updating) {
+      if (updating) return;
       router.push('/login');
       return;
     }
 
     setInsertError('');
+    setUpdating(true);
+    const wasSaved = saved;
+    const delta = wasSaved ? -1 : 1;
+    setSaved(!wasSaved);
+    notifyWishlistChanged(delta);
 
-    if (saved) {
+    if (wasSaved) {
       const { error } = await supabase
         .from('wishlists')
         .delete()
         .eq('user_id', userId)
         .eq('product_id', product.id);
       if (error) {
+        setSaved(wasSaved);
+        notifyWishlistChanged(-delta);
         setInsertError('Could not remove this style. Please try again.');
         flashIconError();
+        setUpdating(false);
         return;
       }
-      setSaved(false);
       notifyWishlistChanged();
       track.wishlistRemoved({ product_id: product.id, product_handle: product.handle, source });
     } else {
@@ -96,11 +106,13 @@ export default function WishlistButton({
         product_price: product.price,
       });
       if (error) {
+        setSaved(wasSaved);
+        notifyWishlistChanged(-delta);
         setInsertError('Could not save this style. Please try again.');
         flashIconError();
+        setUpdating(false);
         return;
       }
-      setSaved(true);
       notifyWishlistChanged();
       track.wishlistAdded({ product_id: product.id, product_handle: product.handle, source });
       markTaskCompleted('first_item_saved', source);
@@ -109,12 +121,11 @@ export default function WishlistButton({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           type: 'wishlist_reminder',
-          productTitle: product.title,
-          productImage: product.images[0] ?? '',
           productHandle: product.handle,
         }),
       }).catch(() => {});
     }
+    setUpdating(false);
   }
 
   if (loading) return null;
@@ -140,6 +151,7 @@ export default function WishlistButton({
         }}
         title={iconTitle}
         aria-label={iconTitle}
+        disabled={updating}
         className={`flex h-9 w-9 items-center justify-center border backdrop-blur-sm transition ${
           iconErr
             ? 'border-crimson-400/60 bg-wine-950/85 text-crimson-400'
@@ -161,6 +173,7 @@ export default function WishlistButton({
       <button
         type="button"
         onClick={toggle}
+        disabled={updating}
         title={!userId ? 'Sign in to save' : saved ? 'Remove from wishlist' : 'Save to wishlist'}
         className={`flex w-full items-center gap-2 border py-4 text-xs font-medium uppercase tracking-[0.2em] transition ${
           saved

@@ -5,6 +5,9 @@ export type ProductVariant = {
   colorHex: string;
   stock: number;
   sku: string;
+  sourceSku?: string;
+  price?: number;
+  currency?: string;
   shopifyVariantId?: string;
 };
 
@@ -33,6 +36,12 @@ export type Product = {
   isBestseller: boolean;
   material: string;
   careInstructions: string;
+  vendor?: string;
+  currency?: string;
+  updatedAt?: string;
+  seoTitle?: string;
+  seoDescription?: string;
+  imageAltTexts?: (string | null)[];
 };
 
 export type Collection = {

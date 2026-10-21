@@ -1,10 +1,11 @@
 import Link from 'next/link';
-import type { Metadata } from 'next';
+import { publicPageMetadata } from '@/lib/seo';
 
-export const metadata: Metadata = {
+export const metadata = publicPageMetadata({
   title: 'Privacy Policy',
-  description: 'How Velour collects, uses, and protects your personal information.',
-};
+  description: 'How Self Love collects, uses, and protects your personal information.',
+  path: '/pages/privacy',
+});
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -21,10 +22,10 @@ export default function PrivacyPage() {
       <p className="mb-2 text-xs font-medium uppercase tracking-[0.3em] text-gold-400">Legal</p>
       <h1 className="font-serif text-4xl font-light text-ivory">Privacy Policy</h1>
       <div className="mx-auto mt-4 mb-3 h-px w-12 bg-gold-400/40" />
-      <p className="mb-10 text-xs text-ivory-dim">Last updated: June 2026</p>
+      <p className="mb-10 text-xs text-ivory-dim">Last updated: October 2026</p>
 
       <Section title="1. Who We Are">
-        <p>Velour (&ldquo;we,&rdquo; &ldquo;us,&rdquo; or &ldquo;our&rdquo;) operates this website. We are committed to protecting your privacy with particular care given the personal nature of the products we sell. This policy explains what data we collect, how we use it, and your rights.</p>
+        <p>Self Love (&ldquo;we,&rdquo; &ldquo;us,&rdquo; or &ldquo;our&rdquo;) operates this website. We are committed to protecting your privacy with particular care given the personal nature of the products we sell. This policy explains what data we collect, how we use it, and your rights.</p>
         <p>Contact: <a href="/pages/contact" className="text-gold-400 hover:underline">Contact us</a> or email us directly via the contact form.</p>
       </Section>
 
@@ -32,7 +33,9 @@ export default function PrivacyPage() {
         <p><strong className="text-ivory">Account information:</strong> When you register, we collect your name and email address. This information is stored securely in our database.</p>
         <p><strong className="text-ivory">Wishlist data:</strong> Items you save to your wishlist are stored in our database linked to your account.</p>
         <p><strong className="text-ivory">Address information:</strong> If you provide a shipping address, it is stored in our database.</p>
-        <p><strong className="text-ivory">Browser-only data (never uploaded):</strong> Your fit profile measurements, AI preview images, and saved AI looks are stored exclusively in your browser&rsquo;s local storage. This data never leaves your device unless you explicitly choose to share it.</p>
+        <p><strong className="text-ivory">Bag contents:</strong> If you are signed in, the items in your bag are saved to your account so you can continue on another device, and we may send you a reminder email about items left in your bag. Signing out removes the bag from that browser.</p>
+        <p><strong className="text-ivory">Orders, returns and reviews:</strong> We keep your order and shipping status, return requests (including any photos you upload, which are private to you and our team), and reviews you write. Reviews are shown publicly under a masked name or &ldquo;Anonymous shopper&rdquo;; your email and phone are never shown.</p>
+        <p><strong className="text-ivory">Browser-only data:</strong> Your exact fit profile measurements, AI preview images and saved AI looks are stored in your browser&rsquo;s local storage and are not uploaded to our servers. See section 5 for what an AI preview request sends.</p>
         <p><strong className="text-ivory">Usage analytics:</strong> We use PostHog to collect anonymised usage data (pages visited, features used). This data does not include your measurements, wishlist product titles, or AI images. You may opt out via our cookie preferences.</p>
         <p><strong className="text-ivory">Payment data:</strong> Payments are processed by our payment provider. We do not store card numbers or full payment details on our servers.</p>
       </Section>
@@ -43,11 +46,12 @@ export default function PrivacyPage() {
       </Section>
 
       <Section title="4. Discreet Billing">
-        <p>All charges on your bank or credit card statement appear as <strong className="text-ivory">VLR APPAREL</strong> — never as &ldquo;Velour,&rdquo; &ldquo;intimate apparel,&rdquo; or any description that reveals the nature of your purchase. Packaging is similarly discreet.</p>
+        <p>Charges appear discreetly and never include &ldquo;intimate apparel&rdquo; or any description that reveals the nature of your purchase. Packaging is similarly discreet.</p>
       </Section>
 
       <Section title="5. AI Preview Privacy">
-        <p>Our AI Preview feature generates images based on your fit profile description. These images are generated on-demand and returned directly to your browser. They are not stored on our servers, not shared with third parties, and not used to train any AI model. The images persist only in your browser&rsquo;s local storage until you clear them.</p>
+        <p>When you request an AI preview, we send a short, general description derived from your fit profile &mdash; a height range, body shape and skin tone, never your exact measurements &mdash; together with the product name, through our server to our image-generation provider, Hugging Face, which creates the image. Please see Hugging Face&rsquo;s privacy policy for how it processes these requests.</p>
+        <p>The generated image is returned to your browser and is not stored on our servers. It stays in your browser&rsquo;s local storage until you clear it. AI previews only depict adult models.</p>
       </Section>
 
       <Section title="6. Cookies and Tracking">

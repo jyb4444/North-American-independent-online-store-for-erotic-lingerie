@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { sendAbandonedCartEmail } from '@/lib/email';
@@ -14,10 +15,19 @@ type CartSnapshot = {
   updated_at: string;
 };
 
+function isAuthorizedCronRequest(req: Request): boolean {
+  const expected = process.env.CRON_SECRET;
+  if (!expected) return false;
+  // Vercel Cron sends `Authorization: Bearer <CRON_SECRET>`; `x-cron-secret` is kept for manual runs.
+  const bearer = req.headers.get('authorization')?.replace(/^Bearer\s+/i, '');
+  const provided = bearer || req.headers.get('x-cron-secret') || '';
+  const a = Buffer.from(provided);
+  const b = Buffer.from(expected);
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
+}
+
 export async function GET(req: Request) {
-  // Verify cron secret to prevent unauthorized calls
-  const secret = req.headers.get('x-cron-secret');
-  if (secret !== process.env.CRON_SECRET) {
+  if (!isAuthorizedCronRequest(req)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 

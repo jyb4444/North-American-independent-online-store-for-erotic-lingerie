@@ -160,12 +160,14 @@ export default function QuickViewModal({ product, onClose }: Props) {
                 <h2 className="font-serif text-2xl font-light text-ivory">{product.title}</h2>
                 <WishlistButton product={product} variant="icon" source="quick_view" className="flex-shrink-0" />
               </div>
-              <div className="mt-2 flex items-center gap-1.5">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <Star key={i} size={11} className={i < Math.round(product.rating) ? 'fill-gold-400 text-gold-400' : 'text-wine-700'} />
-                ))}
-                <span className="text-[11px] text-ivory-dim">({product.reviewCount})</span>
-              </div>
+              {product.reviewCount > 0 && (
+                <div className="mt-2 flex items-center gap-1.5" aria-label={`Rated ${product.rating} out of 5`}>
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <Star key={i} size={11} className={i < Math.round(product.rating) ? 'fill-gold-400 text-gold-400' : 'text-wine-700'} />
+                  ))}
+                  <span className="text-[11px] text-ivory-dim">({product.reviewCount})</span>
+                </div>
+              )}
               <div className="mt-2 flex items-baseline gap-2">
                 <span className={`font-serif text-xl ${product.compareAtPrice ? 'text-crimson-400' : 'text-gold-400'}`}>
                   ${product.price.toFixed(2)}

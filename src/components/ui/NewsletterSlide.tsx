@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Mail } from 'lucide-react';
+import { isAgeVerified, isBlockingModalOpen } from '@/lib/popups';
 
 const DISMISSED_KEY = 'velour_newsletter_dismissed';
 const SUBSCRIBED_KEY = 'velour_newsletter_subscribed';
@@ -12,7 +13,8 @@ const DELAY_MS = 35_000; // 35s as fallback
 export default function NewsletterSlide() {
   const [visible, setVisible] = useState(false);
   const [email, setEmail] = useState('');
-  const [state, setState] = useState<'idle' | 'sending' | 'success'>('idle');
+  const [state, setState] = useState<'idle' | 'sending' | 'success' | 'error'>('idle');
+  const [error, setError] = useState('');
 
   useEffect(() => {
     // Never show if already dismissed or subscribed
@@ -23,8 +25,15 @@ export default function NewsletterSlide() {
 
     let triggered = false;
 
+    let retryId: number | undefined;
     function trigger() {
       if (triggered) return;
+      // Wait while the age gate or the first-order offer is on screen.
+      if (!isAgeVerified() || isBlockingModalOpen()) {
+        window.clearTimeout(retryId);
+        retryId = window.setTimeout(trigger, 5_000);
+        return;
+      }
       triggered = true;
       setVisible(true);
     }
@@ -42,6 +51,7 @@ export default function NewsletterSlide() {
     return () => {
       window.removeEventListener('scroll', onScroll);
       window.clearTimeout(timerId);
+      window.clearTimeout(retryId);
     };
   }, []);
 
@@ -53,13 +63,22 @@ export default function NewsletterSlide() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setState('sending');
+    setError('');
     try {
-      await fetch('/api/newsletter', {
+      const res = await fetch('/api/newsletter', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
       });
-    } catch {}
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({})) as { error?: string };
+        throw new Error(data.error ?? 'Could not subscribe. Please try again.');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not subscribe. Please try again.');
+      setState('error');
+      return;
+    }
     setState('success');
     localStorage.setItem(SUBSCRIBED_KEY, '1');
     setTimeout(() => setVisible(false), 3500);
@@ -86,7 +105,7 @@ export default function NewsletterSlide() {
 
           {state === 'success' ? (
             <div className="py-2 text-center">
-              <p className="font-serif text-lg font-light text-ivory">Welcome to Velour</p>
+              <p className="font-serif text-lg font-light text-ivory">Welcome to Self Love</p>
               <p className="mt-1 text-xs text-ivory-muted">
                 Your first private access email is on its way.
               </p>
@@ -122,6 +141,10 @@ export default function NewsletterSlide() {
                   {state === 'sending' ? 'Subscribing…' : 'Subscribe'}
                 </button>
               </form>
+
+              {state === 'error' && (
+                <p role="alert" className="mt-2 text-[11px] leading-relaxed text-crimson-400">{error}</p>
+              )}
 
               <p className="mt-3 text-center text-[10px] text-ivory-dim">
                 No spam. Unsubscribe anytime. Sent from a discreet address.

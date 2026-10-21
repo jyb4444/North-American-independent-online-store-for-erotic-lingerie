@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { shopifyFetch } from '@/lib/shopify/client';
-import { CREATE_CART_MUTATION, type CartLine, type CartCreateResult } from '@/lib/shopify/cart';
+import { CartError, createShopifyCart, type CartLine } from '@/lib/shopify/cart';
 import { getProductByHandle } from '@/lib/products';
 import { MOCK_PRODUCTS } from '@/mock/products';
 import type { CartItem } from '@/types';
@@ -30,13 +29,38 @@ async function resolveItemToLine(item: CartItem): Promise<CartLine | null> {
   return resolvedId ? { merchandiseId: resolvedId, quantity: item.quantity } : null;
 }
 
+function toQuantity(value: unknown): number | null {
+  const quantity = Number(value);
+  return Number.isInteger(quantity) && quantity >= 1 && quantity <= 99 ? quantity : null;
+}
+
 export async function POST(req: NextRequest) {
+  let body: { lines?: unknown; items?: unknown; giftCardCode?: unknown };
   try {
-    const { lines, items } = (await req.json()) as { lines?: CartLine[]; items?: CartItem[] };
-    const validLines = (lines ?? []).filter((line) => isShopifyVariantGid(line.merchandiseId));
-    const resolvedLines = items
-      ? (await Promise.all(items.map(resolveItemToLine))).filter((line): line is CartLine => !!line)
-      : [];
+    body = await req.json() as typeof body;
+  } catch {
+    return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
+  }
+
+  // Only merchandise + quantity are taken from the client; line attributes are server-controlled.
+  const validLines: CartLine[] = (Array.isArray(body.lines) ? body.lines : [])
+    .map((line: { merchandiseId?: unknown; quantity?: unknown }) => ({
+      merchandiseId: typeof line?.merchandiseId === 'string' ? line.merchandiseId : '',
+      quantity: toQuantity(line?.quantity) ?? 0,
+    }))
+    .filter((line) => isShopifyVariantGid(line.merchandiseId) && line.quantity > 0);
+  const items = (Array.isArray(body.items) ? body.items : []) as CartItem[];
+  if (items.some((item) => toQuantity(item?.quantity) === null)) {
+    return NextResponse.json({ error: 'Invalid item quantity.' }, { status: 400 });
+  }
+
+  const giftCardCode = typeof body.giftCardCode === 'string' ? body.giftCardCode.trim() : '';
+  if (giftCardCode.length > 64) {
+    return NextResponse.json({ error: 'Invalid gift card code.' }, { status: 400 });
+  }
+
+  try {
+    const resolvedLines = (await Promise.all(items.map(resolveItemToLine))).filter((line): line is CartLine => !!line);
     const cartLines = resolvedLines.length > 0 ? resolvedLines : validLines;
 
     if (cartLines.length === 0) {
@@ -46,22 +70,20 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const data = await shopifyFetch<CartCreateResult>({
-      query: CREATE_CART_MUTATION,
-      variables: { input: { lines: cartLines } },
-      cache: 'no-store',
+    const cart = await createShopifyCart({ lines: cartLines, giftCardCodes: giftCardCode ? [giftCardCode] : [] });
+
+    return NextResponse.json({
+      cartId: cart.id,
+      checkoutUrl: cart.checkoutUrl,
+      subtotal: cart.cost.subtotalAmount,
+      total: cart.cost.totalAmount,
+      appliedGiftCards: cart.appliedGiftCards,
     });
-
-    if (data.cartCreate.userErrors.length > 0) {
-      return NextResponse.json(
-        { error: data.cartCreate.userErrors[0].message },
-        { status: 422 }
-      );
-    }
-
-    return NextResponse.json({ checkoutUrl: data.cartCreate.cart.checkoutUrl });
   } catch (err) {
+    if (err instanceof CartError) {
+      return NextResponse.json({ error: err.message }, { status: 422 });
+    }
     console.error('Shopify cart creation failed:', err);
-    return NextResponse.json({ error: 'Failed to create cart' }, { status: 500 });
+    return NextResponse.json({ error: 'Could not start checkout. Please try again.' }, { status: 500 });
   }
 }

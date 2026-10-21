@@ -2,28 +2,30 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import Image from 'next/image';
 import { track } from '@/lib/analytics';
+import { AGE_COOKIE, AGE_VERIFIED_EVENT, isAgeVerified } from '@/lib/popups';
 
-const COOKIE_KEY = 'velour_age_verified';
 const COOKIE_DAYS = 30;
-
-function getAgeCookie(): boolean {
-  if (typeof document === 'undefined') return false;
-  return document.cookie.split(';').some((c) => c.trim().startsWith(`${COOKIE_KEY}=1`));
-}
 
 function setAgeCookie() {
   const expires = new Date(Date.now() + COOKIE_DAYS * 864e5).toUTCString();
   // SameSite=Strict prevents CSRF; Secure added in production via HSTS
-  document.cookie = `${COOKIE_KEY}=1; expires=${expires}; path=/; SameSite=Strict`;
+  document.cookie = `${AGE_COOKIE}=1; expires=${expires}; path=/; SameSite=Strict`;
 }
 
+/**
+ * Rendered on the server, so the gate is in the HTML before any JavaScript runs (no flash of
+ * content, and visitors without JavaScript cannot skip it). Verified visitors never see it:
+ * an inline <head> script marks <html data-age-verified> before first paint (CSS hides the
+ * gate), and it is removed from the DOM once hydrated.
+ */
 export default function AgeGate() {
-  const [show, setShow] = useState(false);
+  const [show, setShow] = useState(true);
 
   useEffect(() => {
     const id = window.setTimeout(() => {
-      if (!getAgeCookie()) setShow(true);
+      if (isAgeVerified()) setShow(false);
     }, 0);
     return () => window.clearTimeout(id);
   }, []);
@@ -32,6 +34,7 @@ export default function AgeGate() {
     setAgeCookie();
     track.ageGatePassed();
     setShow(false);
+    window.dispatchEvent(new Event(AGE_VERIFIED_EVENT));
   }
 
   function handleDeny() {
@@ -40,11 +43,16 @@ export default function AgeGate() {
   }
 
   return (
-    <AnimatePresence>
+    // initial={false}: render the visible state on the server instead of fading in after hydration.
+    <AnimatePresence initial={false}>
       {show && (
         <motion.div
           initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[9999] flex items-center justify-center bg-wine-950/95 backdrop-blur-md"
+          className="age-gate fixed inset-0 z-[9999] flex items-center justify-center bg-wine-950/95 backdrop-blur-md"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="age-gate-title"
+          data-blocking-modal
         >
           <div className="pointer-events-none absolute inset-0 overflow-hidden">
             <div className="absolute left-1/2 top-0 h-px w-48 -translate-x-1/2 bg-gradient-to-r from-transparent via-gold-400/40 to-transparent" />
@@ -60,8 +68,15 @@ export default function AgeGate() {
             <span className="absolute left-4 top-4 font-serif text-lg text-gold-600/40 select-none">✦</span>
             <span className="absolute right-4 top-4 font-serif text-lg text-gold-600/40 select-none">✦</span>
 
-            <p className="mb-1 font-serif text-xs font-light uppercase tracking-[0.3em] text-gold-400">Velour</p>
-            <h1 className="mb-1 font-serif text-3xl font-light italic text-ivory">Adults Only</h1>
+            <Image
+              src="/logo.png"
+              alt="Self Love"
+              width={72}
+              height={72}
+              className="mx-auto mb-3 h-16 w-16 rounded-full object-cover"
+            />
+            <p className="mb-1 text-xs font-semibold uppercase tracking-[0.3em] text-gold-400">Self Love</p>
+            <h2 id="age-gate-title" className="mb-1 font-serif text-3xl font-light italic text-ivory">Adults Only</h2>
             <div className="mx-auto mb-6 h-px w-12 bg-gold-400/50" />
             <p className="mb-8 text-sm leading-relaxed text-ivory-muted">
               This boutique contains adult content for individuals{' '}

@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { useState } from 'react';
 import { Mail } from 'lucide-react';
 
@@ -24,7 +25,7 @@ function NewsletterForm() {
   if (state === 'success') {
     return (
       <p className="text-xs text-gold-400">
-        You&rsquo;re on the list. Welcome to Velour.
+        You&rsquo;re on the list. Welcome to Self Love.
       </p>
     );
   }
@@ -60,7 +61,14 @@ export default function Footer() {
 
         {/* Brand + divider */}
         <div className="mb-12 text-center">
-          <p className="font-serif text-2xl font-light italic text-gold-400">Velour</p>
+          <Image
+            src="/logo.png"
+            alt="Self Love"
+            width={72}
+            height={72}
+            className="mx-auto h-16 w-16 rounded-full object-cover"
+          />
+          <p className="mt-3 text-sm font-semibold uppercase tracking-[0.24em] text-ivory">Self Love</p>
           <div className="mx-auto mt-3 h-px w-12 bg-gold-600/40" />
         </div>
 
@@ -70,7 +78,7 @@ export default function Footer() {
               About
             </p>
             <p className="text-xs leading-relaxed">
-              Premium intimate apparel with private fit guidance and saved style tools.
+              Premium intimate apparel with discreet shopping and curated essentials.
             </p>
             <div className="mt-6">
               <p className="mb-1 flex items-center gap-1.5 text-xs font-medium uppercase tracking-[0.2em] text-ivory-muted">
@@ -83,9 +91,7 @@ export default function Footer() {
           <div>
             <p className="mb-5 text-xs font-medium uppercase tracking-[0.3em] text-ivory-muted">Shop</p>
             <ul className="space-y-2.5 text-xs">
-              {[['New Arrivals', '/collections/new-arrivals'], ['Bestsellers', '/collections/bestsellers'],
-                ['Babydoll', '/collections/babydoll'], ['Bodysuits', '/collections/bodysuits'],
-                ['Plus Size', '/collections/plus-size']].map(([label, href]) => (
+              {[['Shop ALL', '/collections/all'], ['SALES', '/sale'], ['Hosiery', '/collections/hosiery']].map(([label, href]) => (
                 <li key={label}>
                   <Link href={href} className="transition hover:text-gold-400">{label}</Link>
                 </li>
@@ -98,7 +104,7 @@ export default function Footer() {
             <ul className="space-y-2.5 text-xs">
               {[['Size Guide', '/pages/size-guide'], ['Fulfillment Notes', '/pages/shipping'],
                 ['Returns', '/pages/returns'], ['FAQ', '/pages/faq'],
-                ['Contact Us', '/pages/contact']].map(([label, href]) => (
+                ['Track Order', '/track'], ['Contact Us', '/pages/contact']].map(([label, href]) => (
                 <li key={label}>
                   <Link href={href} className="transition hover:text-gold-400">{label}</Link>
                 </li>
@@ -109,8 +115,9 @@ export default function Footer() {
           <div>
             <p className="mb-5 text-xs font-medium uppercase tracking-[0.3em] text-ivory-muted">Account</p>
             <ul className="space-y-2.5 text-xs">
-              {[['My Account', '/account'], ['Private Activity', '/account/orders'],
-                ['Style Tools', '/account/membership'],
+              {[['My Account', '/account'], ['Order History', '/account/orders'],
+                ['Return Items', '/returns'],
+                ['Track Package', '/track'],
                 ['Gift Cards', '/pages/gift-card'],
                 ['Referral Program', '/pages/referral']].map(([label, href]) => (
                 <li key={label}>
@@ -122,7 +129,7 @@ export default function Footer() {
         </div>
 
         <div className="mt-12 flex flex-col items-center justify-between gap-3 border-t border-gold-600/10 pt-8 text-xs md:flex-row">
-          <p>© {new Date().getFullYear()} Velour. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} Self Love. All rights reserved.</p>
           <div className="flex gap-5">
             <Link href="/pages/privacy" className="hover:text-gold-400 transition">Privacy Policy</Link>
             <Link href="/pages/terms" className="hover:text-gold-400 transition">Terms of Service</Link>

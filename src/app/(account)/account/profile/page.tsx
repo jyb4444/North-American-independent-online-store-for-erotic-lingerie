@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Eye, EyeOff, Check } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import AddressManager from '@/components/account/AddressManager';
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -36,7 +37,7 @@ export default function ProfilePage() {
       setFirstName(user.user_metadata?.first_name ?? '');
       setLastName(user.user_metadata?.last_name ?? '');
     });
-  }, []);
+  }, [router, supabase]);
 
   async function handleProfileSave(e: React.FormEvent) {
     e.preventDefault();
@@ -94,7 +95,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="mx-auto max-w-xl px-4 py-14 sm:px-6">
+    <div className="mx-auto max-w-2xl px-4 py-14 sm:px-6">
       <div className="mb-8 flex items-center justify-between">
         <div>
           <p className="mb-1 text-xs font-medium uppercase tracking-[0.3em] text-gold-400">Account</p>
@@ -111,10 +112,10 @@ export default function ProfilePage() {
         <form onSubmit={handleProfileSave} className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="mb-1.5 block text-xs font-medium uppercase tracking-widest text-ivory-muted">
+              <label htmlFor="profile-first-name" className="mb-1.5 block text-xs font-medium uppercase tracking-widest text-ivory-muted">
                 First Name
               </label>
-              <input
+              <input id="profile-first-name"
                 type="text"
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
@@ -122,10 +123,10 @@ export default function ProfilePage() {
               />
             </div>
             <div>
-              <label className="mb-1.5 block text-xs font-medium uppercase tracking-widest text-ivory-muted">
+              <label htmlFor="profile-last-name" className="mb-1.5 block text-xs font-medium uppercase tracking-widest text-ivory-muted">
                 Last Name
               </label>
-              <input
+              <input id="profile-last-name"
                 type="text"
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
@@ -135,10 +136,10 @@ export default function ProfilePage() {
           </div>
 
           <div>
-            <label className="mb-1.5 block text-xs font-medium uppercase tracking-widest text-ivory-muted">
+            <label htmlFor="profile-email" className="mb-1.5 block text-xs font-medium uppercase tracking-widest text-ivory-muted">
               Email
             </label>
-            <input
+            <input id="profile-email"
               type="email"
               value={email}
               disabled
@@ -166,7 +167,7 @@ export default function ProfilePage() {
       </section>
 
       {/* ── Change Password ── */}
-      <section className="border border-gold-600/20 bg-wine-900 p-6">
+      <section className="mb-8 border border-gold-600/20 bg-wine-900 p-6">
         <h2 className="mb-5 font-serif text-lg font-light text-ivory">Change Password</h2>
         <form onSubmit={handlePasswordChange} className="space-y-4">
           {[
@@ -175,11 +176,11 @@ export default function ProfilePage() {
             { label: 'Confirm New Password', value: confirmPw, setter: setConfirmPw },
           ].map(({ label, value, setter }) => (
             <div key={label}>
-              <label className="mb-1.5 block text-xs font-medium uppercase tracking-widest text-ivory-muted">
+              <label htmlFor={`profile-${label.toLowerCase().replace(/ /g, '-')}`} className="mb-1.5 block text-xs font-medium uppercase tracking-widest text-ivory-muted">
                 {label}
               </label>
               <div className="relative">
-                <input
+                <input id={`profile-${label.toLowerCase().replace(/ /g, '-')}`}
                   type={showPw ? 'text' : 'password'}
                   value={value}
                   onChange={(e) => setter(e.target.value)}
@@ -189,6 +190,7 @@ export default function ProfilePage() {
                 />
                 {label === 'Current Password' && (
                   <button type="button" onClick={() => setShowPw((v) => !v)}
+                    aria-label={showPw ? 'Hide passwords' : 'Show passwords'}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-ivory-dim hover:text-gold-400 transition">
                     {showPw ? <EyeOff size={13} /> : <Eye size={13} />}
                   </button>
@@ -213,6 +215,10 @@ export default function ProfilePage() {
             {pwSuccess ? <><Check size={13} /> Password Updated</> : pwLoading ? '...' : 'Update Password'}
           </button>
         </form>
+      </section>
+
+      <section className="border border-gold-600/20 bg-wine-900 p-6">
+        <AddressManager />
       </section>
     </div>
   );

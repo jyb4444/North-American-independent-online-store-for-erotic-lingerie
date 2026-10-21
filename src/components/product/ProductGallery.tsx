@@ -14,10 +14,11 @@ type Props = {
   video?: string;
   productId: string;
   title: string;
+  altTexts?: (string | null)[];
   modelMeasurements?: ModelMeasurements;
 };
 
-export default function ProductGallery({ images, video, productId, title, modelMeasurements }: Props) {
+export default function ProductGallery({ images, video, productId, title, altTexts, modelMeasurements }: Props) {
   // Combine images + optional video slot
   const mediaItems: string[] = video ? [...images, VIDEO_SENTINEL] : images;
   const [activeIndex, setActiveIndex] = useState(0);
@@ -73,7 +74,7 @@ export default function ProductGallery({ images, video, productId, title, modelM
               >
                 <Image
                   src={mediaItems[activeIndex]}
-                  alt={`${title} — image ${activeIndex + 1}`}
+                  alt={altTexts?.[activeIndex] || `${title} — image ${activeIndex + 1}`}
                   fill
                   priority={activeIndex === 0}
                   sizes="(max-width: 768px) 100vw, 55vw"
@@ -129,7 +130,7 @@ export default function ProductGallery({ images, video, productId, title, modelM
                     <Play size={18} className="fill-gold-400 text-gold-400" />
                   </div>
                 ) : (
-                  <Image src={src} alt={`Thumbnail ${i + 1}`} fill sizes="64px" className="object-cover" />
+                  <Image src={src} alt={altTexts?.[i] || `${title} thumbnail ${i + 1}`} fill sizes="64px" className="object-cover" />
                 )}
               </button>
             );

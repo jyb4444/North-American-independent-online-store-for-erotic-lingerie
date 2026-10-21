@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { TRY_ON_PRODUCT_PATH } from '@/lib/featured';
 
 type Slide = {
   id: string;
@@ -25,25 +26,25 @@ const SLIDES: Slide[] = [
     headline: 'See It On\nYour Shape',
     sub: 'Preview lingerie styles on a figure matched to your body profile before you decide.',
     cta: 'Try AI Preview',
-    href: '/products/lace-halter-babydoll-set',
+    href: TRY_ON_PRODUCT_PATH,
   },
   {
     id: 's2',
     image: 'https://images.unsplash.com/photo-1642945680515-faada4c0ca7b?auto=format&fit=crop&w=1600&h=900&q=80',
-    tag: 'Personalized Monthly Membership',
-    headline: 'Lingerie Chosen\nFor You',
-    sub: 'Gold, Platinum, and Diamond members receive monthly style picks matched to their body profile and preferences.',
-    cta: 'Explore Membership',
-    href: '/membership',
+    tag: 'Sheer Hosiery Edit',
+    headline: 'Hosiery Edit\nFor Every Look',
+    sub: 'Explore sheer, lace, and statement hosiery selected for the current private edit.',
+    cta: 'Shop Hosiery',
+    href: '/collections/hosiery',
   },
   {
     id: 's3',
     image: 'https://images.unsplash.com/photo-1526404746352-668ded9b50ab?auto=format&fit=crop&w=1600&h=900&q=80',
-    tag: 'Intimacy & Music Therapy',
-    headline: 'Support Beyond\nThe Product',
-    sub: 'Diamond members and qualifying customers can access 30-minute sessions for emotional, intimacy, and relationship support.',
-    cta: 'Learn About Therapy',
-    href: '/pages/about',
+    tag: 'Current Markdowns',
+    headline: 'Private Sale\nSelections',
+    sub: 'Browse styles with active sale pricing while they are still available.',
+    cta: 'Shop SALES',
+    href: '/sale',
   },
 ];
 
@@ -65,13 +66,13 @@ export default function HeroCarousel() {
     <div className="relative h-[88vh] min-h-[560px] overflow-hidden">
       <div ref={emblaRef} className="h-full overflow-hidden">
         <div className="flex h-full">
-          {SLIDES.map((slide) => (
+          {SLIDES.map((slide, index) => (
             <div key={slide.id} className="relative h-full min-w-full flex-shrink-0">
               <Image
                 src={slide.image}
                 alt={slide.headline}
                 fill
-                priority
+                priority={index === 0}
                 sizes="100vw"
                 className="object-cover object-center"
               />
@@ -84,11 +85,15 @@ export default function HeroCarousel() {
                 <p className="mb-4 text-xs font-medium uppercase tracking-[0.4em] text-gold-400">
                   {slide.tag}
                 </p>
-                <h1 className="font-serif max-w-xl whitespace-pre-line text-6xl font-light leading-tight tracking-tight text-ivory md:text-7xl">
+                {index === 0 ? <h1 className="font-serif max-w-xl whitespace-pre-line text-6xl font-light leading-tight tracking-tight text-ivory md:text-7xl">
                   {slide.headline.split('\n')[0]}
                   <br />
                   <span className="italic text-gold-400">{slide.headline.split('\n')[1]}</span>
-                </h1>
+                </h1> : <h2 className="font-serif max-w-xl whitespace-pre-line text-6xl font-light leading-tight tracking-tight text-ivory md:text-7xl">
+                  {slide.headline.split('\n')[0]}
+                  <br />
+                  <span className="italic text-gold-400">{slide.headline.split('\n')[1]}</span>
+                </h2>}
                 <p className="mt-5 max-w-xs text-sm font-light leading-relaxed text-ivory-muted">
                   {slide.sub}
                 </p>

@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { onAgeVerified } from '@/lib/popups';
 import { Gift, X } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
@@ -33,17 +34,20 @@ export default function FirstFreeSignupModal() {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
-    const id = window.setTimeout(async () => {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) return;
+    // Never on top of the age gate: start the delay only once the visitor is verified.
+    let id: number | undefined;
+    const stop = onAgeVerified(() => {
+      id = window.setTimeout(async () => {
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) return;
 
-      const stored = readOfferState();
-      if (stored.dismissedAt || stored.reservedAt) return;
-      setOpen(true);
-    }, 900);
-
-    return () => window.clearTimeout(id);
+        const stored = readOfferState();
+        if (stored.dismissedAt || stored.reservedAt) return;
+        setOpen(true);
+      }, 900);
+    });
+    return () => { stop(); window.clearTimeout(id); };
   }, []);
 
   function dismiss() {
@@ -59,7 +63,7 @@ export default function FirstFreeSignupModal() {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[90] flex items-center justify-center bg-wine-950/75 px-4 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[90] flex items-center justify-center bg-wine-950/75 px-4 backdrop-blur-sm" data-blocking-modal>
       <div className="relative w-full max-w-md border border-gold-600/30 bg-wine-900 px-6 py-6 shadow-2xl">
         <button
           type="button"

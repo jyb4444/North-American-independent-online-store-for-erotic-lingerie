@@ -12,17 +12,65 @@ import ContextTranslateMenu from '@/components/layout/ContextTranslateMenu';
 import FirstFreeSignupModal from '@/components/promotion/FirstFreeSignupModal';
 import MobileBottomNav from '@/components/layout/MobileBottomNav';
 import NewsletterSlide from '@/components/ui/NewsletterSlide';
+import { AGE_GATE_PREPAINT_SCRIPT } from '@/lib/popups';
+import JsonLd from '@/components/seo/JsonLd';
+import { DEFAULT_DESCRIPTION, SITE_NAME, SITE_URL, absoluteUrl } from '@/lib/seo';
+
+const isPreviewDeployment = process.env.VERCEL_ENV === 'preview';
 
 export const metadata: Metadata = {
-  title: { default: 'Velour — Premium Intimate Apparel', template: '%s | Velour' },
-  description: 'Discover luxurious intimate apparel with private fit guidance and saved style tools.',
-  robots: { index: true, follow: true },
+  metadataBase: new URL(SITE_URL),
+  title: { default: 'Self Love — Premium Intimate Apparel', template: '%s | Self Love' },
+  description: DEFAULT_DESCRIPTION,
+  applicationName: SITE_NAME,
+  category: 'shopping',
+  icons: {
+    icon: '/logo.png',
+    apple: '/logo.png',
+  },
+  robots: { index: !isPreviewDeployment, follow: !isPreviewDeployment },
+  openGraph: {
+    type: 'website',
+    siteName: SITE_NAME,
+    title: 'Self Love — Premium Intimate Apparel',
+    description: DEFAULT_DESCRIPTION,
+    url: SITE_URL,
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Self Love — Premium Intimate Apparel',
+    description: DEFAULT_DESCRIPTION,
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    // suppressHydrationWarning: the <head> script may add data-age-verified before hydration.
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: AGE_GATE_PREPAINT_SCRIPT }} />
+      </head>
       <body className="font-sans bg-wine-950 text-ivory antialiased">
+        <JsonLd data={{
+          '@context': 'https://schema.org',
+          '@graph': [
+            {
+              '@type': 'Organization',
+              '@id': `${SITE_URL}/#organization`,
+              name: SITE_NAME,
+              url: SITE_URL,
+              logo: absoluteUrl('/logo.png'),
+            },
+            {
+              '@type': 'WebSite',
+              '@id': `${SITE_URL}/#website`,
+              name: SITE_NAME,
+              url: SITE_URL,
+              publisher: { '@id': `${SITE_URL}/#organization` },
+              inLanguage: 'en-US',
+            },
+          ],
+        }} />
         <AnalyticsProvider>
           <AgeGate />
           <Header />

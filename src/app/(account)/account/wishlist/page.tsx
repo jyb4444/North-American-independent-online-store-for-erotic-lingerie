@@ -10,7 +10,7 @@ import { useCartStore } from '@/store/cart';
 import { track } from '@/lib/analytics';
 import { notifyWishlistChanged } from '@/hooks/useWishlistSummary';
 import WishlistReminderBanner from '@/components/wishlist/WishlistReminderBanner';
-import { MOCK_PRODUCTS } from '@/mock/products';
+import { loadCatalog } from '@/hooks/useCatalog';
 import type { Database } from '@/lib/supabase/types';
 
 type WishlistRow = Database['public']['Tables']['wishlists']['Row'];
@@ -36,7 +36,8 @@ export default function WishlistPage() {
   }, [supabase]);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      const user = session?.user;
       if (!user) {
         router.push('/login');
         return;
@@ -55,7 +56,7 @@ export default function WishlistPage() {
     try {
       await supabase.from('wishlists').delete().eq('id', id);
       setItems((prev) => prev.filter((i) => i.id !== id));
-      notifyWishlistChanged();
+      notifyWishlistChanged(-1);
       track.wishlistRemoved({
         product_id: item.product_id,
         product_handle: item.product_handle,
@@ -73,8 +74,10 @@ export default function WishlistPage() {
     setMessage('');
 
     try {
-      const product = MOCK_PRODUCTS.find((p) => p.id === item.product_id || p.handle === item.product_handle);
-      const variant = product?.variants[0];
+      const catalog = await loadCatalog();
+      const product = catalog.find((p) => p.id === item.product_id || p.handle === item.product_handle);
+      // First variant that is actually in stock; the saved price may be out of date.
+      const variant = product?.variants.find((v) => v.stock > 0);
 
       if (!product || !variant) {
         setMessage('This style is no longer available. It has been kept in your wishlist.');
@@ -83,20 +86,21 @@ export default function WishlistPage() {
 
       addItem({
         variantId: variant.id,
-        productId: item.product_id,
-        title: item.product_title,
-        image: item.product_image ?? product.images[0] ?? '',
-        price: item.product_price ?? product.price,
+        productId: product.id,
+        title: product.title,
+        image: product.images[0] ?? item.product_image ?? '',
+        price: product.price,
         size: variant.size,
         color: variant.color,
         colorHex: variant.colorHex,
         quantity: 1,
+        shopifyVariantId: variant.shopifyVariantId,
       });
       track.addedToCart(product, variant, 1);
 
       await supabase.from('wishlists').delete().eq('id', item.id);
       setItems((prev) => prev.filter((i) => i.id !== item.id));
-      notifyWishlistChanged();
+      notifyWishlistChanged(-1);
       track.wishlistRemoved({
         product_id: item.product_id,
         product_handle: item.product_handle,

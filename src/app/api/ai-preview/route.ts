@@ -39,6 +39,22 @@ function getHuggingFaceConfig() {
   };
 }
 
+// The preview depicts an adult model in lingerie. Refuse anything that could describe a
+// minor or ask for explicit imagery; the description should only cover body shape and size.
+const MINOR_TERMS = /\b(child|children|kid|kids|minor|minors|underage|under-age|teen|teens|teenage|teenager|young girl|young boy|little girl|schoolgirl|school girl|preteen|pre-teen|loli|lolita|juvenile|infant|toddler|baby)\b/i;
+const EXPLICIT_TERMS = /\b(nude|naked|nudity|topless|bottomless|nsfw|porn|porno|pornographic|explicit|sex|sexual|genital|genitals|nipple|nipples|erotic)\b/i;
+
+function refuseBodyDescription(text: string): string | null {
+  const ages = [...text.matchAll(/\b(\d{1,2})\s*(?:yo|y\/o|yrs?|years?)(?:\s*old)?\b/gi)].map((match) => Number(match[1]));
+  if (MINOR_TERMS.test(text) || ages.some((age) => age < 18)) {
+    return 'AI preview only depicts adult models. Please describe body shape and size only.';
+  }
+  if (EXPLICIT_TERMS.test(text)) {
+    return 'Please describe body shape and size only.';
+  }
+  return null;
+}
+
 function buildPrompt(productTitle: string, productDescription: string, bodyDescription: string): string {
   const styleKeywords = productDescription
     .replace(/[^a-zA-Z\s,]/g, '')
@@ -52,7 +68,7 @@ function buildPrompt(productTitle: string, productDescription: string, bodyDescr
     .join(', ');
 
   return [
-    `Tasteful high-end fashion editorial photograph of ${bodyDescription}`,
+    `Tasteful high-end fashion editorial photograph of an adult model (25+ years old), ${bodyDescription}`,
     `wearing a garment inspired by ${productTitle}`,
     styleKeywords ? `with ${styleKeywords} fabric details` : '',
     'professional studio fashion photography',
@@ -65,6 +81,9 @@ function buildPrompt(productTitle: string, productDescription: string, bodyDescr
 
 function buildNegativePrompt(): string {
   return [
+    'minor',
+    'child',
+    'teenager',
     'explicit nudity',
     'pornographic',
     'distorted body',
@@ -130,23 +149,11 @@ export async function POST(req: Request) {
   const ip = getClientIp(req);
   const rlKey = user ? `ai-preview:${user.id}` : `ai-preview-guest:${ip}`;
   const rlLimit = user ? 5 : 2;
-  const { allowed } = rateLimit(rlKey, { limit: rlLimit, windowMs: 60_000 });
+  const { allowed } = await rateLimit(rlKey, { limit: rlLimit, windowMs: 60_000 });
   if (!allowed) {
     return NextResponse.json(
       { error: 'Too many requests. Please wait a moment.' },
       { status: 429 }
-    );
-  }
-
-  const config = getHuggingFaceConfig();
-
-  if (!config.token) {
-    return NextResponse.json(
-      {
-        error:
-          'AI preview requires HF_TOKEN. Create a Hugging Face token, add HF_TOKEN to .env.local, then restart the dev server.',
-      },
-      { status: 503 }
     );
   }
 
@@ -158,8 +165,25 @@ export async function POST(req: Request) {
   }
 
   const { productTitle, productDescription, bodyDescription } = body;
-  if (!productTitle || !bodyDescription) {
+  if (typeof productTitle !== 'string' || typeof bodyDescription !== 'string' || !productTitle.trim() || !bodyDescription.trim()) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+  }
+  if (productTitle.length > 200 || bodyDescription.length > 300 || (typeof productDescription === 'string' && productDescription.length > 2000)) {
+    return NextResponse.json({ error: 'Description is too long.' }, { status: 400 });
+  }
+  const refusal = refuseBodyDescription(bodyDescription);
+  if (refusal) return NextResponse.json({ error: refusal }, { status: 400 });
+
+  const config = getHuggingFaceConfig();
+
+  if (!config.token) {
+    return NextResponse.json(
+      {
+        error:
+          'AI preview requires HF_TOKEN. Create a Hugging Face token, add HF_TOKEN to .env.local, then restart the dev server.',
+      },
+      { status: 503 }
+    );
   }
 
   const prompt = buildPrompt(productTitle, productDescription ?? '', bodyDescription);

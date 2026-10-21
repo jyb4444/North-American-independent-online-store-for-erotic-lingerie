@@ -71,8 +71,8 @@ export default function ContactPage() {
         <form onSubmit={handleSubmit} className="space-y-5 border border-gold-600/20 bg-wine-900 p-8">
           <div className="grid gap-5 sm:grid-cols-2">
             <div>
-              <label className="mb-1.5 block text-xs font-medium uppercase tracking-widest text-ivory-muted">Name</label>
-              <input
+              <label htmlFor="contact-name" className="mb-1.5 block text-xs font-medium uppercase tracking-widest text-ivory-muted">Name</label>
+              <input id="contact-name"
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
@@ -82,8 +82,8 @@ export default function ContactPage() {
               />
             </div>
             <div>
-              <label className="mb-1.5 block text-xs font-medium uppercase tracking-widest text-ivory-muted">Email</label>
-              <input
+              <label htmlFor="contact-email" className="mb-1.5 block text-xs font-medium uppercase tracking-widest text-ivory-muted">Email</label>
+              <input id="contact-email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -95,8 +95,8 @@ export default function ContactPage() {
           </div>
 
           <div>
-            <label className="mb-1.5 block text-xs font-medium uppercase tracking-widest text-ivory-muted">Subject</label>
-            <select
+            <label htmlFor="contact-subject" className="mb-1.5 block text-xs font-medium uppercase tracking-widest text-ivory-muted">Subject</label>
+            <select id="contact-subject"
               value={subject}
               onChange={(e) => setSubject(e.target.value as typeof subject)}
               className="w-full border border-wine-700 bg-wine-800 px-3 py-2.5 text-sm text-ivory focus:border-gold-400 focus:outline-none transition"
@@ -106,8 +106,8 @@ export default function ContactPage() {
           </div>
 
           <div>
-            <label className="mb-1.5 block text-xs font-medium uppercase tracking-widest text-ivory-muted">Message</label>
-            <textarea
+            <label htmlFor="contact-message" className="mb-1.5 block text-xs font-medium uppercase tracking-widest text-ivory-muted">Message</label>
+            <textarea id="contact-message"
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               required

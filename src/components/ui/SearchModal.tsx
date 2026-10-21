@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Search, X } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { MOCK_PRODUCTS } from '@/mock/products';
+import { useCatalog } from '@/hooks/useCatalog';
 
 type Props = { open: boolean; onClose: () => void };
 
@@ -31,8 +31,11 @@ export default function SearchModal({ open, onClose }: Props) {
     return () => document.removeEventListener('keydown', handleKey);
   }, [onClose]);
 
+  // Loaded when the panel first opens; this is the live (Shopify) catalogue.
+  const { products: catalog, loading } = useCatalog(open);
+
   const q = query.trim().toLowerCase();
-  const results = q.length < 2 ? [] : MOCK_PRODUCTS.filter((p) =>
+  const results = q.length < 2 ? [] : catalog.filter((p) =>
     p.title.toLowerCase().includes(q) ||
     p.description.toLowerCase().includes(q) ||
     p.category.toLowerCase().includes(q) ||
@@ -40,12 +43,9 @@ export default function SearchModal({ open, onClose }: Props) {
   ).slice(0, 8);
 
   const categoryLinks = [
-    { href: '/collections/all', label: 'Shop ALL', description: 'Browse every current style', products: MOCK_PRODUCTS.slice(0, 4) },
-    { href: '/collections/new-arrivals', label: 'New In', description: 'Recently added styles', products: MOCK_PRODUCTS.filter((p) => p.isNew).slice(0, 4) },
-    { href: '/collections/discount', label: 'Discount', description: 'Current markdowns', products: MOCK_PRODUCTS.filter((p) => p.compareAtPrice).slice(0, 4) },
-    { href: '/collections/sets', label: 'Sets', description: 'Coordinated pieces', products: MOCK_PRODUCTS.filter((p) => ['bra-set', 'babydoll'].includes(p.category)).slice(0, 4) },
-    { href: '/collections/first-free', label: 'First Free', description: 'Signup offer eligible styles', products: MOCK_PRODUCTS.slice(0, 4) },
-    { href: '/pages/about', label: 'About Us', description: 'Brand story coming soon', products: [] },
+    { href: '/collections/all', label: 'Shop ALL', description: 'Browse every current style', products: catalog.slice(0, 4) },
+    { href: '/sale', label: 'SALES', description: 'Current markdowns', products: catalog.filter((p) => p.compareAtPrice).slice(0, 4) },
+    { href: '/collections/hosiery', label: 'Hosiery', description: 'Sheer and statement hosiery', products: catalog.filter((p) => p.category === 'hosiery').slice(0, 4) },
   ];
 
   return (
@@ -59,6 +59,9 @@ export default function SearchModal({ open, onClose }: Props) {
             initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.2 }}
             className="fixed left-0 right-0 top-0 z-50 border-b border-gold-600/20 bg-wine-900 px-4 pb-6 pt-4 shadow-2xl"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Search"
           >
             {/* Input */}
             <div className="mx-auto flex max-w-2xl items-center gap-3">
@@ -69,6 +72,7 @@ export default function SearchModal({ open, onClose }: Props) {
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search products, categories, styles…"
+                aria-label="Search products"
                 className="flex-1 bg-transparent text-base text-ivory placeholder-ivory-dim focus:outline-none"
               />
               <button onClick={onClose} className="text-ivory-dim hover:text-gold-400 transition">
@@ -79,7 +83,9 @@ export default function SearchModal({ open, onClose }: Props) {
             {/* Results */}
             <div className="mx-auto mt-5 max-w-2xl">
               {q.length >= 2 ? (
-                results.length === 0 ? (
+                loading ? (
+                  <p className="text-sm text-ivory-muted">Searching…</p>
+                ) : results.length === 0 ? (
                   <p className="text-sm text-ivory-muted">No results for &quot;{query}&quot;</p>
                 ) : (
                   <>

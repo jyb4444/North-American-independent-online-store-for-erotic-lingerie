@@ -1,7 +1,7 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import { SlidersHorizontal } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Check, ChevronDown } from 'lucide-react';
 import ProductCard from '@/components/product/ProductCard';
 import Breadcrumb from '@/components/ui/Breadcrumb';
 import QuickViewModal from '@/components/ui/QuickViewModal';
@@ -15,25 +15,40 @@ type Props = {
   baseProducts: Product[];
 };
 
-export default function CollectionPageClient({ handle, collection, baseProducts }: Props) {
-  const allColors = useMemo(() => {
-    const map = new Map<string, string>();
-    baseProducts.forEach((p) => p.variants.forEach((v) => map.set(v.color, v.colorHex)));
-    return Array.from(map.entries());
-  }, [baseProducts]);
+const SORT_OPTIONS: { value: SortKey; label: string }[] = [
+  { value: 'default', label: 'Featured' },
+  { value: 'newest', label: 'Newest' },
+  { value: 'price-asc', label: 'Price: Low to High' },
+  { value: 'price-desc', label: 'Price: High to Low' },
+  { value: 'rating', label: 'Top Rated' },
+];
 
+export default function CollectionPageClient({ handle, collection, baseProducts }: Props) {
   const { savePosition } = useScrollRestore(`collection-${handle}`);
   const [sort, setSort] = useState<SortKey>('default');
-  const [filterColor, setFilterColor] = useState<string | null>(null);
-  const [filterDiscount, setFilterDiscount] = useState(false);
-  const [showFilters, setShowFilters] = useState(false);
+  const [sortOpen, setSortOpen] = useState(false);
+  const sortMenuRef = useRef<HTMLDivElement>(null);
   const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
+
+  useEffect(() => {
+    function closeOnOutsideClick(event: MouseEvent) {
+      if (sortMenuRef.current && !sortMenuRef.current.contains(event.target as Node)) setSortOpen(false);
+    }
+
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === 'Escape') setSortOpen(false);
+    }
+
+    document.addEventListener('mousedown', closeOnOutsideClick);
+    document.addEventListener('keydown', closeOnEscape);
+    return () => {
+      document.removeEventListener('mousedown', closeOnOutsideClick);
+      document.removeEventListener('keydown', closeOnEscape);
+    };
+  }, []);
 
   const products = useMemo(() => {
     let list = [...baseProducts];
-
-    if (filterColor) list = list.filter((p) => p.variants.some((v) => v.color === filterColor));
-    if (filterDiscount) list = list.filter((p) => !!p.compareAtPrice);
 
     switch (sort) {
       case 'price-asc': list.sort((a, b) => a.price - b.price); break;
@@ -43,9 +58,9 @@ export default function CollectionPageClient({ handle, collection, baseProducts 
     }
 
     return list;
-  }, [baseProducts, sort, filterColor, filterDiscount]);
+  }, [baseProducts, sort]);
 
-  const activeFilters = (filterColor ? 1 : 0) + (filterDiscount ? 1 : 0);
+  const selectedSortLabel = SORT_OPTIONS.find((option) => option.value === sort)?.label ?? 'Featured';
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
@@ -55,97 +70,71 @@ export default function CollectionPageClient({ handle, collection, baseProducts 
         { label: collection.title },
       ]} />
 
-      <div className="mb-8 flex items-end justify-between">
+      <div className="mb-8 flex items-end justify-between gap-5">
         <div>
           <h1 className="font-serif text-3xl font-light text-ivory">{collection.title}</h1>
           {collection.description && <p className="mt-1 text-sm text-ivory-muted">{collection.description}</p>}
           <p className="mt-1 text-xs text-ivory-dim">{products.length} products</p>
         </div>
 
-        <div className="flex items-center gap-3">
-          <select
-            value={sort}
-            onChange={(e) => setSort(e.target.value as SortKey)}
-            className="border border-wine-700 bg-wine-900 px-3 py-2 text-xs uppercase tracking-widest text-ivory-muted focus:border-gold-400 focus:outline-none transition"
-          >
-            <option value="default">Featured</option>
-            <option value="newest">Newest</option>
-            <option value="price-asc">Price: Low - High</option>
-            <option value="price-desc">Price: High - Low</option>
-            <option value="rating">Top Rated</option>
-          </select>
-
+        <div ref={sortMenuRef} className="relative w-56 shrink-0">
           <button
-            onClick={() => setShowFilters((v) => !v)}
-            className={`flex items-center gap-2 border px-3 py-2 text-xs uppercase tracking-widest transition ${
-              showFilters || activeFilters > 0
+            type="button"
+            onClick={() => setSortOpen((open) => !open)}
+            aria-haspopup="listbox"
+            aria-expanded={sortOpen}
+            aria-controls="collection-sort-options"
+            className={`flex w-full items-center justify-between border bg-wine-900 px-4 py-3 text-left text-xs font-medium uppercase tracking-[0.18em] transition ${
+              sortOpen
                 ? 'border-gold-400 text-gold-400'
-                : 'border-wine-700 text-ivory-muted hover:border-gold-400/50 hover:text-gold-400'
+                : 'border-wine-700 text-ivory-muted hover:border-gold-400/60 hover:text-gold-400'
             }`}
           >
-            <SlidersHorizontal size={13} />
-            Filter{activeFilters > 0 ? ` (${activeFilters})` : ''}
+            <span>{selectedSortLabel}</span>
+            <ChevronDown
+              aria-hidden="true"
+              className={`h-4 w-4 shrink-0 transition-transform duration-200 ${sortOpen ? 'rotate-180' : ''}`}
+            />
           </button>
+
+          {sortOpen && (
+            <div
+              id="collection-sort-options"
+              role="listbox"
+              aria-label="Sort products"
+              className="absolute right-0 top-[calc(100%+0.5rem)] z-30 w-full border border-gold-600/30 bg-wine-950 p-1.5 shadow-2xl"
+            >
+              {SORT_OPTIONS.map((option) => {
+                const selected = option.value === sort;
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    role="option"
+                    aria-selected={selected}
+                    onClick={() => {
+                      setSort(option.value);
+                      setSortOpen(false);
+                    }}
+                    className={`flex w-full items-center justify-between px-3 py-2.5 text-left text-xs uppercase tracking-[0.14em] transition ${
+                      selected
+                        ? 'bg-gold-400 text-wine-950'
+                        : 'text-ivory-muted hover:bg-wine-800 hover:text-gold-400'
+                    }`}
+                  >
+                    <span>{option.label}</span>
+                    {selected && <Check aria-hidden="true" className="h-3.5 w-3.5" />}
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
 
-      {showFilters && (
-        <div className="mb-8 border border-gold-600/20 bg-wine-900 px-5 py-4">
-          <div className="flex flex-wrap items-center gap-6">
-            <div>
-              <p className="mb-2 text-xs font-medium uppercase tracking-widest text-ivory-muted">Color</p>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setFilterColor(null)}
-                  className={`border px-3 py-1 text-xs transition ${!filterColor ? 'border-gold-400 text-gold-400' : 'border-wine-700 text-ivory-dim hover:border-gold-400/50'}`}
-                >
-                  All
-                </button>
-                {allColors.map(([color, hex]) => (
-                  <button
-                    key={color}
-                    onClick={() => setFilterColor(filterColor === color ? null : color)}
-                    title={color}
-                    className={`h-6 w-6 rounded-full border-2 transition ${
-                      filterColor === color ? 'border-gold-400 ring-1 ring-gold-400/30' : 'border-transparent hover:border-white/30'
-                    }`}
-                    style={{ backgroundColor: hex }}
-                  />
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <p className="mb-2 text-xs font-medium uppercase tracking-widest text-ivory-muted">Offer</p>
-              <button
-                onClick={() => setFilterDiscount((v) => !v)}
-                className={`border px-3 py-1 text-xs transition ${filterDiscount ? 'border-gold-400/50 text-gold-400' : 'border-wine-700 text-ivory-dim hover:border-gold-400/50'}`}
-              >
-                Discount
-              </button>
-            </div>
-
-            {activeFilters > 0 && (
-              <button
-                onClick={() => { setFilterColor(null); setFilterDiscount(false); }}
-                className="text-xs text-ivory-dim underline hover:text-gold-400 transition"
-              >
-                Clear all
-              </button>
-            )}
-          </div>
-        </div>
-      )}
-
       {products.length === 0 ? (
         <div className="flex h-64 flex-col items-center justify-center border border-gold-600/20 bg-wine-900 text-center">
-          <p className="font-serif text-xl font-light italic text-ivory-muted">No products match your filters</p>
-          <button
-            onClick={() => { setFilterColor(null); setFilterDiscount(false); }}
-            className="mt-4 text-xs uppercase tracking-widest text-gold-400 hover:underline transition"
-          >
-            Clear filters
-          </button>
+          <p className="font-serif text-xl font-light italic text-ivory-muted">No products are available in this collection</p>
         </div>
       ) : (
         <>

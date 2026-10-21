@@ -34,10 +34,11 @@ function AddressField({
 }) {
   return (
     <div className={half ? '' : 'col-span-2'}>
-      <label className="mb-1.5 block text-xs font-medium uppercase tracking-widest text-ivory-muted">
+      <label htmlFor={`address-${String(name)}`} className="mb-1.5 block text-xs font-medium uppercase tracking-widest text-ivory-muted">
         {label}{required && ' *'}
       </label>
       <input
+        id={`address-${String(name)}`}
         type="text"
         value={form[name] as string}
         onChange={(e) => setForm((f) => ({ ...f, [name]: e.target.value }))}
@@ -253,6 +254,9 @@ export default function AddressesPage() {
               <button
                 type="button"
                 onClick={() => setForm((f) => ({ ...f, is_default: !f.is_default }))}
+                role="checkbox"
+                aria-checked={form.is_default}
+                aria-label="Set as default address"
                 className={`flex h-4 w-4 items-center justify-center border transition ${form.is_default ? 'border-gold-400 bg-gold-400' : 'border-wine-700'}`}
               >
                 {form.is_default && <Check size={10} className="text-wine-950" />}

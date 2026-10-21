@@ -1,38 +1,37 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { Resend } from 'resend';
+import { getClientIp, rateLimit } from '@/lib/rate-limit';
+import { sendNewsletterWelcomeEmail } from '@/lib/email';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-const FROM = process.env.RESEND_FROM_EMAIL ?? 'Velour <onboarding@resend.dev>';
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export async function POST(req: NextRequest) {
+  const { allowed } = await rateLimit(`newsletter:${getClientIp(req)}`, { limit: 5, windowMs: 60 * 60_000 });
+  if (!allowed) return NextResponse.json({ error: 'Too many requests. Please try again later.' }, { status: 429 });
+
+  let email = '';
   try {
-    const { email } = await req.json() as { email?: string };
-    if (!email || !email.includes('@')) {
-      return NextResponse.json({ error: 'Invalid email' }, { status: 400 });
-    }
-
-    // Send a welcome email to the subscriber
-    await resend.emails.send({
-      from: FROM,
-      to: email,
-      subject: 'Welcome to Velour — Your Private Access',
-      html: `
-        <div style="font-family: Georgia, serif; max-width: 520px; margin: 0 auto; padding: 40px 24px; background: #110a0d; color: #e8ddd0;">
-          <p style="font-size: 22px; font-weight: 300; color: #c9a84c; font-style: italic; margin-bottom: 24px;">Velour</p>
-          <h1 style="font-size: 20px; font-weight: 300; color: #e8ddd0; margin-bottom: 16px;">Welcome to Velour</h1>
-          <p style="font-size: 13px; line-height: 1.8; color: #b0a090; margin-bottom: 20px;">
-            You now have private early access to new arrivals, member-only offers, and exclusive styling guides —
-            all sent discreetly to this address.
-          </p>
-          <p style="font-size: 11px; color: #6b5e50;">
-            Sent from a discreet sender. To unsubscribe, reply with "unsubscribe".
-          </p>
-        </div>
-      `,
-    });
-
-    return NextResponse.json({ ok: true });
+    const body = await req.json() as { email?: unknown };
+    email = typeof body.email === 'string' ? body.email.trim() : '';
   } catch {
-    return NextResponse.json({ error: 'Failed to subscribe' }, { status: 500 });
+    return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
   }
+  if (!EMAIL_PATTERN.test(email) || email.length > 254) {
+    return NextResponse.json({ error: 'Invalid email' }, { status: 400 });
+  }
+
+  // One welcome email per address per day, so this endpoint cannot be used to spam a third party.
+  const { allowed: sendAllowed } = await rateLimit(`newsletter-recipient:${email.toLowerCase()}`, {
+    limit: 1,
+    windowMs: 24 * 60 * 60_000,
+  });
+  if (!sendAllowed) return NextResponse.json({ ok: true });
+
+  try {
+    await sendNewsletterWelcomeEmail(email);
+  } catch (error) {
+    console.error('Newsletter email failed:', error);
+    return NextResponse.json({ error: 'Failed to subscribe. Please try again.' }, { status: 500 });
+  }
+
+  return NextResponse.json({ ok: true });
 }
