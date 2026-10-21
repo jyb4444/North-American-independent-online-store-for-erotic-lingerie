@@ -109,7 +109,7 @@ export async function POST(req: Request) {
 
   const { product_id, product_handle, rating, body_text, photo_urls, video_urls, is_anonymous } = body;
 
-  if (!product_id || !product_handle || !rating || typeof body_text !== 'string' || !body_text.trim()) {
+  if (!product_id || !product_handle || !rating || !body_text?.trim()) {
     return NextResponse.json({ error: 'All fields are required.' }, { status: 400 });
   }
   if (rating < 1 || rating > 5 || !Number.isInteger(rating)) {

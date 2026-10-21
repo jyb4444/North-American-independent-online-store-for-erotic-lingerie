@@ -66,13 +66,13 @@ export default function HeroCarousel() {
     <div className="relative h-[88vh] min-h-[560px] overflow-hidden">
       <div ref={emblaRef} className="h-full overflow-hidden">
         <div className="flex h-full">
-          {SLIDES.map((slide) => (
+          {SLIDES.map((slide, index) => (
             <div key={slide.id} className="relative h-full min-w-full flex-shrink-0">
               <Image
                 src={slide.image}
                 alt={slide.headline}
                 fill
-                priority
+                priority={index === 0}
                 sizes="100vw"
                 className="object-cover object-center"
               />
@@ -85,11 +85,15 @@ export default function HeroCarousel() {
                 <p className="mb-4 text-xs font-medium uppercase tracking-[0.4em] text-gold-400">
                   {slide.tag}
                 </p>
-                <h1 className="font-serif max-w-xl whitespace-pre-line text-6xl font-light leading-tight tracking-tight text-ivory md:text-7xl">
+                {index === 0 ? <h1 className="font-serif max-w-xl whitespace-pre-line text-6xl font-light leading-tight tracking-tight text-ivory md:text-7xl">
                   {slide.headline.split('\n')[0]}
                   <br />
                   <span className="italic text-gold-400">{slide.headline.split('\n')[1]}</span>
-                </h1>
+                </h1> : <h2 className="font-serif max-w-xl whitespace-pre-line text-6xl font-light leading-tight tracking-tight text-ivory md:text-7xl">
+                  {slide.headline.split('\n')[0]}
+                  <br />
+                  <span className="italic text-gold-400">{slide.headline.split('\n')[1]}</span>
+                </h2>}
                 <p className="mt-5 max-w-xs text-sm font-light leading-relaxed text-ivory-muted">
                   {slide.sub}
                 </p>

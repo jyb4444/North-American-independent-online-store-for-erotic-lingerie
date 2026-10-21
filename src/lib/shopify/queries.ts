@@ -9,6 +9,8 @@ const PRODUCT_FRAGMENT = `
     productType
     vendor
     createdAt
+    updatedAt
+    seo { title description }
     priceRange {
       minVariantPrice { amount currencyCode }
     }
@@ -57,8 +59,9 @@ export const GET_PRODUCT_BY_HANDLE = `
 // ─── Collections ──────────────────────────────────────────────────────────────
 
 export const GET_COLLECTIONS = `
-  query GetCollections($first: Int!) {
-    collections(first: $first) {
+  query GetCollections($first: Int!, $after: String) {
+    collections(first: $first, after: $after) {
+      pageInfo { hasNextPage endCursor }
       edges {
         node {
           id

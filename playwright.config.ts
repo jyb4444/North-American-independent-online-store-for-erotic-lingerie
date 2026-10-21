@@ -56,7 +56,8 @@ export default defineConfig({
       command: 'npx tsx tests/mocks/shopify-storefront.ts',
       url: 'http://127.0.0.1:3199/__health',
       timeout: 30_000,
-      reuseExistingServer: !process.env.CI,
+      // Never attach tests to a manually started process with unknown credentials/state.
+      reuseExistingServer: false,
       stdout: 'ignore',
       stderr: 'pipe',
     },
@@ -65,7 +66,7 @@ export default defineConfig({
       url: BASE_URL,
       env: { ...testEnv, NEXT_DIST_DIR: legacy ? '.next-e2e-legacy' : '.next-e2e', NEXT_TELEMETRY_DISABLED: '1' },
       timeout: 300_000,
-      reuseExistingServer: !process.env.CI,
+      reuseExistingServer: false,
       stdout: 'ignore',
       stderr: 'pipe',
     },

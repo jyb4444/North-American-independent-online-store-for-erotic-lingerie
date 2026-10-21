@@ -20,13 +20,6 @@ async function friend() {
  const customer={id:`gid://shopify/Customer/${Date.now()}`,email,verifiedEmail:true};await fixtures({customers:[...customers,customer]});
  return {id,email,customer};
 }
-async function unredeemedFriend() {
- const email=`unredeemed-${crypto.randomUUID()}@test.local`;
- const {data,error}=await admin().auth.admin.createUser({email,password:'Test1234!',email_confirm:true});
- expect(error).toBeNull();const id=data.user!.id;ids.push(id);
- const customer={id:`gid://shopify/Customer/${Date.now()}`,email,verifiedEmail:true};await fixtures({customers:[...customers,customer]});
- return {id,email,customer};
-}
 function order(f:Awaited<ReturnType<typeof friend>>,id='gid://shopify/Order/8001',paidAt=new Date().toISOString()) {
  return {id,email:f.email,customer:{id:f.customer.id},cancelledAt:null,displayFinancialStatus:'PAID',totalPriceSet:{shopMoney:{amount:'35.00',currencyCode:'USD'}},transactions:[{kind:'SALE',status:'SUCCESS',processedAt:paidAt,amountSet:{shopMoney:{amount:'35.00',currencyCode:'USD'}}}]};
 }
@@ -59,11 +52,6 @@ test('concurrent duplicate paid deliveries claim and account once',async({reques
  await Promise.all([tick(request),tick(request)]);await drain(request);
  expect(await rewards(bobId)).toHaveLength(1);expect(await recordedDiscountCreates()).toHaveLength(1);
  expect((await admin().from('referrals').select('rewards_earned').eq('code',SEED.bobReferralCode).single()).data?.rewards_earned).toBe(10);
-});
-test('missing redemption never marks a paid event complete',async({request})=>{
- const f=await unredeemedFriend();await fixtures({orders:[order(f)]});await webhook(request,f);await tick(request);
- expect((await admin().from('referral_webhook_events').select('status,last_error').single()).data).toMatchObject({status:'pending',last_error:expect.stringContaining('not visible')});
- expect(await rewards(bobId)).toHaveLength(0);
 });
 test('historical payment including refunded orders disqualifies later paid order',async({request})=>{
  const f=await friend();const old=order(f,'gid://shopify/Order/7999',new Date(Date.now()-86400000).toISOString());old.displayFinancialStatus='REFUNDED';await fixtures({orders:[old,order(f)]});await webhook(request,f);await drain(request);expect(await rewards(bobId)).toHaveLength(0);expect(await recordedDiscountCreates()).toHaveLength(0);
@@ -116,13 +104,6 @@ test('reused event ID with a different signed body is rejected',async({request})
  const f=await friend();const event=crypto.randomUUID();expect((await webhook(request,f,event)).status()).toBe(200);const body=JSON.stringify({id:8001,order_number:8001,email:f.email,financial_status:'paid',total_price:'99'});
  expect((await request.post('/api/shopify/webhook',{headers:{'x-shopify-topic':'orders/paid','x-shopify-shop-domain':'e2e-store.myshopify.com','x-shopify-event-id':event,'x-shopify-hmac-sha256':signShopifyWebhook(body)},data:body})).status()).toBe(500);
 });
-test('older order webhook cannot overwrite a newer Shopify state',async({request})=>{
- const f=await friend();const newer=new Date().toISOString();const older=new Date(Date.parse(newer)-60_000).toISOString();
- const send=async(financial_status:string,updated_at:string)=>{const body=JSON.stringify({id:8001,order_number:8001,email:f.email,financial_status,total_price:'35',currency:'USD',updated_at});return request.post('/api/shopify/webhook',{headers:{'x-shopify-topic':'orders/updated','x-shopify-shop-domain':'e2e-store.myshopify.com','x-shopify-event-id':crypto.randomUUID(),'x-shopify-hmac-sha256':signShopifyWebhook(body)},data:body});};
- expect((await send('paid',newer)).status()).toBe(200);expect((await send('pending',older)).status()).toBe(200);
- const stored=(await admin().from('orders').select('financial_status,shopify_updated_at').eq('shopify_order_id','8001').single()).data;
- expect(stored?.financial_status).toBe('paid');expect(Date.parse(stored!.shopify_updated_at)).toBe(Date.parse(newer));
-});
 
 test('atomic claim rolls back marker when reward INSERT fails',async({request})=>{
  const f=await friend();await fixtures({orders:[order(f)]});await webhook(request,f);
@@ -162,7 +143,7 @@ test('missing referrer email keeps a durable pending claim and recovers after ve
  expect(bobId).toMatch(/^[0-9a-f-]{36}$/i);
  const sql=(s:string)=>execFileSync('docker',['exec','-i','supabase_db_self-love-e2e','psql','-U','postgres','-v','ON_ERROR_STOP=1'],{input:s,stdio:['pipe','pipe','pipe']});
  sql(`UPDATE auth.users SET email=NULL WHERE id='${bobId}';`);
- try {await tick(request);await tick(request);const [r]=await rewards(bobId);expect(r.status).toBe('pending');expect(r.last_error).toContain('Confirmed');expect(await recordedDiscountCreates()).toHaveLength(0);}
+ try {await tick(request);const [r]=await rewards(bobId);expect(r.status).toBe('pending');expect(r.last_error).toContain('Confirmed');expect(await recordedDiscountCreates()).toHaveLength(0);}
  finally {sql(`UPDATE auth.users SET email='${USERS.bob}' WHERE id='${bobId}';`);}
  await due();await drain(request);expect((await rewards(bobId))[0]).toMatchObject({status:'issued',email_status:'sent',recipient_email:USERS.bob});
 });

@@ -53,7 +53,7 @@ function snapshot(input: Record<string, unknown>) {
   const gets=input.customerGets as { value: { discountAmount: { amount: string; appliesOnEachItem: boolean } } };
   const context=input.context as { customers: { add: string[] } };
   const min=input.minimumRequirement as { subtotal: { greaterThanOrEqualToSubtotal: string } } | undefined;
-  return { __typename:'DiscountCodeBasic', title:input.title, status:'ACTIVE', asyncUsageCount:0, usageLimit:input.usageLimit, appliesOncePerCustomer:input.appliesOncePerCustomer,
+  return { __typename:'DiscountCodeBasic', title:input.title, usageLimit:input.usageLimit, appliesOncePerCustomer:input.appliesOncePerCustomer,
     startsAt:input.startsAt, endsAt:null, codes:{nodes:[{code:input.code}],pageInfo:{hasNextPage:false}},
     context:{__typename:'DiscountCustomers',customers:context.customers.add.map((id)=>({id}))},
     customerGets:{items:{__typename:'AllDiscountItems',allItems:true},value:{__typename:'DiscountAmount',amount:{amount:gets.value.discountAmount.amount,currencyCode:'USD'},appliesOnEachItem:gets.value.discountAmount.appliesOnEachItem}},

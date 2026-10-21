@@ -99,6 +99,7 @@ export default function ProductPageClient({ product, relatedProducts }: Props) {
           video={product.video}
           productId={product.id}
           title={product.title}
+          altTexts={product.imageAltTexts}
           modelMeasurements={product.modelMeasurements}
         />
 

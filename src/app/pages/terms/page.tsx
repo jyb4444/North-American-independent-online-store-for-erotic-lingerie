@@ -1,10 +1,11 @@
 import Link from 'next/link';
-import type { Metadata } from 'next';
+import { publicPageMetadata } from '@/lib/seo';
 
-export const metadata: Metadata = {
+export const metadata = publicPageMetadata({
   title: 'Terms of Service',
   description: 'Terms and conditions governing use of the Self Love website and services.',
-};
+  path: '/pages/terms',
+});
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (

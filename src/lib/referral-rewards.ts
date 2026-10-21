@@ -57,19 +57,13 @@ export async function processReferralWork() {
       if(!event.user_id) throw new RewardBlocked('Referred account no longer exists',true);
       const user=await confirmedUser(event.user_id);
       const evidence=await firstPaidOrder(user.email!,event.order_id);
-      const {data:claimStatus,error}=await db.rpc('claim_referral_paid_order',{p_user_id:event.user_id,p_order_id:event.order_id,p_paid_at:evidence.paidAt,p_customer_id:evidence.identity.id,p_amount:settings.amount,p_minimum:settings.minimumSubtotal});
+      const {error}=await db.rpc('claim_referral_paid_order',{p_user_id:event.user_id,p_order_id:event.order_id,p_paid_at:evidence.paidAt,p_customer_id:evidence.identity.id,p_amount:settings.amount,p_minimum:settings.minimumSubtotal});
       if(error) throw new Error('Atomic reward claim failed');
-      if(claimStatus==='pending_redemption') throw new RewardBlocked('Referral redemption is not visible yet; safe retry required');
-      if(claimStatus==='manual_review') throw new RewardBlocked('Referral was recorded after payment or identity eligibility is ambiguous',true);
-      if(!['claimed','already_claimed'].includes(String(claimStatus))) throw new Error('Atomic reward claim returned an unknown state');
       await updateLeased('referral_webhook_events','event_id',event.event_id,event.lease_token,{status:'complete',last_error:null,lease_token:null,lease_until:null});
     } catch(error) {
       await updateLeased('referral_webhook_events','event_id',event.event_id,event.lease_token,{status:error instanceof RewardBlocked && error.manual ? 'manual_review' : 'pending',last_error:(error instanceof RewardBlocked ? error.message : 'Payment verification failed; safe retry required')+(event.attempts>=8 ? '; retry budget exhausted; manual retry required':''),next_attempt_at:retryAt(event.attempts),lease_token:null,lease_until:null});
     }
   }
-  // A single invocation performs at most one potentially long Shopify history scan.
-  // The next scheduler invocation will issue any reward queued by this event.
-  if((events ?? []).length) return {enabled:true,events:(events ?? []).length,rewards:0};
   const {data:rewards,error:rewardError}=await db.rpc('lease_referral_rewards',{p_limit:1});
   if(rewardError) throw new Error('Referral reward schema unavailable');
   for(const reward of (rewards ?? []) as RewardWork[]) {

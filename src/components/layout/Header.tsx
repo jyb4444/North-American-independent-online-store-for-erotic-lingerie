@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
+import { usePathname } from 'next/navigation';
 import { useCartStore } from '@/store/cart';
 import { ShoppingBag, Search, Menu, X, LogIn, User, Package, LogOut, PackageSearch, RotateCcw } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
@@ -11,6 +12,7 @@ import SearchModal from '@/components/ui/SearchModal';
 import HeaderWishlistLink from '@/components/wishlist/HeaderWishlistLink';
 
 export default function Header() {
+  const pathname = usePathname();
   // Subscribe to the count itself so the badge re-renders when the bag changes.
   const itemCount = useCartStore((s) => s.items.reduce((sum, item) => sum + item.quantity, 0));
   const openCart = useCartStore((s) => s.openCart);
@@ -92,10 +94,20 @@ export default function Header() {
         {/* Desktop Nav */}
         <nav className="hidden gap-7 md:flex">
           {navItems.map((item) => (
-            <Link key={item.href} href={item.href}
-              className={`text-xs font-medium uppercase tracking-widest transition hover:text-gold-400 ${
-                item.highlight ? 'text-crimson-400 hover:text-crimson-300' : 'text-ivory-muted'
-              }`}>
+            <Link
+              key={item.href}
+              href={item.href}
+              aria-current={pathname === item.href ? 'page' : undefined}
+              className={`relative py-2 text-xs font-medium uppercase tracking-widest transition after:absolute after:inset-x-0 after:-bottom-1 after:h-px after:origin-center after:transition-transform ${
+                pathname === item.href
+                  ? item.highlight
+                    ? 'text-crimson-400 after:scale-x-100 after:bg-crimson-400'
+                    : 'text-gold-400 after:scale-x-100 after:bg-gold-400'
+                  : item.highlight
+                    ? 'text-crimson-400 after:scale-x-0 after:bg-crimson-400 hover:text-crimson-300 hover:after:scale-x-100'
+                    : 'text-ivory-muted after:scale-x-0 after:bg-gold-400 hover:text-gold-400 hover:after:scale-x-100'
+              }`}
+            >
               {item.label}
             </Link>
           ))}
@@ -192,8 +204,11 @@ export default function Header() {
         <nav className="border-t border-gold-600/20 bg-wine-900 px-4 pb-5 pt-3 md:hidden">
           {navItems.map((item) => (
             <Link key={item.href} href={item.href}
+              aria-current={pathname === item.href ? 'page' : undefined}
               className={`block py-2.5 text-xs font-medium uppercase tracking-widest transition hover:text-gold-400 ${
-                item.highlight ? 'text-crimson-400' : 'text-ivory-muted'
+                pathname === item.href
+                  ? item.highlight ? 'text-crimson-400 underline underline-offset-8' : 'text-gold-400 underline underline-offset-8'
+                  : item.highlight ? 'text-crimson-400' : 'text-ivory-muted'
               }`}
               onClick={() => setMobileOpen(false)}>
               {item.label}

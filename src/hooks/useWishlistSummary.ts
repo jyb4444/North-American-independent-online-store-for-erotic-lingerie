@@ -7,6 +7,8 @@ import type { Database } from '@/lib/supabase/types';
 
 export const WISHLIST_CHANGED_EVENT = 'velour_wishlist_changed';
 
+type WishlistChangedDetail = { delta?: number };
+
 export type WishlistSummaryItem = Pick<
   Database['public']['Tables']['wishlists']['Row'],
   'id' | 'product_id' | 'product_handle' | 'product_image' | 'product_price'
@@ -20,9 +22,11 @@ type WishlistSummaryState = {
   isAuthenticated: boolean;
 };
 
-export function notifyWishlistChanged() {
+export function notifyWishlistChanged(delta?: number) {
   if (typeof window === 'undefined') return;
-  window.dispatchEvent(new Event(WISHLIST_CHANGED_EVENT));
+  window.dispatchEvent(new CustomEvent<WishlistChangedDetail>(WISHLIST_CHANGED_EVENT, {
+    detail: delta === undefined ? undefined : { delta },
+  }));
 }
 
 export function useWishlistSummary(limit = 4) {
@@ -36,7 +40,8 @@ export function useWishlistSummary(limit = 4) {
 
   const refresh = useCallback(async () => {
     const supabase = createClient();
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    const { data: { session }, error: userError } = await supabase.auth.getSession();
+    const user = session?.user;
 
     if (userError || !user) {
       setState({ count: 0, items: [], loading: false, error: '', isAuthenticated: false });
@@ -69,18 +74,27 @@ export function useWishlistSummary(limit = 4) {
       refresh();
     }, 0);
 
-    function handleAuthOrWishlistChange() {
+    function handleAuthChange() {
+      refresh();
+    }
+
+    function handleWishlistChange(event: Event) {
+      const delta = (event as CustomEvent<WishlistChangedDetail>).detail?.delta;
+      if (typeof delta === 'number') {
+        setState((current) => ({ ...current, count: Math.max(0, current.count + delta) }));
+        return;
+      }
       refresh();
     }
 
     const supabase = createClient();
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(handleAuthOrWishlistChange);
-    window.addEventListener(WISHLIST_CHANGED_EVENT, handleAuthOrWishlistChange);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(handleAuthChange);
+    window.addEventListener(WISHLIST_CHANGED_EVENT, handleWishlistChange);
 
     return () => {
       window.clearTimeout(initialRefresh);
       subscription.unsubscribe();
-      window.removeEventListener(WISHLIST_CHANGED_EVENT, handleAuthOrWishlistChange);
+      window.removeEventListener(WISHLIST_CHANGED_EVENT, handleWishlistChange);
     };
   }, [refresh]);
 

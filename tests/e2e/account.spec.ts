@@ -89,7 +89,7 @@ test.describe('profile and addresses', () => {
     await page.getByLabel('First Name').fill('Mallory');
     await page.getByLabel('Last Name').fill('E2E');
     await page.getByRole('button', { name: 'Save Changes' }).click();
-    await expect(page.getByText('Saved')).toBeVisible();
+    await expect(page.getByText('Saved', { exact: true })).toBeVisible();
 
     await page.reload();
     await expect(page.getByLabel('First Name')).toHaveValue('Mallory');

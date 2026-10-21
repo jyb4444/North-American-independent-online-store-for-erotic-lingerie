@@ -2,8 +2,9 @@
 
 import { useState } from 'react';
 import { ChevronDown } from 'lucide-react';
+import JsonLd from '@/components/seo/JsonLd';
 
-const FAQS = [
+export const FAQS = [
   {
     q: 'How do I choose the right size?',
     a: 'Use our Size Guide (available on each product page) to compare your measurements. If you are between sizes, we recommend sizing up for a more comfortable fit. Our Free Size items fit approximately XS–M.',
@@ -54,7 +55,17 @@ function FAQItem({ q, a }: { q: string; a: string }) {
 
 export default function FAQPage() {
   return (
-    <div className="mx-auto max-w-2xl px-4 py-16 sm:px-6">
+    <>
+      <JsonLd data={{
+        '@context': 'https://schema.org',
+        '@type': 'FAQPage',
+        mainEntity: FAQS.map(({ q, a }) => ({
+          '@type': 'Question',
+          name: q,
+          acceptedAnswer: { '@type': 'Answer', text: a },
+        })),
+      }} />
+      <div className="mx-auto max-w-2xl px-4 py-16 sm:px-6">
       <p className="mb-2 text-xs font-medium uppercase tracking-[0.3em] text-gold-400">Help</p>
       <h1 className="font-serif text-4xl font-light text-ivory">FAQ</h1>
       <div className="mx-auto mt-4 mb-10 h-px w-12 bg-gold-400/40" />
@@ -71,6 +82,7 @@ export default function FAQPage() {
           Contact Us →
         </a>
       </div>
-    </div>
+      </div>
+    </>
   );
 }

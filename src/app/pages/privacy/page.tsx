@@ -1,10 +1,11 @@
 import Link from 'next/link';
-import type { Metadata } from 'next';
+import { publicPageMetadata } from '@/lib/seo';
 
-export const metadata: Metadata = {
+export const metadata = publicPageMetadata({
   title: 'Privacy Policy',
   description: 'How Self Love collects, uses, and protects your personal information.',
-};
+  path: '/pages/privacy',
+});
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (

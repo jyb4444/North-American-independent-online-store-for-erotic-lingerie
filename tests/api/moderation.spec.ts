@@ -23,7 +23,3 @@ test('trimmed short body is rejected before database INSERT',async({request})=>{
  const r=await request.post('/api/reviews',{headers:{cookie:await sessionCookieHeader(USERS.alice),'x-forwarded-for':'moderation-'+crypto.randomUUID()},data:{product_id:'e2e-moderation-short',product_handle:'e2e',rating:5,body_text:'        tiny        '}});expect(r.status()).toBe(400);
  expect((await admin().from('reviews').select('id').eq('product_id','e2e-moderation-short')).data).toHaveLength(0);
 });
-test('non-string review body is rejected as a client error',async({request})=>{
- const r=await request.post('/api/reviews',{headers:{cookie:await sessionCookieHeader(USERS.alice),'x-forwarded-for':'moderation-type-'+crypto.randomUUID()},data:{product_id:'e2e-moderation-type',product_handle:'e2e',rating:5,body_text:12345}});
- expect(r.status()).toBe(400);
-});

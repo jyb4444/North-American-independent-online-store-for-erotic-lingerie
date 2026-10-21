@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { createClient } from '@/lib/supabase/client';
 import { safeRedirectPath } from '@/lib/redirect';
+import SuccessNotice from '@/components/ui/SuccessNotice';
 import { Eye, EyeOff } from 'lucide-react';
 
 type Mode = 'signin' | 'signup';
@@ -233,9 +234,7 @@ export default function LoginPage() {
               </p>
             )}
             {success && (
-              <p className="text-xs text-green-400 border border-green-600/30 bg-green-900/20 px-3 py-2">
-                {success}
-              </p>
+              <SuccessNotice>{success}</SuccessNotice>
             )}
 
             {/* Submit */}

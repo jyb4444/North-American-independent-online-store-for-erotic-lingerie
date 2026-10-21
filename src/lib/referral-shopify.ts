@@ -68,7 +68,7 @@ export async function firstPaidOrder(email: string, orderId: string) {
   throw new RewardBlocked('Historical order pagination incomplete; first order not proven', true);
 }
 export type DiscountSnapshot = {
-  __typename: string; title: string; status: string; asyncUsageCount: number; usageLimit: number; appliesOncePerCustomer: boolean; startsAt: string; endsAt: string | null;
+  __typename: string; title: string; usageLimit: number; appliesOncePerCustomer: boolean; startsAt: string; endsAt: string | null;
   codes: { nodes: { code: string }[]; pageInfo: { hasNextPage: boolean } };
   context: { __typename: string; customers?: { id: string }[] };
   customerGets: { items: { __typename: string; allItems?: boolean }; value: { __typename: string; amount?: { amount: string; currencyCode: string }; appliesOnEachItem?: boolean } };
@@ -78,7 +78,7 @@ export type DiscountSnapshot = {
 export function validRewardDiscount(d: DiscountSnapshot, input: { code: string; title: string; customerId: string; amount: number; minimumSubtotal: number }) {
   const value = d.customerGets?.value;
   const minimum = d.minimumRequirement;
-  return d.__typename === 'DiscountCodeBasic' && d.title === input.title && d.status === 'ACTIVE' && d.asyncUsageCount === 0 && d.usageLimit === 1 && d.appliesOncePerCustomer === true && d.endsAt === null && Date.parse(d.startsAt)<=Date.now()
+  return d.__typename === 'DiscountCodeBasic' && d.title === input.title && d.usageLimit === 1 && d.appliesOncePerCustomer === true && d.endsAt === null && Date.parse(d.startsAt)<=Date.now()
     && !d.codes.pageInfo.hasNextPage && d.codes.nodes.length===1 && d.codes.nodes[0].code===input.code
     && d.context.__typename==='DiscountCustomers' && d.context.customers?.length===1 && d.context.customers[0].id===input.customerId
     && value?.__typename==='DiscountAmount' && Number(value.amount?.amount)===input.amount && value.amount?.currencyCode==='USD' && value.appliesOnEachItem===false
@@ -88,7 +88,7 @@ export function validRewardDiscount(d: DiscountSnapshot, input: { code: string; 
 }
 export async function ensureRewardDiscount(input: { code: string; title: string; customerId: string; amount: number; minimumSubtotal: number }) {
   if (!Number.isFinite(input.amount) || input.amount<=0 || Number(input.amount.toFixed(2))!==input.amount || !Number.isFinite(input.minimumSubtotal) || input.minimumSubtotal<0 || Number(input.minimumSubtotal.toFixed(2))!==input.minimumSubtotal) throw new RewardBlocked('USD reward settings must use whole cents',true);
-    const data = await query<{ codeDiscountNodeByCode: { id: string; codeDiscount: DiscountSnapshot } | null }>(`query ReferralDiscount($code: String!) { codeDiscountNodeByCode(code: $code) { id codeDiscount { __typename ... on DiscountCodeBasic { title status asyncUsageCount usageLimit appliesOncePerCustomer startsAt endsAt codes(first: 2) { nodes { code } pageInfo { hasNextPage } } context { __typename ... on DiscountCustomers { customers { id } } } customerGets { items { __typename ... on AllDiscountItems { allItems } } value { __typename ... on DiscountAmount { amount { amount currencyCode } appliesOnEachItem } } } minimumRequirement { __typename ... on DiscountMinimumSubtotal { greaterThanOrEqualToSubtotal { amount currencyCode } } } combinesWith { orderDiscounts productDiscounts shippingDiscounts } } } } }`, { code: input.code });
+  const data = await query<{ codeDiscountNodeByCode: { id: string; codeDiscount: DiscountSnapshot } | null }>(`query ReferralDiscount($code: String!) { codeDiscountNodeByCode(code: $code) { id codeDiscount { __typename ... on DiscountCodeBasic { title usageLimit appliesOncePerCustomer startsAt endsAt codes(first: 2) { nodes { code } pageInfo { hasNextPage } } context { __typename ... on DiscountCustomers { customers { id } } } customerGets { items { __typename ... on AllDiscountItems { allItems } } value { __typename ... on DiscountAmount { amount { amount currencyCode } appliesOnEachItem } } } minimumRequirement { __typename ... on DiscountMinimumSubtotal { greaterThanOrEqualToSubtotal { amount currencyCode } } } combinesWith { orderDiscounts productDiscounts shippingDiscounts } } } } }`, { code: input.code });
   if (data.codeDiscountNodeByCode) {
     if (!validRewardDiscount(data.codeDiscountNodeByCode.codeDiscount, input)) throw new RewardBlocked('Existing Shopify code has incompatible restrictions; manual reconciliation required', true);
     return data.codeDiscountNodeByCode.id;
@@ -100,7 +100,7 @@ export async function ensureRewardDiscount(input: { code: string; title: string;
 }
 async function ensureExistingRewardDiscount(input: Parameters<typeof ensureRewardDiscount>[0], id: string): Promise<string> {
   // Recursion uses a read-first path, never a fresh identity/code; no recursive create on eventual consistency.
-  const result = await query<{ node: { id: string; codeDiscount: DiscountSnapshot } | null }>(`query ReferralCreatedDiscount($code: String!) { node: codeDiscountNodeByCode(code: $code) { id codeDiscount { __typename ... on DiscountCodeBasic { title status asyncUsageCount usageLimit appliesOncePerCustomer startsAt endsAt codes(first: 2) { nodes { code } pageInfo { hasNextPage } } context { __typename ... on DiscountCustomers { customers { id } } } customerGets { items { __typename ... on AllDiscountItems { allItems } } value { __typename ... on DiscountAmount { amount { amount currencyCode } appliesOnEachItem } } } minimumRequirement { __typename ... on DiscountMinimumSubtotal { greaterThanOrEqualToSubtotal { amount currencyCode } } } combinesWith { orderDiscounts productDiscounts shippingDiscounts } } } } }`, { code: input.code });
+  const result = await query<{ node: { id: string; codeDiscount: DiscountSnapshot } | null }>(`query ReferralCreatedDiscount($code: String!) { node: codeDiscountNodeByCode(code: $code) { id codeDiscount { __typename ... on DiscountCodeBasic { title usageLimit appliesOncePerCustomer startsAt endsAt codes(first: 2) { nodes { code } pageInfo { hasNextPage } } context { __typename ... on DiscountCustomers { customers { id } } } customerGets { items { __typename ... on AllDiscountItems { allItems } } value { __typename ... on DiscountAmount { amount { amount currencyCode } appliesOnEachItem } } } minimumRequirement { __typename ... on DiscountMinimumSubtotal { greaterThanOrEqualToSubtotal { amount currencyCode } } } combinesWith { orderDiscounts productDiscounts shippingDiscounts } } } } }`, { code: input.code });
   if (!result.node) throw new RewardBlocked('Created discount not yet readable; retry with fixed code');
   if (result.node.id!==id || !validRewardDiscount(result.node.codeDiscount,input)) throw new RewardBlocked('Created discount restrictions differ from expected',true);
   return id;

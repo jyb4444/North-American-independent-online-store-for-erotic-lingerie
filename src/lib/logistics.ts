@@ -73,7 +73,6 @@ type ShopifyOrderPayload = {
   currency?: string | null;
   currency_code?: string | null;
   processed_at?: string | null;
-  updated_at?: string | null;
   fulfillments?: ShopifyFulfillmentPayload[];
   line_items?: ShopifyLineItemPayload[];
 };
@@ -254,64 +253,35 @@ export async function upsertOrderFromShopify(payload: ShopifyOrderPayload): Prom
 
   const supabase = createAdminClient();
   const userId = await getUserIdForEmail(email);
-  const record = {
-    user_id: userId,
-    shopify_order_id: shopifyOrderId,
-    shopify_order_number: orderNumber,
-    email,
-    phone: payload.phone ?? null,
-    financial_status: payload.financial_status ?? null,
-    fulfillment_status: payload.fulfillment_status ?? null,
-    total_amount: normalizeAmount(payload.current_total_price ?? payload.total_price),
-    currency: payload.currency_code ?? payload.currency ?? 'USD',
-    processed_at: payload.processed_at ?? null,
-  };
-  const sourceUpdatedAt = payload.updated_at?.trim();
-  let orderId: string | null = null;
 
-  if (sourceUpdatedAt && Number.isFinite(Date.parse(sourceUpdatedAt))) {
-    const { data, error } = await supabase.rpc('upsert_shopify_order_if_fresh', {
-      p_user_id: record.user_id,
-      p_shopify_order_id: record.shopify_order_id,
-      p_shopify_order_number: record.shopify_order_number,
-      p_email: record.email,
-      p_phone: record.phone,
-      p_financial_status: record.financial_status,
-      p_fulfillment_status: record.fulfillment_status,
-      p_total_amount: record.total_amount,
-      p_currency: record.currency,
-      p_processed_at: record.processed_at,
-      p_shopify_updated_at: sourceUpdatedAt,
-    });
-    if (!error) {
-      orderId = typeof data === 'string' ? data : null;
-      // NULL means an equal or newer webhook already won the atomic timestamp guard.
-      if (!orderId) {
-        const existing = await supabase.from('orders').select('id').eq('shopify_order_id', shopifyOrderId).single();
-        if (existing.error || !existing.data) throw new Error('Fresh order state lookup failed');
-        return getOrderById(existing.data.id);
-      }
-    } else if (!['PGRST202', '42883'].includes(error.code ?? '')) {
-      throw new Error('Order freshness guard failed');
-    }
-  }
+  const { data: order, error } = await supabase
+    .from('orders')
+    .upsert({
+      user_id: userId,
+      shopify_order_id: shopifyOrderId,
+      shopify_order_number: orderNumber,
+      email,
+      phone: payload.phone ?? null,
+      financial_status: payload.financial_status ?? null,
+      fulfillment_status: payload.fulfillment_status ?? null,
+      total_amount: normalizeAmount(payload.current_total_price ?? payload.total_price),
+      currency: payload.currency_code ?? payload.currency ?? 'USD',
+      processed_at: payload.processed_at ?? null,
+    }, { onConflict: 'shopify_order_id' })
+    .select('*, shipments(*, shipment_events(*))')
+    .single();
 
-  if (!orderId) {
-    const { data, error } = await supabase.from('orders').upsert(record, { onConflict: 'shopify_order_id' }).select('id').single();
-    if (error) throw new Error(error.message);
-    orderId = data.id;
-  }
-  if (!orderId) throw new Error('Order upsert returned no identity');
+  if (error) throw new Error(error.message);
 
   for (const lineItem of payload.line_items ?? []) {
-    await upsertOrderItem(orderId, lineItem);
+    await upsertOrderItem(order.id, lineItem);
   }
 
   for (const fulfillment of payload.fulfillments ?? []) {
-    await upsertShipmentForOrder(orderId, fulfillment);
+    await upsertShipmentForOrder(order.id, fulfillment);
   }
 
-  return getOrderById(orderId);
+  return getOrderById(order.id);
 }
 
 async function upsertAdminOrderForUser(node: ShopifyAdminOrderNode, userId: string): Promise<OrderWithShipments | null> {

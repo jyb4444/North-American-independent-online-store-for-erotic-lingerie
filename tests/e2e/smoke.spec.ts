@@ -4,6 +4,7 @@
  */
 import { MOCK_PRODUCTS } from '@/mock/products';
 import { MOCK_COLLECTIONS } from '@/mock/collections';
+import { isPublicCollectionHandle, isPublicProductHandle } from '@/lib/catalog-visibility';
 import { USERS } from '../helpers/seed';
 import { expect, signIn, test } from './fixtures';
 
@@ -27,8 +28,19 @@ const STATIC_PAGES = [
 
 const PUBLIC_PAGES = [
   ...STATIC_PAGES,
-  ...MOCK_COLLECTIONS.map((collection) => `/collections/${collection.handle}`),
-  ...MOCK_PRODUCTS.map((product) => `/products/${product.handle}`),
+  ...MOCK_COLLECTIONS.filter((collection) => isPublicCollectionHandle(collection.handle)).map(
+    (collection) => `/collections/${collection.handle}`,
+  ),
+  ...MOCK_PRODUCTS.filter((product) => isPublicProductHandle(product.handle)).map(
+    (product) => `/products/${product.handle}`,
+  ),
+];
+
+const HIDDEN_CATALOG_PAGES = [
+  '/collections/frontpage',
+  '/products/fishnet-halter-bodystocking',
+  '/products/half-cup-underwire-lace-bodysuit-waist-cinching-lingerie',
+  '/products/leopard-jacquard-pearl-bodysuit-mesh-lingerie-set',
 ];
 
 const ACCOUNT_PAGES = ['/account', '/account/profile', '/account/addresses', '/account/wishlist', '/account/orders', '/orders', '/returns'];
@@ -49,7 +61,11 @@ test.describe('public pages', () => {
     test.use({ failOnPageIssues: false });
 
     test('unknown product and collection pages return 404', async ({ page }) => {
-      for (const path of ['/products/does-not-exist-e2e', '/collections/does-not-exist-e2e']) {
+      for (const path of [
+        '/products/does-not-exist-e2e',
+        '/collections/does-not-exist-e2e',
+        ...HIDDEN_CATALOG_PAGES,
+      ]) {
         const response = await page.goto(path);
         expect(response?.status(), path).toBe(404);
         await expect(page.getByText(/not found|doesn.t exist|404/i).first()).toBeVisible();

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Eye, EyeOff, Check } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import AddressManager from '@/components/account/AddressManager';
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -94,7 +95,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="mx-auto max-w-xl px-4 py-14 sm:px-6">
+    <div className="mx-auto max-w-2xl px-4 py-14 sm:px-6">
       <div className="mb-8 flex items-center justify-between">
         <div>
           <p className="mb-1 text-xs font-medium uppercase tracking-[0.3em] text-gold-400">Account</p>
@@ -166,7 +167,7 @@ export default function ProfilePage() {
       </section>
 
       {/* ── Change Password ── */}
-      <section className="border border-gold-600/20 bg-wine-900 p-6">
+      <section className="mb-8 border border-gold-600/20 bg-wine-900 p-6">
         <h2 className="mb-5 font-serif text-lg font-light text-ivory">Change Password</h2>
         <form onSubmit={handlePasswordChange} className="space-y-4">
           {[
@@ -214,6 +215,10 @@ export default function ProfilePage() {
             {pwSuccess ? <><Check size={13} /> Password Updated</> : pwLoading ? '...' : 'Update Password'}
           </button>
         </form>
+      </section>
+
+      <section className="border border-gold-600/20 bg-wine-900 p-6">
+        <AddressManager />
       </section>
     </div>
   );

@@ -5,7 +5,7 @@ import type { Product } from '@/types';
 
 let catalogPromise: Promise<Product[]> | null = null;
 
-function loadCatalog(): Promise<Product[]> {
+export function loadCatalog(): Promise<Product[]> {
   catalogPromise ??= fetch('/api/catalog')
     .then((res) => (res.ok ? res.json() : Promise.reject(new Error(`catalog ${res.status}`))))
     .then((data: { products: Product[] }) => data.products)

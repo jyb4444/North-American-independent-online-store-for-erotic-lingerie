@@ -303,7 +303,7 @@ export default function CartDrawer() {
         if (insertError) throw insertError;
       }
 
-      notifyWishlistChanged();
+      notifyWishlistChanged(1);
       removeItem(item.variantId);
       track.cartItemMovedToWishlist({
         product_id: product.id,

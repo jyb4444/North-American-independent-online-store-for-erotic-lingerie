@@ -13,6 +13,7 @@ export default function HeaderWishlistLink() {
   return (
     <Link
       href={isAuthenticated ? '/account/wishlist' : '/login'}
+      prefetch
       aria-label={isAuthenticated ? 'Private wishlist' : 'Sign in to save styles'}
       title={isAuthenticated ? undefined : 'Sign in to save styles'}
       onClick={() => {

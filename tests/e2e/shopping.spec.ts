@@ -1,6 +1,7 @@
 /** Browsing, search, product page and bag journeys. */
 import type { Page } from '@playwright/test';
 import { MOCK_PRODUCTS } from '@/mock/products';
+import { isPublicProductHandle } from '@/lib/catalog-visibility';
 import { expect, test } from './fixtures';
 
 const PRODUCT = MOCK_PRODUCTS[0]; // Bow Satin Corset Garter Set — $39.99, S–XL, Navy Blue / Black
@@ -30,12 +31,16 @@ test('header navigation leads to a collection with products', async ({ page }) =
 test('collection sorting by price puts the cheapest / most expensive product first', async ({ page }) => {
   await page.goto('/collections/all');
   const firstProduct = () => page.locator('main a[href^="/products/"]').first().getAttribute('href');
-  const byPrice = [...MOCK_PRODUCTS].sort((a, b) => a.price - b.price);
-  const sort = page.locator('main select').first();
+  const byPrice = MOCK_PRODUCTS
+    .filter((product) => isPublicProductHandle(product.handle))
+    .sort((a, b) => a.price - b.price);
+  const sort = page.getByRole('button', { name: 'Featured', exact: true });
 
-  await sort.selectOption('price-asc');
+  await sort.click();
+  await page.getByRole('option', { name: 'Price: Low to High' }).click();
   await expect.poll(firstProduct).toBe(`/products/${byPrice[0].handle}`);
-  await sort.selectOption('price-desc');
+  await page.getByRole('button', { name: 'Price: Low to High', exact: true }).click();
+  await page.getByRole('option', { name: 'Price: High to Low' }).click();
   await expect.poll(firstProduct).toBe(`/products/${byPrice.at(-1)!.handle}`);
 });
 

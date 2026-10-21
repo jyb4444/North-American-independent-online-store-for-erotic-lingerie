@@ -10,7 +10,7 @@ import { useCartStore } from '@/store/cart';
 import { track } from '@/lib/analytics';
 import { notifyWishlistChanged } from '@/hooks/useWishlistSummary';
 import WishlistReminderBanner from '@/components/wishlist/WishlistReminderBanner';
-import { useCatalog } from '@/hooks/useCatalog';
+import { loadCatalog } from '@/hooks/useCatalog';
 import type { Database } from '@/lib/supabase/types';
 
 type WishlistRow = Database['public']['Tables']['wishlists']['Row'];
@@ -18,7 +18,6 @@ type WishlistRow = Database['public']['Tables']['wishlists']['Row'];
 export default function WishlistPage() {
   const router = useRouter();
   const [items, setItems] = useState<WishlistRow[]>([]);
-  const { products: catalog, loading: catalogLoading } = useCatalog();
   const [loading, setLoading] = useState(true);
   const [movingId, setMovingId] = useState<string | null>(null);
   const [removingId, setRemovingId] = useState<string | null>(null);
@@ -37,7 +36,8 @@ export default function WishlistPage() {
   }, [supabase]);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      const user = session?.user;
       if (!user) {
         router.push('/login');
         return;
@@ -56,7 +56,7 @@ export default function WishlistPage() {
     try {
       await supabase.from('wishlists').delete().eq('id', id);
       setItems((prev) => prev.filter((i) => i.id !== id));
-      notifyWishlistChanged();
+      notifyWishlistChanged(-1);
       track.wishlistRemoved({
         product_id: item.product_id,
         product_handle: item.product_handle,
@@ -74,10 +74,7 @@ export default function WishlistPage() {
     setMessage('');
 
     try {
-      if (catalogLoading) {
-        setMessage('Still loading the latest styles. Please try again in a moment.');
-        return;
-      }
+      const catalog = await loadCatalog();
       const product = catalog.find((p) => p.id === item.product_id || p.handle === item.product_handle);
       // First variant that is actually in stock; the saved price may be out of date.
       const variant = product?.variants.find((v) => v.stock > 0);
@@ -103,7 +100,7 @@ export default function WishlistPage() {
 
       await supabase.from('wishlists').delete().eq('id', item.id);
       setItems((prev) => prev.filter((i) => i.id !== item.id));
-      notifyWishlistChanged();
+      notifyWishlistChanged(-1);
       track.wishlistRemoved({
         product_id: item.product_id,
         product_handle: item.product_handle,
