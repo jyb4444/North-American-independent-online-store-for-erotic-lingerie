@@ -2,8 +2,10 @@
  * D05 in the browser: the bag verifies a gift card with Shopify, shows the real balance
  * instead of a client-side "discount", and hands the code to Shopify checkout.
  */
-import { expect, test, type Page } from '@playwright/test';
+import type { Page } from '@playwright/test';
 import { MOCK_GIFT_CARD, REGULAR_VARIANT, recordedCartCreates, resetShopifyMock } from '../helpers/shopify-mock';
+import { USERS } from '../helpers/seed';
+import { expect, signIn, test } from './fixtures';
 
 const CART_ITEM = {
   variantId: REGULAR_VARIANT,
@@ -34,6 +36,16 @@ async function openBagWithOneItem(page: Page) {
 
 test.beforeEach(resetShopifyMock);
 
+test('a signed-in checkout is bound to the verified site-account email', async ({ page }) => {
+  await signIn(page, USERS.alice);
+
+  const res = await page.request.post('/api/shopify/cart', { data: { items: [CART_ITEM] } });
+  expect(res.status(), await res.text()).toBe(200);
+
+  const [input] = await recordedCartCreates();
+  expect(input.buyerIdentity).toEqual({ email: USERS.alice });
+});
+
 test('a valid gift card shows the Shopify balance and is passed to checkout', async ({ page }) => {
   await openBagWithOneItem(page);
 
@@ -59,12 +71,16 @@ test('a valid gift card shows the Shopify balance and is passed to checkout', as
   expect(creates.at(-1)?.giftCardCodes).toEqual([MOCK_GIFT_CARD.code]);
 });
 
-test('an invalid gift card is rejected with a message and nothing is applied', async ({ page }) => {
-  await openBagWithOneItem(page);
+test.describe(() => {
+  test.use({ expectedConsoleErrors: [/422 \(Unprocessable Entity\).*\/api\/shopify\/cart/] });
 
-  await page.getByRole('textbox', { name: 'Gift card code' }).fill('NOT-A-REAL-CODE');
-  await page.getByRole('button', { name: 'Apply' }).click();
+  test('an invalid gift card is rejected with a message and nothing is applied', async ({ page }) => {
+    await openBagWithOneItem(page);
 
-  await expect(page.getByText(/could not be applied/)).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Remove gift card' })).toHaveCount(0);
+    await page.getByRole('textbox', { name: 'Gift card code' }).fill('NOT-A-REAL-CODE');
+    await page.getByRole('button', { name: 'Apply' }).click();
+
+    await expect(page.getByText(/could not be applied/)).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Remove gift card' })).toHaveCount(0);
+  });
 });

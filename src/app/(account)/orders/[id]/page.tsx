@@ -6,7 +6,6 @@ import { getOrderForUser } from '@/lib/logistics';
 import { getReturnRequestsForOrder, getSignedReturnMediaUrls } from '@/lib/returns';
 import ReturnRequestForm from '@/components/returns/ReturnRequestForm';
 import ReturnPhotoGallery from '@/components/returns/ReturnPhotoGallery';
-import ReturnTrackingForm from '@/components/returns/ReturnTrackingForm';
 
 function formatDate(value: string | null) {
   if (!value) return 'Pending';
@@ -24,10 +23,6 @@ function money(value: number | null, currency: string) {
 
 function label(value: string | null) {
   return value ? value.replace(/_/g, ' ') : 'Preparing';
-}
-
-function canAddTracking(status: string) {
-  return ['approved', 'awaiting_customer_shipment', 'customer_shipped'].includes(status);
 }
 
 function requestStatusTone(status: string) {
@@ -177,12 +172,6 @@ export default async function OrderDetailPage({
                     <span className={`border px-2 py-1 text-[10px] uppercase tracking-widest ${requestStatusTone(request.status)}`}>
                       {label(request.status)}
                     </span>
-                    <span className="border border-gold-600/30 px-2 py-1 text-[10px] uppercase tracking-widest text-ivory-dim">
-                      {label(request.eligibility_status)}
-                    </span>
-                    <span className="border border-gold-600/30 px-2 py-1 text-[10px] uppercase tracking-widest text-ivory-dim">
-                      Shopify {label(request.shopify_sync_status)}
-                    </span>
                   </div>
                 </div>
 
@@ -247,7 +236,6 @@ export default async function OrderDetailPage({
                   </Link>
                 </div>
 
-                {canAddTracking(request.status) && <ReturnTrackingForm requestId={request.id} />}
               </div>
             ))}
           </div>

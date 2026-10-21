@@ -10,10 +10,7 @@ import type { OrderItem } from '@/lib/logistics';
 const RESOLUTIONS: Array<{ value: DesiredResolution; label: string }> = [
   { value: 'return_refund', label: 'Return for refund' },
   { value: 'exchange', label: 'Exchange' },
-  { value: 'reship', label: 'Reship missing/wrong item' },
-  { value: 'partial_refund', label: 'Partial refund' },
-  { value: 'refund', label: 'Refund without return' },
-  { value: 'cancel_order', label: 'Cancel order' },
+  { value: 'reship', label: 'Replace a wrong or missing item' },
 ];
 
 const REASONS: Array<{ value: ReturnReason; label: string }> = [
@@ -40,7 +37,6 @@ type SelectedItem = {
   selected: boolean;
   quantity: number;
   itemCondition: ItemCondition;
-  reasonDetail: string;
 };
 
 function initialSelectedState(items: OrderItem[]) {
@@ -48,7 +44,6 @@ function initialSelectedState(items: OrderItem[]) {
     selected: false,
     quantity: 1,
     itemCondition: 'unopened_tags_attached' as ItemCondition,
-    reasonDetail: '',
   }]));
 }
 
@@ -112,7 +107,6 @@ export default function ReturnRequestForm({
         orderItemId,
         quantity: item.quantity,
         itemCondition: item.itemCondition,
-        reasonDetail: item.reasonDetail,
       }));
 
     if (requestItems.length === 0) {
@@ -169,9 +163,13 @@ export default function ReturnRequestForm({
           <RotateCcw size={18} />
         </div>
         <div>
-          <h2 className="font-serif text-xl font-light text-ivory">Start a Return</h2>
+          <h2 className="font-serif text-xl font-light text-ivory">Request a Return</h2>
           <p className="text-xs text-ivory-dim">{selectedCount} item{selectedCount === 1 ? '' : 's'} selected</p>
         </div>
+      </div>
+
+      <div className="border border-gold-400/30 bg-gold-400/10 p-4 text-sm leading-relaxed text-ivory-muted">
+        Submitting this form does not approve a return or issue a refund. Please wait for our email with return instructions before shipping anything.
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
@@ -265,18 +263,6 @@ export default function ReturnRequestForm({
                           ))}
                         </select>
                       </label>
-                      <label className="sm:col-span-2 text-xs uppercase tracking-widest text-ivory-dim">
-                        Item note
-                        <input
-                          value={state.reasonDetail}
-                          onChange={(event) => setSelected((current) => ({
-                            ...current,
-                            [item.id]: { ...current[item.id], reasonDetail: event.target.value },
-                          }))}
-                          className="mt-2 w-full border border-gold-600/20 bg-wine-900 px-3 py-3 text-sm normal-case tracking-normal text-ivory outline-none focus:border-gold-400"
-                          placeholder="Short detail for this item"
-                        />
-                      </label>
                     </div>
                   )}
                 </div>
@@ -287,20 +273,20 @@ export default function ReturnRequestForm({
       </div>
 
       <label className="block text-xs uppercase tracking-widest text-ivory-dim">
-        Details
+        What happened?
         <textarea
           value={customerNote}
           onChange={(event) => setCustomerNote(event.target.value)}
           rows={4}
           className="mt-2 w-full resize-none border border-gold-600/20 bg-wine-950 px-3 py-3 text-sm normal-case tracking-normal text-ivory outline-none focus:border-gold-400"
-          placeholder="Add fit notes, defect details, missing item details, or packaging concerns."
+          placeholder="Briefly describe the issue and what you would like us to review."
         />
       </label>
 
       <label className="flex cursor-pointer items-center justify-between gap-3 border border-dashed border-gold-600/30 bg-wine-950/40 px-4 py-4 text-sm text-ivory-muted">
         <span className="flex items-center gap-3">
           <Camera size={18} className="text-gold-400" />
-          {files?.length ? `${Math.min(files.length, 6)} file(s) selected` : 'Upload photos'}
+          {files?.length ? `${Math.min(files.length, 6)} file(s) selected` : 'Add photos (recommended for damage or quality issues)'}
         </span>
         <Upload size={16} className="text-gold-400" />
         <input
@@ -331,8 +317,11 @@ export default function ReturnRequestForm({
         disabled={submitting}
         className="w-full border border-gold-400 px-5 py-3 text-xs font-medium uppercase tracking-widest text-gold-400 transition hover:bg-gold-400 hover:text-wine-950 disabled:cursor-not-allowed disabled:opacity-50"
       >
-        {submitting ? 'Submitting...' : 'Submit Request'}
+        {submitting ? 'Submitting...' : 'Submit for Review'}
       </button>
+      <p className="text-center text-xs leading-relaxed text-ivory-dim">
+        Need help before submitting? <a href="/pages/contact" className="text-gold-400 hover:text-gold-300">Contact support</a> with your order number.
+      </p>
     </form>
   );
 }

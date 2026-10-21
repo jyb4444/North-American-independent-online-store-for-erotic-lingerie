@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { CartError, createShopifyCart, type CartLine } from '@/lib/shopify/cart';
 import { getProductByHandle } from '@/lib/products';
 import { MOCK_PRODUCTS } from '@/mock/products';
+import { createClient } from '@/lib/supabase/server';
 import type { CartItem } from '@/types';
 
 function isShopifyVariantGid(value?: string) {
@@ -32,6 +33,11 @@ async function resolveItemToLine(item: CartItem): Promise<CartLine | null> {
 function toQuantity(value: unknown): number | null {
   const quantity = Number(value);
   return Number.isInteger(quantity) && quantity >= 1 && quantity <= 99 ? quantity : null;
+}
+
+function getBuyerIp(req: NextRequest): string | undefined {
+  const forwarded = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim();
+  return forwarded || req.headers.get('x-real-ip')?.trim() || undefined;
 }
 
 export async function POST(req: NextRequest) {
@@ -79,7 +85,16 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const cart = await createShopifyCart({ lines: cartLines, giftCardCodes: giftCardCode ? [giftCardCode] : [] });
+    // Bind checkout contact details to the verified site session. The client cannot supply or
+    // override this email, so Shopify orders can be reconciled to the correct local account.
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    const cart = await createShopifyCart({
+      lines: cartLines,
+      giftCardCodes: giftCardCode ? [giftCardCode] : [],
+      buyerEmail: user?.email,
+      buyerIp: getBuyerIp(req),
+    });
 
     return NextResponse.json({
       cartId: cart.id,
