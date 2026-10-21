@@ -6,11 +6,9 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { Heart, Trash2, ShoppingBag } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
-import { useCartStore } from '@/store/cart';
 import { track } from '@/lib/analytics';
 import { notifyWishlistChanged } from '@/hooks/useWishlistSummary';
 import WishlistReminderBanner from '@/components/wishlist/WishlistReminderBanner';
-import { loadCatalog } from '@/hooks/useCatalog';
 import type { Database } from '@/lib/supabase/types';
 
 type WishlistRow = Database['public']['Tables']['wishlists']['Row'];
@@ -19,10 +17,8 @@ export default function WishlistPage() {
   const router = useRouter();
   const [items, setItems] = useState<WishlistRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [movingId, setMovingId] = useState<string | null>(null);
   const [removingId, setRemovingId] = useState<string | null>(null);
   const [message, setMessage] = useState('');
-  const addItem = useCartStore((s) => s.addItem);
   const supabase = useMemo(() => createClient(), []);
 
   const fetchWishlist = useCallback(async (userId: string) => {
@@ -64,53 +60,6 @@ export default function WishlistPage() {
       });
     } finally {
       setRemovingId(null);
-    }
-  }
-
-  async function moveToBag(item: WishlistRow) {
-    if (movingId) return;
-
-    setMovingId(item.id);
-    setMessage('');
-
-    try {
-      const catalog = await loadCatalog();
-      const product = catalog.find((p) => p.id === item.product_id || p.handle === item.product_handle);
-      // First variant that is actually in stock; the saved price may be out of date.
-      const variant = product?.variants.find((v) => v.stock > 0);
-
-      if (!product || !variant) {
-        setMessage('This style is no longer available. It has been kept in your wishlist.');
-        return;
-      }
-
-      addItem({
-        variantId: variant.id,
-        productId: product.id,
-        title: product.title,
-        image: product.images[0] ?? item.product_image ?? '',
-        price: product.price,
-        size: variant.size,
-        color: variant.color,
-        colorHex: variant.colorHex,
-        quantity: 1,
-        shopifyVariantId: variant.shopifyVariantId,
-      });
-      track.addedToCart(product, variant, 1);
-
-      await supabase.from('wishlists').delete().eq('id', item.id);
-      setItems((prev) => prev.filter((i) => i.id !== item.id));
-      notifyWishlistChanged(-1);
-      track.wishlistRemoved({
-        product_id: item.product_id,
-        product_handle: item.product_handle,
-        source: 'wishlist_move_to_bag',
-      });
-      setMessage('Moved to your private bag.');
-    } catch {
-      setMessage('Could not move this style. Please try again.');
-    } finally {
-      setMovingId(null);
     }
   }
 
@@ -192,15 +141,13 @@ export default function WishlistPage() {
                     <p className="font-serif text-sm text-gold-400">${item.product_price.toFixed(2)}</p>
                   )}
                   <div className="grid gap-2 pt-2">
-                    <button
-                      type="button"
-                      onClick={() => void moveToBag(item)}
-                      disabled={movingId === item.id}
-                      className="flex items-center justify-center gap-1.5 border border-gold-400 px-3 py-2 text-[10px] font-medium uppercase tracking-widest text-gold-400 transition hover:bg-gold-400 hover:text-wine-950 disabled:cursor-wait disabled:border-wine-700 disabled:text-wine-600"
+                    <Link
+                      href={`/products/${item.product_handle}`}
+                      className="flex items-center justify-center gap-1.5 border border-gold-400 px-3 py-2 text-[10px] font-medium uppercase tracking-widest text-gold-400 transition hover:bg-gold-400 hover:text-wine-950"
                     >
                       <ShoppingBag size={11} />
-                      {movingId === item.id ? 'Moving...' : 'Move to Bag'}
-                    </button>
+                      Choose options
+                    </Link>
                     <Link
                       href={`/products/${item.product_handle}`}
                       className="text-center text-[10px] uppercase tracking-widest text-ivory-dim transition hover:text-gold-400"

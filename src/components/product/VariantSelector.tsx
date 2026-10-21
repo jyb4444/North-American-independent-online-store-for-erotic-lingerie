@@ -10,15 +10,20 @@ import SizeGuideModal from '@/components/ui/SizeGuideModal';
 type Props = {
   product: Product;
   onVariantChange: (variant: ProductVariant | null) => void;
+  preferredSize?: string | null;
 };
 
 type NotifyState = 'idle' | 'sending' | 'success' | 'error';
 
-export default function VariantSelector({ product, onVariantChange }: Props) {
+export default function VariantSelector({ product, onVariantChange, preferredSize }: Props) {
   const sizes = [...new Set(product.variants.map((v) => v.size))];
   const colors = [...new Map(product.variants.map((v) => [v.color, v])).values()];
 
-  const [selectedSize, setSelectedSize] = useState<string | null>(null);
+  const [selectedSize, setSelectedSize] = useState<string | null>(() => (
+    preferredSize && product.variants.some((variant) => variant.size === preferredSize && variant.stock > 0)
+      ? preferredSize
+      : null
+  ));
   const [selectedColor, setSelectedColor] = useState<string | null>(null);
   const [sizeGuideOpen, setSizeGuideOpen] = useState(false);
 

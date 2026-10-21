@@ -39,6 +39,7 @@ export default function ProductPageClient({ product, relatedProducts }: Props) {
   const [added, setAdded] = useState(false);
   const [copied, setCopied] = useState(false);
   const [fitAdvisorOpen, setFitAdvisorOpen] = useState(false);
+  const [recommendedSize, setRecommendedSize] = useState<string | null>(null);
   const { recordView } = useRecentlyViewed();
   const addItem = useCartStore((s) => s.addItem);
 
@@ -180,7 +181,12 @@ export default function ProductPageClient({ product, relatedProducts }: Props) {
             </div>
           </section>
 
-          <VariantSelector product={product} onVariantChange={setSelectedVariant} />
+          <VariantSelector
+            key={`${product.id}:${recommendedSize ?? 'none'}`}
+            product={product}
+            onVariantChange={setSelectedVariant}
+            preferredSize={recommendedSize}
+          />
           <FitConfidenceBadge product={product} variant="pdp" onOpenFitAdvisor={() => setFitAdvisorOpen(true)} />
 
           <div>
@@ -249,8 +255,8 @@ export default function ProductPageClient({ product, relatedProducts }: Props) {
         onClose={() => setFitAdvisorOpen(false)}
         product={product}
         onSelectSize={(size) => {
-          const match = product.variants.find((v) => v.size === size);
-          if (match) setSelectedVariant(match);
+          setRecommendedSize(size);
+          setSelectedVariant(null);
         }}
       />
     </div>

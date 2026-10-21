@@ -155,4 +155,39 @@ test.describe('D05 redeeming a gift card at checkout', () => {
     expect(huge.status()).toBe(400);
     expect(await recordedCartCreates()).toEqual([]);
   });
+
+  test('checkout rejects bag items without both size and color', async ({ request }) => {
+    const res = await request.post('/api/shopify/cart', {
+      data: {
+        items: [{
+          productId: 'gid://shopify/Product/1',
+          variantId: REGULAR_VARIANT,
+          shopifyVariantId: REGULAR_VARIANT,
+          quantity: 1,
+          size: 'M',
+          color: '',
+        }],
+      },
+    });
+    expect(res.status()).toBe(400);
+    expect((await res.json()).error).toBe('Choose a size and color for every item before checkout.');
+    expect(await recordedCartCreates()).toEqual([]);
+  });
+
+  test('checkout identifies products that are not connected to Shopify', async ({ request }) => {
+    const res = await request.post('/api/shopify/cart', {
+      data: {
+        items: [{
+          productId: 'local-product',
+          variantId: 'local-variant',
+          quantity: 1,
+          size: 'M',
+          color: 'Black',
+        }],
+      },
+    });
+    expect(res.status()).toBe(400);
+    expect((await res.json()).error).toContain('not connected to Shopify checkout');
+    expect(await recordedCartCreates()).toEqual([]);
+  });
 });

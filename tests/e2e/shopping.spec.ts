@@ -72,6 +72,14 @@ test('search with no matches shows an empty state and Escape closes it', async (
 
 test('product page requires a size and colour before adding to bag', async ({ page }) => {
   await page.goto(`/products/${PRODUCT.handle}`);
+  const addButton = page.locator('main').getByRole('button', { name: 'Select Size & Color' });
+  await expect(addButton).toBeDisabled();
+
+  await page.locator('main').getByRole('button', { name: 'Black', exact: true }).click();
+  await expect(addButton).toBeDisabled();
+
+  await page.reload();
+  await page.locator('main').getByRole('button', { name: 'M', exact: true }).click();
   await expect(page.locator('main').getByRole('button', { name: 'Select Size & Color' })).toBeDisabled();
 });
 
