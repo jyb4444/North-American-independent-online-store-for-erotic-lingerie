@@ -119,7 +119,7 @@ export default function NewsletterSlide() {
                     Private Early Access
                   </p>
                   <p className="mt-1 text-[11px] leading-relaxed text-ivory-dim">
-                    New arrivals, members-only offers, and styling guides — sent discreetly.
+                    New arrivals, product updates, and styling guides — sent to this address.
                   </p>
                 </div>
               </div>

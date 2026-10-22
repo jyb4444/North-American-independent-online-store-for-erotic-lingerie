@@ -57,17 +57,22 @@ export const useCartStore = create<CartState>()(
         set((state) => {
           const existing = state.items.find((i) => i.variantId === newItem.variantId);
           if (existing) {
-            const nextQuantity = Math.min(99, existing.quantity + newItem.quantity);
+            const limit = Math.min(99, newItem.stock ?? existing.stock ?? 99);
+            const nextQuantity = Math.min(limit, existing.quantity + newItem.quantity);
             return {
               items: state.items.map((i) =>
                 i.variantId === newItem.variantId
-                  ? { ...i, quantity: nextQuantity }
+                  ? { ...i, ...newItem, quantity: nextQuantity }
                   : i
               ),
               isOpen: true,
             };
           }
-          return { items: [...state.items, newItem], isOpen: true };
+          const limit = Math.min(99, newItem.stock ?? 99);
+          return {
+            items: [...state.items, { ...newItem, quantity: Math.min(limit, Math.max(1, newItem.quantity)) }],
+            isOpen: true,
+          };
         });
       },
 
@@ -80,10 +85,11 @@ export const useCartStore = create<CartState>()(
           get().removeItem(variantId);
           return;
         }
-        const bounded = Math.min(99, Math.floor(quantity));
         set((state) => ({
           items: state.items.map((i) =>
-            i.variantId === variantId ? { ...i, quantity: bounded } : i
+            i.variantId === variantId
+              ? { ...i, quantity: Math.min(Math.max(1, Math.floor(quantity)), Math.min(99, i.stock ?? 99)) }
+              : i
           ),
         }));
       },

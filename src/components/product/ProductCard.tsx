@@ -8,13 +8,15 @@ import type { Product } from '@/types';
 import { track } from '@/lib/analytics';
 import FitConfidenceBadge from '@/components/product/FitConfidenceBadge';
 import WishlistButton from '@/components/product/WishlistButton';
+import { formatMoney, productImage, productImageAlt } from '@/lib/product-display';
 
 type Props = { product: Product };
 
 export default function ProductCard({ product, onQuickView }: Props & { onQuickView?: (p: Product) => void }) {
   const [hovered, setHovered] = useState(false);
-  const uniqueColors = [...new Map(product.variants.map((v) => [v.color, v])).values()];
-  const uniqueSizes = [...new Set(product.variants.map((v) => v.size))];
+  const inStockVariants = product.variants.filter((variant) => variant.stock > 0);
+  const uniqueColors = [...new Map(inStockVariants.map((v) => [v.color, v])).values()];
+  const uniqueSizes = [...new Set(inStockVariants.map((v) => v.size))];
   const discountPct = product.compareAtPrice
     ? Math.round(((product.compareAtPrice - product.price) / product.compareAtPrice) * 100)
     : null;
@@ -31,10 +33,10 @@ export default function ProductCard({ product, onQuickView }: Props & { onQuickV
     >
       {/* Image */}
       <div className="relative aspect-[3/4] overflow-hidden rounded-sm bg-wine-800">
-        <Link href={`/products/${product.handle}`} onClick={() => track.productViewed(product)} className="block h-full">
+        <Link href={`/products/${product.handle}`} onClick={() => track.productViewed(product)} className="relative block h-full">
           <Image
-            src={hovered && product.images[1] ? product.images[1] : product.images[0]}
-            alt={product.title}
+            src={hovered && product.images[1] ? product.images[1] : productImage(product)}
+            alt={hovered && product.images[1] ? productImageAlt(product, 1) : productImageAlt(product)}
             fill
             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
             className="object-cover transition-transform duration-700 group-hover:scale-105"
@@ -98,12 +100,12 @@ export default function ProductCard({ product, onQuickView }: Props & { onQuickV
 
         <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
           <span className={product.compareAtPrice ? 'text-sm text-crimson-400' : 'text-sm text-gold-400'}>
-            ${product.price.toFixed(2)}
+            {formatMoney(product.price, product.currency)}
           </span>
           {product.compareAtPrice && (
             <>
               <span className="text-sm text-ivory-dim line-through">
-                ${product.compareAtPrice.toFixed(2)}
+                {formatMoney(product.compareAtPrice, product.currency)}
               </span>
               {discountPct && (
                 <span className="text-[10px] uppercase tracking-widest text-crimson-400">
@@ -113,6 +115,10 @@ export default function ProductCard({ product, onQuickView }: Props & { onQuickV
             </>
           )}
         </div>
+
+        <p className="text-xs text-ivory-dim" aria-label={`Available colors: ${uniqueColors.map((variant) => variant.color).join(', ') || 'none'}`}>
+          {uniqueSizes.length === 1 && uniqueSizes[0] === 'Free Size' ? 'One size' : `Sizes ${uniqueSizes.join(', ') || 'unavailable'}`} · {uniqueColors.length} {uniqueColors.length === 1 ? 'color' : 'colors'}
+        </p>
 
         <FitConfidenceBadge product={product} variant="card" />
 

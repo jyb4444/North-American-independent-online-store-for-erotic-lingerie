@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Play, Ruler } from 'lucide-react';
 import { track } from '@/lib/analytics';
 import type { ModelMeasurements } from '@/types';
+import { PRODUCT_IMAGE_FALLBACK } from '@/lib/product-display';
 
 const VIDEO_SENTINEL = '__video__';
 
@@ -20,7 +21,8 @@ type Props = {
 
 export default function ProductGallery({ images, video, productId, title, altTexts, modelMeasurements }: Props) {
   // Combine images + optional video slot
-  const mediaItems: string[] = video ? [...images, VIDEO_SENTINEL] : images;
+  const safeImages = images.length ? images : [PRODUCT_IMAGE_FALLBACK];
+  const mediaItems: string[] = video ? [...safeImages, VIDEO_SENTINEL] : safeImages;
   const [activeIndex, setActiveIndex] = useState(0);
   const [zoom, setZoom] = useState({ active: false, x: 50, y: 50 });
 
@@ -104,9 +106,8 @@ export default function ProductGallery({ images, video, productId, title, altTex
           <div className="mt-2 flex items-center gap-1.5 text-[11px] text-ivory-dim">
             <Ruler size={11} className="text-gold-400/60" />
             <span>
-              Model: {modelMeasurements.height}
+              Model wears {modelMeasurements.size}. {modelMeasurements.height}
               {modelMeasurements.bust ? `, ${modelMeasurements.bust}` : ''}
-              {' '}— wearing size {modelMeasurements.size}
             </span>
           </div>
         )}
@@ -121,6 +122,8 @@ export default function ProductGallery({ images, video, productId, title, altTex
               <button
                 key={i}
                 onClick={() => selectMedia(i)}
+                aria-label={isVid ? 'Play product video' : `Show ${title}, image ${i + 1} of ${mediaItems.length}`}
+                aria-current={i === activeIndex ? 'true' : undefined}
                 className={`relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg border-2 transition ${
                   i === activeIndex ? 'border-white' : 'border-transparent opacity-50 hover:opacity-80'
                 }`}
@@ -130,7 +133,7 @@ export default function ProductGallery({ images, video, productId, title, altTex
                     <Play size={18} className="fill-gold-400 text-gold-400" />
                   </div>
                 ) : (
-                  <Image src={src} alt={altTexts?.[i] || `${title} thumbnail ${i + 1}`} fill sizes="64px" className="object-cover" />
+                  <Image src={src} alt="" fill sizes="64px" className="object-cover" />
                 )}
               </button>
             );

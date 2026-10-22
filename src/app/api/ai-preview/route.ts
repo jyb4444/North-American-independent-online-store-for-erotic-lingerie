@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
 import { createClient } from '@/lib/supabase/server';
 import { getProductByHandle } from '@/lib/products';
+import { aiPreviewRefusal, aiPreviewSafetyIssue } from '@/lib/ai-preview-safety';
 
 export const runtime = 'nodejs';
 
@@ -36,22 +37,6 @@ function getHuggingFaceConfig() {
     height: Number.isFinite(height) ? height : 1024,
     steps: Number.isFinite(steps) ? steps : 4,
   };
-}
-
-// The preview depicts an adult model in lingerie. Refuse anything that could describe a
-// minor or ask for explicit imagery; the description should only cover body shape and size.
-const MINOR_TERMS = /\b(child|children|kid|kids|minor|minors|underage|under-age|teen|teens|teenage|teenager|young girl|young boy|little girl|schoolgirl|school girl|preteen|pre-teen|loli|lolita|juvenile|infant|toddler|baby)\b/i;
-const EXPLICIT_TERMS = /\b(nude|naked|nudity|topless|bottomless|nsfw|porn|porno|pornographic|explicit|sex|sexual|genital|genitals|nipple|nipples|erotic)\b/i;
-
-function refuseBodyDescription(text: string): string | null {
-  const ages = [...text.matchAll(/\b(\d{1,2})\s*(?:yo|y\/o|yrs?|years?)(?:\s*old)?\b/gi)].map((match) => Number(match[1]));
-  if (MINOR_TERMS.test(text) || ages.some((age) => age < 18)) {
-    return 'AI preview only depicts adult models. Please describe body shape and size only.';
-  }
-  if (EXPLICIT_TERMS.test(text)) {
-    return 'Please describe body shape and size only.';
-  }
-  return null;
 }
 
 function buildPrompt(productTitle: string, productDescription: string, bodyDescription: string): string {
@@ -170,11 +155,19 @@ export async function POST(req: Request) {
   if (!/^[a-z0-9][a-z0-9-]{0,199}$/.test(productHandle) || bodyDescription.length > 300) {
     return NextResponse.json({ error: 'Description is too long.' }, { status: 400 });
   }
-  const refusal = refuseBodyDescription(bodyDescription);
-  if (refusal) return NextResponse.json({ error: refusal }, { status: 400 });
+  const bodyIssue = aiPreviewSafetyIssue(bodyDescription);
+  if (bodyIssue) return NextResponse.json({ error: aiPreviewRefusal(bodyIssue) }, { status: 400 });
 
   const product = await getProductByHandle(productHandle);
   if (!product) return NextResponse.json({ error: 'Product not found.' }, { status: 404 });
+
+  // Validate the complete prompt before checking provider configuration. Product copy is
+  // untrusted catalogue input and can make an otherwise safe body description ineligible.
+  const prompt = buildPrompt(product.title, product.description, bodyDescription);
+  const promptIssue = aiPreviewSafetyIssue(prompt);
+  if (promptIssue) {
+    return NextResponse.json({ error: aiPreviewRefusal(promptIssue) }, { status: 400 });
+  }
 
   const config = getHuggingFaceConfig();
 
@@ -187,8 +180,6 @@ export async function POST(req: Request) {
       { status: 503 }
     );
   }
-
-  const prompt = buildPrompt(product.title, product.description, bodyDescription);
 
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
     let res: Response;

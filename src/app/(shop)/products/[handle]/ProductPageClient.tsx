@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import ProductGallery from '@/components/product/ProductGallery';
 import VariantSelector from '@/components/product/VariantSelector';
 import WishlistButton from '@/components/product/WishlistButton';
@@ -25,14 +25,6 @@ function isShopifyVariantGid(value?: string) {
   return !!value && value.startsWith('gid://shopify/ProductVariant/');
 }
 
-function productDetailBullets(description: string) {
-  return description
-    .split(/(?<=[.!?])\s+/)
-    .map((sentence) => sentence.trim())
-    .filter((sentence) => sentence.length > 24)
-    .slice(0, 5);
-}
-
 export default function ProductPageClient({ product, relatedProducts }: Props) {
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null);
   const [quantity, setQuantity] = useState(1);
@@ -40,9 +32,16 @@ export default function ProductPageClient({ product, relatedProducts }: Props) {
   const [copied, setCopied] = useState(false);
   const [fitAdvisorOpen, setFitAdvisorOpen] = useState(false);
   const [recommendedSize, setRecommendedSize] = useState<string | null>(null);
+  const [selection, setSelection] = useState<{ size: string | null; color: string | null }>({ size: null, color: null });
   const { recordView } = useRecentlyViewed();
   const addItem = useCartStore((s) => s.addItem);
   const displayedPrice = selectedVariant?.price ?? product.price;
+  const selectedStock = selectedVariant?.stock ?? 0;
+
+  const handleVariantChange = useCallback((variant: ProductVariant | null) => {
+    setSelectedVariant(variant);
+    setQuantity((current) => variant ? Math.min(current, variant.stock) : 1);
+  }, []);
 
   useEffect(() => {
     recordView(product.id);
@@ -61,31 +60,38 @@ export default function ProductPageClient({ product, relatedProducts }: Props) {
   }
 
   function handleAddToCart() {
-    if (!selectedVariant) return;
+    if (!selectedVariant || selectedVariant.stock <= 0) return;
+    const safeQuantity = Math.min(quantity, selectedVariant.stock);
     addItem({
       variantId: selectedVariant.id,
       productId: product.id,
       title: product.title,
       image: product.images[0],
       price: displayedPrice,
+      currency: selectedVariant.currency ?? product.currency ?? 'USD',
+      stock: selectedVariant.stock,
       size: selectedVariant.size,
       color: selectedVariant.color,
       colorHex: selectedVariant.colorHex,
-      quantity,
+      quantity: safeQuantity,
       shopifyVariantId: isShopifyVariantGid(selectedVariant.shopifyVariantId ?? selectedVariant.id)
         ? selectedVariant.shopifyVariantId ?? selectedVariant.id
         : undefined,
     });
-    track.addedToCart(product, selectedVariant, quantity);
+    track.addedToCart(product, selectedVariant, safeQuantity);
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);
   }
 
-  const discountPct = product.compareAtPrice
+  const discountPct = product.compareAtPrice && (!selectedVariant || selectedVariant.price === product.price)
     ? Math.round(((product.compareAtPrice - product.price) / product.compareAtPrice) * 100)
     : null;
   const categoryLabel = product.category.charAt(0).toUpperCase() + product.category.slice(1);
-  const details = productDetailBullets(product.description);
+  const selectionPrompt = !selection.size && !selection.color
+    ? 'Select Size & Color'
+    : !selection.size
+      ? 'Select Size'
+      : 'Select Color';
 
   return (
     <div className="mx-auto max-w-7xl px-4 pb-28 pt-14 sm:px-6 md:pb-14">
@@ -158,23 +164,13 @@ export default function ProductPageClient({ product, relatedProducts }: Props) {
             <div>
               <h2 className="text-base font-semibold text-ivory">About this item</h2>
               <p className="mt-3 text-[15px] font-light leading-7 text-ivory-muted">{product.description}</p>
-              {details.length > 1 && (
-                <ul className="mt-4 space-y-3">
-                  {details.map((detail) => (
-                    <li key={detail} className="flex gap-3 text-[15px] leading-7 text-ivory-muted">
-                      <span className="mt-3 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-gold-400" />
-                      <span>{detail}</span>
-                    </li>
-                  ))}
-                </ul>
-              )}
             </div>
 
             <div className="grid gap-3 border-y border-gold-600/15 py-4 sm:grid-cols-2">
-              <div>
+              {product.material !== 'See product details for material information.' && <div>
                 <p className="text-xs font-medium uppercase tracking-widest text-ivory-muted">Material</p>
                 <p className="mt-1 text-sm leading-6 text-ivory-muted">{product.material}</p>
-              </div>
+              </div>}
               <div>
                 <p className="text-xs font-medium uppercase tracking-widest text-ivory-muted">Care</p>
                 <p className="mt-1 text-sm leading-6 text-ivory-muted">{product.careInstructions}</p>
@@ -183,9 +179,9 @@ export default function ProductPageClient({ product, relatedProducts }: Props) {
           </section>
 
           <VariantSelector
-            key={`${product.id}:${recommendedSize ?? 'none'}`}
             product={product}
-            onVariantChange={setSelectedVariant}
+            onVariantChange={handleVariantChange}
+            onSelectionChange={setSelection}
             preferredSize={recommendedSize}
           />
           <FitConfidenceBadge product={product} variant="pdp" onOpenFitAdvisor={() => setFitAdvisorOpen(true)} />
@@ -193,9 +189,9 @@ export default function ProductPageClient({ product, relatedProducts }: Props) {
           <div>
             <p className="mb-3 text-xs font-medium uppercase tracking-[0.2em] text-ivory-muted">Quantity</p>
             <div className="flex w-fit items-center gap-4 border border-wine-700 px-5 py-2.5">
-              <button onClick={() => setQuantity((q) => Math.max(1, q - 1))} className="text-ivory-muted hover:text-gold-400 transition">-</button>
+              <button aria-label="Decrease quantity" onClick={() => setQuantity((q) => Math.max(1, q - 1))} disabled={quantity <= 1} className="text-ivory-muted transition hover:text-gold-400 disabled:cursor-not-allowed disabled:opacity-40">-</button>
               <span className="w-5 text-center text-sm text-ivory">{quantity}</span>
-              <button onClick={() => setQuantity((q) => q + 1)} className="text-ivory-muted hover:text-gold-400 transition">+</button>
+              <button aria-label="Increase quantity" onClick={() => setQuantity((q) => Math.min(selectedStock, q + 1))} disabled={!selectedVariant || quantity >= selectedStock} className="text-ivory-muted transition hover:text-gold-400 disabled:cursor-not-allowed disabled:opacity-40">+</button>
             </div>
           </div>
 
@@ -219,7 +215,7 @@ export default function ProductPageClient({ product, relatedProducts }: Props) {
             }`}
           >
             <ShoppingBag size={15} />
-            {added ? 'Added to Bag' : selectedVariant ? 'Add to Bag' : 'Select Size & Color'}
+            {added ? 'Added to Bag' : selectedVariant ? 'Add to Bag' : selectionPrompt}
           </button>
         </div>
       </div>
@@ -246,7 +242,7 @@ export default function ProductPageClient({ product, relatedProducts }: Props) {
             }`}
           >
             <ShoppingBag size={14} />
-            {added ? 'Added' : selectedVariant ? 'Add to Bag' : 'Select Size'}
+            {added ? 'Added' : selectedVariant ? 'Add to Bag' : selectionPrompt}
           </button>
         </div>
       </div>
@@ -257,7 +253,6 @@ export default function ProductPageClient({ product, relatedProducts }: Props) {
         product={product}
         onSelectSize={(size) => {
           setRecommendedSize(size);
-          setSelectedVariant(null);
         }}
       />
     </div>

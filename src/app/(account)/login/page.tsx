@@ -8,6 +8,7 @@ import { createClient } from '@/lib/supabase/client';
 import { safeRedirectPath } from '@/lib/redirect';
 import SuccessNotice from '@/components/ui/SuccessNotice';
 import { Eye, EyeOff } from 'lucide-react';
+import { publicReferralRewardSettings, referralMarketingEnabled } from '@/lib/referral-public';
 
 type Mode = 'signin' | 'signup';
 
@@ -26,6 +27,8 @@ export default function LoginPage() {
   const [success, setSuccess] = useState('');
 
   const supabase = createClient();
+  const referralsEnabled = referralMarketingEnabled();
+  const referralSettings = publicReferralRewardSettings();
 
   useEffect(() => {
     const id = window.setTimeout(() => {
@@ -65,7 +68,7 @@ export default function LoginPage() {
             first_name: firstName,
             last_name: lastName,
             // Credited server-side in /auth/callback once the email is confirmed.
-            ...(referralCode.trim() ? { referral_code: referralCode.trim().toUpperCase() } : {}),
+            ...(referralsEnabled && referralCode.trim() ? { referral_code: referralCode.trim().toUpperCase() } : {}),
           },
           emailRedirectTo: `${window.location.origin}/auth/callback`,
         },
@@ -138,7 +141,7 @@ export default function LoginPage() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Name fields (signup only) */}
-            {mode === 'signup' && (
+            {mode === 'signup' && referralsEnabled && (
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label htmlFor="login-first-name" className="mb-1.5 block text-xs font-medium uppercase tracking-widest text-ivory-muted">
@@ -248,7 +251,11 @@ export default function LoginPage() {
                   className="w-full border border-wine-700 bg-wine-800 px-3 py-2.5 font-mono text-sm text-ivory placeholder-ivory-dim/50 focus:border-gold-400 focus:outline-none transition"
                 />
                 <p className="mt-1 text-[11px] text-ivory-dim">
-                  Have a friend&rsquo;s code? Get $10 off your first order of $30+ after you confirm your email.
+                  Have a friend&rsquo;s code? Get ${referralSettings.amount.toFixed(0)} off your first order
+                  {referralSettings.minimumSubtotal > 0
+                    ? ` of $${referralSettings.minimumSubtotal.toFixed(0)}+`
+                    : ''}{' '}
+                  after you confirm your email.
                 </p>
               </div>
             )}

@@ -667,7 +667,7 @@ export default function CartDrawer() {
                   Review your bag before continuing to secure checkout.
                 </p>
                 <p className="text-[11px] text-ivory-dim">
-                  Billing appears discreetly on all statements.
+                  Final shipping and taxes are shown at checkout.
                 </p>
                 <PrivacyTrustBar context="cart" compact />
                 <CheckoutButton
