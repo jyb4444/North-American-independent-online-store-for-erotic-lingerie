@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
-import { ArrowLeft, CheckCircle2, Package, RotateCcw, ShieldCheck, Truck } from 'lucide-react';
+import { ArrowLeft, Package, RotateCcw, ShieldCheck, Truck } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { getOrderForUser } from '@/lib/logistics';
 import { getReturnRequestsForOrder, getSignedReturnMediaUrls } from '@/lib/returns';
@@ -145,7 +145,7 @@ export default async function OrderDetailPage({
             <li>Underwear and bottom intimate items are final sale for hygiene reasons.</li>
             <li>Damaged hosiery or stockings cannot be returned unless the issue is a verified defect or transit damage.</li>
             <li>Unopened eligible items can be reviewed within 30 days.</li>
-            <li>Approved returns use customer self-ship first; add tracking after approval.</li>
+            <li>Wait for our email before shipping anything.</li>
           </ul>
         </section>
       </div>
@@ -175,34 +175,18 @@ export default async function OrderDetailPage({
                   </div>
                 </div>
 
-                <div className="mt-4 space-y-2">
-                  {request.policy_notes.map((note) => (
-                    <div key={note} className="flex gap-2 text-xs text-ivory-muted">
-                      <CheckCircle2 size={13} className="mt-0.5 flex-shrink-0 text-gold-400" />
-                      {note}
-                    </div>
-                  ))}
-                </div>
-
                 {request.return_request_items.length > 0 && (
                   <div className="mt-4 grid gap-3 border-t border-gold-600/10 pt-4 text-xs text-ivory-dim sm:grid-cols-2">
                     {request.return_request_items.map((item) => (
                       <div key={item.id} className="border border-gold-600/10 bg-wine-900/50 p-3">
                         <p className="text-sm text-ivory">{item.order_items.title}</p>
-                        <p className="mt-1">Qty {item.quantity} · {label(item.item_condition)}</p>
-                        {item.reason_detail && (
-                          <p className="mt-2 text-ivory-muted">Item note: {item.reason_detail}</p>
-                        )}
+                        <p className="mt-1">Qty {item.quantity}</p>
                       </div>
                     ))}
                   </div>
                 )}
 
-                <div className="mt-4 grid gap-4 border-t border-gold-600/10 pt-4 text-xs text-ivory-dim sm:grid-cols-3">
-                  <div>
-                    <p className="uppercase tracking-widest text-ivory-dim">Resolution</p>
-                    <p className="mt-1 text-ivory-muted">{label(request.desired_resolution)}</p>
-                  </div>
+                <div className="mt-4 grid gap-4 border-t border-gold-600/10 pt-4 text-xs text-ivory-dim sm:grid-cols-2">
                   <div>
                     <p className="uppercase tracking-widest text-ivory-dim">Photos</p>
                     <div className="mt-2">
@@ -214,7 +198,7 @@ export default async function OrderDetailPage({
                     <p className="mt-1 text-ivory-muted">{label(request.reason)}</p>
                   </div>
                   {request.customer_note && (
-                    <div className="sm:col-span-3">
+                    <div className="sm:col-span-2">
                       <p className="uppercase tracking-widest text-ivory-dim">Details</p>
                       <p className="mt-1 text-ivory-muted">{request.customer_note}</p>
                     </div>

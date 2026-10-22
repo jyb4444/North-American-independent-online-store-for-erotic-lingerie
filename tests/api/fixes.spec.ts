@@ -19,9 +19,59 @@ test.describe('D10 abandoned-cart cron authorization', () => {
     expect(res.status()).toBe(200);
   });
 
+  test('empty carts and carts followed by a paid order are closed without email', async ({ request }) => {
+    const userId = await userIdFor(USERS.alice);
+    await clearOutbox();
+    await admin().from('cart_snapshots').delete().eq('user_id', userId);
+    await admin().from('cart_snapshots').insert({
+      user_id: userId, email: USERS.alice, items: [], reminder_sent: false, updated_at: '2000-01-01T00:00:00Z',
+    });
+    const res = await request.get('/api/cron/abandoned-cart', { headers: { authorization: `Bearer ${process.env.CRON_SECRET}` } });
+    expect(res.status()).toBe(200);
+    const snapshot = await admin().from('cart_snapshots').select('reminder_sent').eq('user_id', userId).single();
+    expect(snapshot.data?.reminder_sent).toBe(true);
+    expect((await readOutbox()).filter((mail) => mail.to === USERS.alice)).toHaveLength(0);
+    await admin().from('cart_snapshots').delete().eq('user_id', userId);
+  });
+
   test('rejects a missing or wrong secret', async ({ request }) => {
     expect((await request.get('/api/cron/abandoned-cart')).status()).toBe(401);
     expect((await request.get('/api/cron/abandoned-cart', { headers: { authorization: 'Bearer nope' } })).status()).toBe(401);
+  });
+});
+
+test.describe('durable newsletter delivery', () => {
+  const email = 'newsletter-delivery@example.test';
+  test.beforeEach(async () => {
+    await admin().from('notification_jobs' as never).delete().like('identity', `newsletter-%:${email}%`);
+    await admin().from('newsletter_subscribers' as never).delete().eq('email', email);
+    await clearOutbox();
+  });
+  test.afterEach(async () => {
+    await admin().from('notification_jobs' as never).delete().like('identity', `newsletter-%:${email}%`);
+    await admin().from('newsletter_subscribers' as never).delete().eq('email', email);
+  });
+
+  test('requires confirmation, persists both deliveries, and supports unsubscribe', async ({ request }) => {
+    const signup = await request.post('/api/newsletter', { data: { email } });
+    expect(signup.status(), await signup.text()).toBe(200);
+    let subscriber = (await admin().from('newsletter_subscribers' as never).select('status').eq('email', email).single()).data as unknown as { status: string };
+    expect(subscriber.status).toBe('pending');
+    expect((await request.get('/api/cron/notifications', { headers: { authorization: `Bearer ${process.env.CRON_SECRET}` } })).status()).toBe(200);
+    expect((await readOutbox()).some((mail) => mail.to === email && mail.subject.includes('Confirm'))).toBe(true);
+
+    const job = (await admin().from('notification_jobs' as never).select('payload').like('identity', `newsletter-confirm:${email}:%`).single()).data as unknown as { payload: { confirmationToken: string; unsubscribeToken: string } };
+    const confirm = await request.get(`/api/newsletter/confirm?token=${encodeURIComponent(job.payload.confirmationToken)}&unsubscribe=${encodeURIComponent(job.payload.unsubscribeToken)}`, { maxRedirects: 0 });
+    expect(confirm.status()).toBe(307);
+    subscriber = (await admin().from('newsletter_subscribers' as never).select('status').eq('email', email).single()).data as unknown as { status: string };
+    expect(subscriber.status).toBe('active');
+    expect((await request.get('/api/cron/notifications', { headers: { authorization: `Bearer ${process.env.CRON_SECRET}` } })).status()).toBe(200);
+    expect((await readOutbox()).some((mail) => mail.to === email && mail.subject.includes('Welcome'))).toBe(true);
+
+    const unsubscribe = await request.get(`/api/newsletter/unsubscribe?token=${encodeURIComponent(job.payload.unsubscribeToken)}`, { maxRedirects: 0 });
+    expect(unsubscribe.status()).toBe(307);
+    subscriber = (await admin().from('newsletter_subscribers' as never).select('status').eq('email', email).single()).data as unknown as { status: string };
+    expect(subscriber.status).toBe('unsubscribed');
   });
 });
 
@@ -101,11 +151,44 @@ test.describe('D15–D17 return requests', () => {
     expect((await submit(request, { items: [item(robeId, 1)] })).status()).toBe(200);
   });
 
-  test('invalid reasons and conditions get a clear message', async ({ request }) => {
+  test('concurrent return submissions claim an item only once', async ({ request }) => {
+    const [first, second] = await Promise.all([
+      submit(request, { items: [item(robeId, 2)] }),
+      submit(request, { items: [item(robeId, 2)] }),
+    ]);
+    expect([first.status(), second.status()].sort()).toEqual([200, 400]);
+    const { data: rows } = await admin().from('return_requests').select('id, return_request_items(id), return_request_events(id)').eq('order_id', orderId);
+    expect(rows).toHaveLength(1);
+    expect(rows?.[0].return_request_items).toHaveLength(1);
+    expect(rows?.[0].return_request_events).toHaveLength(1);
+  });
+
+  test('atomic return RPC rolls back the request when an item insert fails', async () => {
+    const aliceId = await userIdFor(USERS.alice);
+    const requestNumber = `ROLLBACK-${Date.now()}`;
+    const result = await admin().rpc('create_return_request_atomic', {
+      p_user_id: aliceId,
+      p_order_id: orderId,
+      p_request_number: requestNumber,
+      p_desired_resolution: 'return_refund',
+      p_reason: 'size_fit',
+      p_policy_notes: ['rollback test'],
+      p_customer_note: null,
+      p_media_urls: [],
+      p_items: [{ order_item_id: robeId, quantity: 1, item_condition: 'invalid-condition', reason_detail: null }],
+    });
+    expect(result.error).not.toBeNull();
+    const { count } = await admin().from('return_requests').select('id', { count: 'exact', head: true }).eq('request_number', requestNumber);
+    expect(count).toBe(0);
+  });
+
+  test('invalid reasons are rejected and client-supplied conditions are ignored', async ({ request }) => {
     const reason = await submit(request, { reason: 'because', items: [item(robeId)] });
     const condition = await submit(request, { items: [item(robeId, 1, { itemCondition: 'pristine' })] });
     expect((await reason.json()).error).toBe('Choose a valid reason.');
-    expect((await condition.json()).error).toBe('Choose a valid item condition.');
+    expect(condition.status()).toBe(200);
+    const { data } = await admin().from('return_request_items').select('item_condition').eq('return_request_id', (await condition.json()).request.id).single();
+    expect(data?.item_condition).toBe('opened_unused');
   });
 
   test('photos must come from the customer\'s own upload folder', async ({ request }) => {
@@ -114,7 +197,7 @@ test.describe('D15–D17 return requests', () => {
     expect(res.status()).toBe(400);
   });
 
-  test('D16 the 30-day window runs from delivery, not from the order date', async ({ request }) => {
+  test('age and policy cases are sent to merchant review instead of auto-approved or rejected', async ({ request }) => {
     const aliceId = await userIdFor(USERS.alice);
     const daysAgo = (days: number) => new Date(Date.now() - days * 86_400_000).toISOString();
     const db = admin();
@@ -137,7 +220,8 @@ test.describe('D15–D17 return requests', () => {
           data: { orderId: order!.id, desiredResolution: 'return_refund', reason: 'changed_mind', items: [item(line!.id)] },
         });
         const { request: created } = await res.json();
-        expect(created.eligibility_status, `${label}: delivered ${deliveredDaysAgo} days ago`).toBe(label === 'late' ? 'eligible' : 'ineligible');
+        expect(created.eligibility_status, `${label}: delivered ${deliveredDaysAgo} days ago`).toBe('review_required');
+        expect(created.status).toBe('submitted');
       }
     } finally {
       await db.from('orders').delete().in('id', ids);
@@ -174,6 +258,135 @@ test('D24 a signed webhook with malformed JSON is a 400, not a crash', async ({ 
   expect(res.status()).toBe(400);
 });
 
+test('a late older order webhook cannot overwrite newer Shopify state', async ({ request }) => {
+  const orderId = `stale-order-${Date.now()}`;
+  const headers = (topic: string, body: string) => ({
+    'content-type': 'application/json',
+    'x-shopify-shop-domain': 'e2e-store.myshopify.com',
+    'x-shopify-event-id': crypto.randomUUID(),
+    'x-shopify-topic': topic,
+    'x-shopify-hmac-sha256': signShopifyWebhook(body),
+  });
+  const payload = (updatedAt: string, financialStatus: string) => JSON.stringify({
+    id: `gid://shopify/Order/${orderId}`,
+    name: `#${orderId}`,
+    email: USERS.alice,
+    financial_status: financialStatus,
+    fulfillment_status: null,
+    total_price: '30.00',
+    currency: 'USD',
+    updated_at: updatedAt,
+    line_items: [],
+  });
+  try {
+    const newer = payload('2026-10-22T12:00:00Z', 'paid');
+    const older = payload('2026-10-22T11:00:00Z', 'pending');
+    expect((await request.post('/api/shopify/webhook', { headers: headers('orders/updated', newer), data: newer })).status()).toBe(200);
+    expect((await request.post('/api/shopify/webhook', { headers: headers('orders/updated', older), data: older })).status()).toBe(200);
+    const stored = await admin().from('orders').select('financial_status,shopify_updated_at').eq('shopify_order_id', orderId).single();
+    expect(stored.data?.financial_status).toBe('paid');
+    expect(stored.data?.shopify_updated_at).toBe('2026-10-22T12:00:00+00:00');
+  } finally {
+    await admin().from('orders').delete().eq('shopify_order_id', orderId);
+  }
+});
+
+test('a fulfillment event cannot create a phantom shipment', async ({ request }) => {
+  const eventId = crypto.randomUUID();
+  const body = JSON.stringify({
+    id: 987654,
+    fulfillment_id: 123456,
+    order_id: `gid://shopify/Order/event-only-${Date.now()}`,
+    status: 'delivered',
+    happened_at: new Date().toISOString(),
+  });
+  const before = await admin().from('shipments').select('id', { count: 'exact', head: true });
+  const response = await request.post('/api/shopify/webhook', {
+    headers: {
+      'content-type': 'application/json',
+      'x-shopify-shop-domain': 'e2e-store.myshopify.com',
+      'x-shopify-event-id': eventId,
+      'x-shopify-topic': 'fulfillment_events/create',
+      'x-shopify-hmac-sha256': signShopifyWebhook(body),
+    },
+    data: body,
+  });
+  expect(response.status(), await response.text()).toBe(200);
+  expect(await response.json()).toMatchObject({ received: true, ignored: true });
+  const after = await admin().from('shipments').select('id', { count: 'exact', head: true });
+  expect(after.count).toBe(before.count);
+  expect((await admin().from('shopify_webhook_inbox' as never).select('event_id').eq('event_id', eventId)).data).toEqual([]);
+});
+
+test('an out-of-order fulfillment is persisted and replayed when its order arrives', async ({ request }) => {
+  const orderId = `out-of-order-${Date.now()}`;
+  const fulfillmentEventId = crypto.randomUUID();
+  const fulfillmentBody = JSON.stringify({
+    id: `gid://shopify/Fulfillment/${orderId}-f`,
+    order_id: `gid://shopify/Order/${orderId}`,
+    shipment_status: 'out_for_delivery',
+    tracking_number: 'TRACK-E2E',
+    tracking_url: 'https://example.test/track/TRACK-E2E',
+  });
+  const headers = (topic: string, eventId: string, body: string) => ({
+    'content-type': 'application/json',
+    'x-shopify-shop-domain': 'e2e-store.myshopify.com',
+    'x-shopify-event-id': eventId,
+    'x-shopify-topic': topic,
+    'x-shopify-hmac-sha256': signShopifyWebhook(body),
+  });
+
+  try {
+    await clearOutbox();
+    const fulfillment = await request.post('/api/shopify/webhook', {
+      headers: headers('fulfillments/create', fulfillmentEventId, fulfillmentBody), data: fulfillmentBody,
+    });
+    expect(fulfillment.status(), await fulfillment.text()).toBe(200);
+    const pending = await admin().from('shopify_webhook_inbox' as never).select('status').eq('event_id', fulfillmentEventId).single();
+    expect((pending.data as unknown as { status: string }).status).toBe('pending');
+
+    const orderBody = JSON.stringify({
+      id: `gid://shopify/Order/${orderId}`,
+      name: `#${orderId}`,
+      email: USERS.alice,
+      financial_status: 'pending',
+      total_price: '30.00',
+      currency: 'USD',
+      line_items: [],
+    });
+    const order = await request.post('/api/shopify/webhook', {
+      headers: headers('orders/create', crypto.randomUUID(), orderBody), data: orderBody,
+    });
+    expect(order.status(), await order.text()).toBe(200);
+
+    const storedOrder = await admin().from('orders').select('id').eq('shopify_order_id', orderId).single();
+    const shipment = await admin().from('shipments').select('status').eq('order_id', storedOrder.data!.id).single();
+    expect(shipment.data?.status).toBe('in_transit');
+    const completed = await admin().from('shopify_webhook_inbox' as never).select('status').eq('event_id', fulfillmentEventId).single();
+    expect((completed.data as unknown as { status: string }).status).toBe('complete');
+
+    const queued = await admin().from('notification_jobs' as never).select('id,status').like('identity', 'shipment-created:%').eq('payload->>orderId', storedOrder.data!.id).single();
+    expect((queued.data as unknown as { status: string }).status).toBe('pending');
+    const cronHeaders = { authorization: `Bearer ${process.env.CRON_SECRET}` };
+    const [firstCron, secondCron] = await Promise.all([
+      request.get('/api/cron/notifications', { headers: cronHeaders }),
+      request.get('/api/cron/notifications', { headers: cronHeaders }),
+    ]);
+    expect(firstCron.status()).toBe(200);
+    expect(secondCron.status()).toBe(200);
+    const shipmentEmails = (await readOutbox()).filter((mail) => mail.to === USERS.alice && mail.subject.includes(orderId));
+    expect(shipmentEmails).toHaveLength(1);
+  } finally {
+    const storedOrder = await admin().from('orders').select('id').eq('shopify_order_id', orderId).maybeSingle();
+    if (storedOrder.data?.id) {
+      await admin().from('shipments').delete().eq('order_id', storedOrder.data.id);
+      await admin().from('orders').delete().eq('id', storedOrder.data.id);
+    }
+    await admin().from('shopify_webhook_inbox' as never).delete().eq('event_id', fulfillmentEventId);
+    await admin().from('notification_jobs' as never).delete().like('identity', 'shipment-created:%');
+  }
+});
+
 test.describe('D32 AI preview input', () => {
   const refused = [
     'a 16 year old girl, petite',
@@ -185,7 +398,7 @@ test.describe('D32 AI preview input', () => {
     test(`refuses "${bodyDescription}"`, async ({ request }) => {
       const res = await request.post('/api/ai-preview', {
         headers: { 'x-forwarded-for': `198.51.100.${refused.indexOf(bodyDescription) + 1}` },
-        data: { productTitle: 'Lace Set', bodyDescription },
+        data: { productHandle: 'bow-corset-garter-set', bodyDescription },
       });
       expect(res.status()).toBe(400);
     });
@@ -194,7 +407,7 @@ test.describe('D32 AI preview input', () => {
   test('a normal description passes validation (then needs the AI provider)', async ({ request }) => {
     const res = await request.post('/api/ai-preview', {
       headers: { 'x-forwarded-for': '198.51.100.50' },
-      data: { productTitle: 'Lace Set', bodyDescription: 'a tall woman with an hourglass figure, warm medium skin tone' },
+      data: { productHandle: 'bow-corset-garter-set', bodyDescription: 'a tall woman with an hourglass figure, warm medium skin tone' },
     });
     expect(res.status()).toBe(503); // HF_TOKEN is not configured in tests
   });

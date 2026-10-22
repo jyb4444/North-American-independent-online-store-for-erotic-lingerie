@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
-import { initAnalytics, track } from '@/lib/analytics';
+import { disableAnalytics, enableAnalytics, initAnalytics, track } from '@/lib/analytics';
 import { getCookieConsent } from '@/components/layout/CookieConsent';
 
 export default function AnalyticsProvider({ children }: { children: React.ReactNode }) {
@@ -21,7 +21,13 @@ export default function AnalyticsProvider({ children }: { children: React.ReactN
 
     function onConsent(e: Event) {
       const ce = e as CustomEvent<{ value: string }>;
-      if (ce.detail?.value === 'granted') tryInit();
+      if (ce.detail?.value === 'granted') {
+        if (initialized.current) enableAnalytics();
+        else tryInit();
+        track.pageView(window.location.pathname);
+      } else if (ce.detail?.value === 'denied' && initialized.current) {
+        disableAnalytics();
+      }
     }
 
     window.addEventListener('velour:consent', onConsent);

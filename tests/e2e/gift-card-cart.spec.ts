@@ -23,7 +23,7 @@ const CART_ITEM = {
 async function openBagWithOneItem(page: Page) {
   await page.context().addCookies([{ name: 'velour_age_verified', value: '1', url: 'http://localhost:3100' }]);
   await page.addInitScript((item) => {
-    localStorage.setItem('cart-storage', JSON.stringify({ state: { items: [item] }, version: 0 }));
+    localStorage.setItem('cart-storage', JSON.stringify({ state: { items: [item], cartOwner: 'guest' }, version: 0 }));
     localStorage.setItem('velour_cookie_consent_v1', 'denied');
     localStorage.setItem('velour_newsletter_dismissed', '1');
     localStorage.setItem('velour_first_free_offer_v1', JSON.stringify({ dismissedAt: new Date().toISOString() }));

@@ -85,6 +85,9 @@ export type Database = {
           size: string;
           color: string;
           notified: boolean;
+          attempts: number;
+          next_attempt_at: string;
+          last_error: string | null;
           created_at: string;
         };
         Insert: {
@@ -93,8 +96,12 @@ export type Database = {
           product_handle: string;
           size: string;
           color: string;
+          notified?: boolean;
+          attempts?: number;
+          next_attempt_at?: string;
+          last_error?: string | null;
         };
-        Update: { notified?: boolean };
+        Update: { notified?: boolean; attempts?: number; next_attempt_at?: string; last_error?: string | null };
       };
       cart_snapshots: {
         Row: {
@@ -103,6 +110,8 @@ export type Database = {
           email: string;
           items: unknown;
           reminder_sent: boolean;
+          reminder_attempts: number;
+          reminder_last_error: string | null;
           updated_at: string;
         };
         Insert: {
@@ -110,10 +119,14 @@ export type Database = {
           email: string;
           items: unknown;
           reminder_sent?: boolean;
+          reminder_attempts?: number;
+          reminder_last_error?: string | null;
         };
         Update: {
           items?: unknown;
           reminder_sent?: boolean;
+          reminder_attempts?: number;
+          reminder_last_error?: string | null;
           updated_at?: string;
         };
       };
@@ -171,6 +184,7 @@ export type Database = {
           total_amount: number | null;
           currency: string;
           processed_at: string | null;
+          shopify_updated_at: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -185,6 +199,7 @@ export type Database = {
           total_amount?: number | null;
           currency?: string;
           processed_at?: string | null;
+          shopify_updated_at?: string | null;
         };
         Update: {
           user_id?: string | null;
@@ -196,6 +211,7 @@ export type Database = {
           total_amount?: number | null;
           currency?: string;
           processed_at?: string | null;
+          shopify_updated_at?: string | null;
           updated_at?: string;
         };
       };

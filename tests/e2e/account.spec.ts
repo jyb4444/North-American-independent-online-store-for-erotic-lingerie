@@ -56,6 +56,22 @@ test.describe('authentication', () => {
     const stored = await page.evaluate(() => localStorage.getItem('cart-storage') ?? '');
     expect(stored).not.toContain(PRODUCT.title);
   });
+
+  test('legacy unowned bag data is not exposed to a signed-out visitor', async ({ page }) => {
+    await page.addInitScript((item) => {
+      localStorage.setItem('cart-storage', JSON.stringify({ state: { items: [item], pendingCheckout: null }, version: 0 }));
+    }, {
+      productId: PRODUCT.id, variantId: PRODUCT.variants[0].id, title: PRODUCT.title,
+      price: PRODUCT.price, quantity: 1, image: PRODUCT.images[0], size: PRODUCT.variants[0].size,
+      color: PRODUCT.variants[0].color,
+    });
+    await page.goto('/');
+    await expect(page.getByRole('banner').getByText('Sign In')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Open bag' })).not.toContainText('1');
+    const state = await page.evaluate(() => JSON.parse(localStorage.getItem('cart-storage') ?? '{}').state);
+    expect(state.cartOwner).toBe('guest');
+    expect(state.items).toEqual([]);
+  });
   });
 
   test('after signing in, the user returns to the page that required it', async ({ page }) => {
@@ -92,6 +108,20 @@ test.describe('authentication', () => {
     await expect(page.getByText('Passwords do not match.')).toBeVisible();
     await expect(page).toHaveURL(/\/login\?mode=signup$/);
   });
+
+  test.describe(() => {
+  test.use({ expectedConsoleErrors: [/403 \(Forbidden\).*\/api\/account\/recover-password/] });
+  test('password recovery is discoverable and cannot be used from an ordinary session', async ({ page }) => {
+    await page.goto('/login');
+    await expect(page.getByRole('link', { name: 'Forgot your password?' })).toHaveAttribute('href', '/forgot-password');
+    await signIn(page, USERS.alice);
+    await page.goto('/update-password');
+    await page.getByLabel('New password', { exact: true }).fill('Different123!');
+    await page.getByLabel('Confirm new password').fill('Different123!');
+    await page.getByRole('button', { name: 'Update password' }).click();
+    await expect(page.getByText(/reset link is invalid or expired/i)).toBeVisible();
+  });
+  });
 });
 
 test.describe('profile and addresses', () => {
@@ -107,6 +137,19 @@ test.describe('profile and addresses', () => {
     await page.reload();
     await expect(page.getByLabel('First Name')).toHaveValue('Mallory');
     await expect(page.getByLabel('Last Name')).toHaveValue('E2E');
+  });
+
+  test('account deletion is a reversible review request, not immediate deletion', async ({ page }) => {
+    const malloryId = await userIdFor(USERS.mallory);
+    await admin().from('account_deletion_requests' as never).delete().eq('user_id', malloryId);
+    await signIn(page, USERS.mallory);
+    await page.goto('/account/profile');
+    page.once('dialog', (dialog) => dialog.accept());
+    await page.getByRole('button', { name: 'Request account deletion' }).click();
+    await expect(page.getByText('Your deletion request has been submitted.')).toBeVisible();
+    const request = await admin().from('account_deletion_requests' as never).select('status,email').eq('user_id', malloryId).single();
+    expect(request.data).toMatchObject({ status: 'requested', email: USERS.mallory });
+    expect((await admin().auth.admin.getUserById(malloryId)).data.user).toBeTruthy();
   });
 
   test('addresses can be added, made default and deleted', async ({ page }) => {
@@ -156,8 +199,9 @@ test.describe('wishlist', () => {
 
     await signIn(page, USERS.mallory);
     await page.goto(`/products/${PRODUCT.handle}`);
-    await page.locator('main').getByRole('button', { name: 'Save to wishlist' }).first().click();
-    await expect(page.locator('main').getByRole('button', { name: 'Remove from wishlist' }).first()).toBeVisible();
+    const primaryWishlistButton = page.locator('[data-wishlist-source="product_detail"]');
+    await primaryWishlistButton.click();
+    await expect(primaryWishlistButton).toHaveAttribute('aria-label', 'Remove from wishlist');
 
     await page.goto('/account/wishlist');
     await expect(page.getByText(PRODUCT.title).first()).toBeVisible();

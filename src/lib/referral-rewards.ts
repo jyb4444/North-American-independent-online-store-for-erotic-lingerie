@@ -13,6 +13,7 @@ export function referralRewardSettings() {
   return { amount: Number.isFinite(amount) && amount>0 ? amount : 10, minimumSubtotal: Number.isFinite(minimumSubtotal) && minimumSubtotal>=0 ? minimumSubtotal : 30 };
 }
 export async function issueReferralReward(input: { userId: string; email: string; kind: ReferralRewardKind; referredUserId: string }) {
+  if (!referralRewardsEnabled()) return;
   if (input.kind!=='welcome' || input.userId!==input.referredUserId) throw new Error('Referrer rewards require verified payment claim');
   const settings = referralRewardSettings();
   const { error } = await createAdminClient().rpc('queue_referral_welcome', { p_user_id: input.userId, p_amount: settings.amount, p_minimum: settings.minimumSubtotal });
@@ -20,6 +21,7 @@ export async function issueReferralReward(input: { userId: string; email: string
 }
 /** A persisted paid event proves order synchronization already completed on its first delivery. */
 export async function knownReferralPayment(eventId: string, shop: string, hash: string) {
+  if (!referralRewardsEnabled()) return false;
   const {data,error}=await createAdminClient().from('referral_webhook_events').select('body_hash,shop_domain').eq('event_id',eventId).maybeSingle();
   if(missingRewardSchema(error) && !referralRewardsEnabled()) return false;
   if(error) throw new Error('Payment deduplication unavailable');
@@ -27,6 +29,7 @@ export async function knownReferralPayment(eventId: string, shop: string, hash: 
   return !!data;
 }
 export async function recordReferralPayment(input: { eventId: string; shop: string; hash: string; orderId: string; userId: string }) {
+  if (!referralRewardsEnabled()) return;
   const db=createAdminClient();
   const { error }=await db.from('referral_webhook_events').upsert({ event_id:input.eventId,shop_domain:input.shop,body_hash:input.hash,order_id:input.orderId,user_id:input.userId },{onConflict:'event_id',ignoreDuplicates:true});
   if (missingRewardSchema(error) && !referralRewardsEnabled()) return;

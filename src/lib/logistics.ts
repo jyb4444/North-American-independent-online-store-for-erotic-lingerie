@@ -1,8 +1,9 @@
 import crypto from 'crypto';
 import { createAdminClient } from '@/lib/supabase/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { sendShipmentCreatedEmail } from '@/lib/email';
+import { enqueueNotification } from '@/lib/notification-jobs';
 import { shopifyAdminFetch } from '@/lib/shopify/admin';
+import { readOrderAttribution } from '@/lib/shopify/order-attribution';
 
 export type ShipmentEvent = {
   id: string;
@@ -74,8 +75,10 @@ type ShopifyOrderPayload = {
   currency?: string | null;
   currency_code?: string | null;
   processed_at?: string | null;
+  updated_at?: string | null;
   fulfillments?: ShopifyFulfillmentPayload[];
   line_items?: ShopifyLineItemPayload[];
+  note_attributes?: Array<{ name?: string | null; value?: string | null }>;
 };
 
 type ShopifyFulfillmentPayload = {
@@ -140,10 +143,14 @@ type ShopifyAdminOrderNode = {
       };
     }>;
   };
+  customAttributes?: Array<{ key: string; value: string | null }>;
 };
 
-function normalizeId(value: unknown): string {
-  return String(value ?? '').trim();
+export function canonicalShopifyId(value: unknown, resource?: string): string {
+  const normalized = String(value ?? '').trim();
+  if (!normalized) return '';
+  if (!resource) return normalized.replace(/^gid:\/\/shopify\/[^/]+\//, '');
+  return normalized.replace(new RegExp(`^gid://shopify/${resource}/`), '');
 }
 
 function normalizeOrderNumber(payload: ShopifyOrderPayload): string {
@@ -154,6 +161,11 @@ function normalizeAmount(value: unknown): number | null {
   if (value === null || value === undefined || value === '') return null;
   const number = Number(value);
   return Number.isFinite(number) ? number : null;
+}
+
+export function shopifyOrderEmailQuery(email: string): string {
+  const escaped = email.trim().toLowerCase().replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+  return `email:"${escaped}"`;
 }
 
 function generateLookupToken(): string {
@@ -168,11 +180,12 @@ function getTrackingUrl(fulfillment: ShopifyFulfillmentPayload): string | null {
   return fulfillment.tracking_url ?? fulfillment.tracking_urls?.[0] ?? null;
 }
 
-function normalizeShipmentStatus(fulfillment: ShopifyFulfillmentPayload): string {
-  const raw = (fulfillment.shipment_status ?? fulfillment.status ?? '').toLowerCase();
-  if (raw.includes('deliver')) return 'delivered';
-  if (raw.includes('failure') || raw.includes('error')) return 'exception';
-  if (raw.includes('transit') || raw.includes('confirmed')) return 'in_transit';
+export function normalizeShipmentStatus(fulfillment: ShopifyFulfillmentPayload): string {
+  const raw = (fulfillment.shipment_status ?? fulfillment.status ?? '').toLowerCase().replace(/[\s-]+/g, '_');
+  if (raw === 'delivered') return 'delivered';
+  if (['failure', 'failed', 'error', 'attempted_delivery'].includes(raw)) return 'exception';
+  if (['in_transit', 'out_for_delivery', 'confirmed'].includes(raw)) return 'in_transit';
+  if (['cancelled', 'canceled'].includes(raw)) return 'cancelled';
   if (getTrackingNumber(fulfillment)) return 'shipped';
   return 'preparing';
 }
@@ -246,18 +259,20 @@ async function getUserIdForEmail(email: string): Promise<string | null> {
 }
 
 export async function upsertOrderFromShopify(payload: ShopifyOrderPayload): Promise<OrderWithShipments | null> {
-  const shopifyOrderId = normalizeId(payload.id ?? payload.admin_graphql_api_id);
+  const shopifyOrderId = canonicalShopifyId(payload.id ?? payload.admin_graphql_api_id, 'Order');
   const email = (payload.email ?? payload.contact_email ?? '').trim().toLowerCase();
   const orderNumber = normalizeOrderNumber(payload);
 
   if (!shopifyOrderId || !email || !orderNumber) return null;
 
   const supabase = createAdminClient();
-  const userId = await getUserIdForEmail(email);
-
-  const { data: order, error } = await supabase
-    .from('orders')
-    .upsert({
+  const attributedUserId = readOrderAttribution(payload.note_attributes);
+  const userId = attributedUserId ?? await getUserIdForEmail(email);
+  const parsedUpdatedAt = Date.parse(payload.updated_at ?? '');
+  const shopifyUpdatedAt = Number.isFinite(parsedUpdatedAt)
+    ? new Date(parsedUpdatedAt).toISOString()
+    : new Date().toISOString();
+  const orderValues = {
       user_id: userId,
       shopify_order_id: shopifyOrderId,
       shopify_order_number: orderNumber,
@@ -268,21 +283,45 @@ export async function upsertOrderFromShopify(payload: ShopifyOrderPayload): Prom
       total_amount: normalizeAmount(payload.current_total_price ?? payload.total_price),
       currency: payload.currency_code ?? payload.currency ?? 'USD',
       processed_at: payload.processed_at ?? null,
-    }, { onConflict: 'shopify_order_id' })
-    .select('*, shipments(*, shipment_events(*))')
-    .single();
+  };
+  let orderId: string;
+  let applied = true;
+  const guarded = await supabase.rpc('upsert_shopify_order_if_fresh' as never, {
+    p_user_id: orderValues.user_id,
+    p_shopify_order_id: orderValues.shopify_order_id,
+    p_shopify_order_number: orderValues.shopify_order_number,
+    p_email: orderValues.email,
+    p_phone: orderValues.phone,
+    p_financial_status: orderValues.financial_status,
+    p_fulfillment_status: orderValues.fulfillment_status,
+    p_total_amount: orderValues.total_amount,
+    p_currency: orderValues.currency,
+    p_processed_at: orderValues.processed_at,
+    p_shopify_updated_at: shopifyUpdatedAt,
+  } as never);
+  if (guarded.error && ['PGRST202','42883'].includes(guarded.error.code ?? '')) {
+    const legacy = await supabase.from('orders').upsert(orderValues, { onConflict: 'shopify_order_id' }).select('id').single();
+    if (legacy.error) throw new Error(legacy.error.message);
+    orderId = legacy.data.id;
+  } else {
+    if (guarded.error) throw new Error('Order synchronization unavailable');
+    const result = (guarded.data as unknown as Array<{order_id:string;applied:boolean}> | null)?.[0];
+    if (!result) throw new Error('Order synchronization returned no result');
+    orderId = result.order_id;
+    applied = result.applied;
+  }
 
-  if (error) throw new Error(error.message);
+  if (!applied) return getOrderById(orderId);
 
   for (const lineItem of payload.line_items ?? []) {
-    await upsertOrderItem(order.id, lineItem);
+    await upsertOrderItem(orderId, lineItem);
   }
 
   for (const fulfillment of payload.fulfillments ?? []) {
-    await upsertShipmentForOrder(order.id, fulfillment);
+    await upsertShipmentForOrder(orderId, fulfillment);
   }
 
-  return getOrderById(order.id);
+  return getOrderById(orderId);
 }
 
 async function upsertAdminOrderForUser(node: ShopifyAdminOrderNode, userId: string): Promise<OrderWithShipments | null> {
@@ -339,8 +378,8 @@ export async function syncShopifyOrdersForUser(input: {
     };
   }>({
     query: `
-      query OrdersForEmail($first: Int!, $query: String!) {
-        orders(first: $first, sortKey: CREATED_AT, reverse: true, query: $query) {
+      query OrdersForAccount($first: Int!, $query: String!) {
+        orders(first: $first, query: $query, sortKey: CREATED_AT, reverse: true) {
           nodes {
             legacyResourceId
             name
@@ -350,6 +389,7 @@ export async function syncShopifyOrdersForUser(input: {
             displayFulfillmentStatus
             createdAt
             processedAt
+            customAttributes { key value }
             currentTotalPriceSet {
               shopMoney {
                 amount
@@ -377,8 +417,8 @@ export async function syncShopifyOrdersForUser(input: {
       }
     `,
     variables: {
-      first: input.limit ?? 20,
-      query: `email:${email}`,
+      first: Math.max(1, Math.min(input.limit ?? 100, 250)),
+      query: shopifyOrderEmailQuery(email),
     },
   });
 
@@ -387,6 +427,8 @@ export async function syncShopifyOrdersForUser(input: {
 
   let synced = 0;
   for (const order of result.data?.orders.nodes ?? []) {
+    const attributedUserId = readOrderAttribution(order.customAttributes);
+    if (attributedUserId !== input.userId && order.email?.trim().toLowerCase() !== email) continue;
     const upserted = await upsertAdminOrderForUser(order, input.userId);
     if (upserted) synced += 1;
   }
@@ -395,7 +437,7 @@ export async function syncShopifyOrdersForUser(input: {
 }
 
 async function upsertOrderItem(orderId: string, lineItem: ShopifyLineItemPayload): Promise<void> {
-  const lineItemId = normalizeId(lineItem.id ?? lineItem.admin_graphql_api_id);
+  const lineItemId = canonicalShopifyId(lineItem.id ?? lineItem.admin_graphql_api_id, 'LineItem');
   const title = (lineItem.title ?? lineItem.name ?? '').trim();
   if (!lineItemId || !title) return;
 
@@ -405,7 +447,7 @@ async function upsertOrderItem(orderId: string, lineItem: ShopifyLineItemPayload
     .upsert({
       order_id: orderId,
       shopify_line_item_id: lineItemId,
-      shopify_variant_id: normalizeId(lineItem.variant_admin_graphql_api_id ?? lineItem.variant_id) || null,
+      shopify_variant_id: canonicalShopifyId(lineItem.variant_admin_graphql_api_id ?? lineItem.variant_id, 'ProductVariant') || null,
       title,
       variant_title: lineItem.variant_title ?? null,
       sku: lineItem.sku ?? null,
@@ -420,7 +462,7 @@ async function upsertOrderItem(orderId: string, lineItem: ShopifyLineItemPayload
 }
 
 export async function upsertFulfillmentFromShopify(payload: ShopifyFulfillmentPayload): Promise<ShipmentWithEvents | null> {
-  const shopifyOrderId = normalizeId(payload.order_id);
+  const shopifyOrderId = canonicalShopifyId(payload.order_id, 'Order');
   if (!shopifyOrderId) return null;
 
   const supabase = createAdminClient();
@@ -436,7 +478,7 @@ export async function upsertFulfillmentFromShopify(payload: ShopifyFulfillmentPa
 
 export async function upsertShipmentForOrder(orderId: string, fulfillment: ShopifyFulfillmentPayload): Promise<ShipmentWithEvents> {
   const supabase = createAdminClient();
-  const fulfillmentId = normalizeId(fulfillment.id ?? fulfillment.admin_graphql_api_id) || null;
+  const fulfillmentId = canonicalShopifyId(fulfillment.id ?? fulfillment.admin_graphql_api_id, 'Fulfillment') || null;
   const trackingNumber = getTrackingNumber(fulfillment);
   const status = normalizeShipmentStatus(fulfillment);
   const shippedAt = status === 'preparing' ? null : fulfillment.created_at ?? new Date().toISOString();
@@ -536,22 +578,15 @@ async function maybeSendShipmentEmail(orderId: string, shipmentId: string) {
   const shipment = data?.shipments?.[0];
   if (!data || !shipment?.tracking_number) return;
 
-  const result = await sendShipmentCreatedEmail({
+  await enqueueNotification('shipment_created', `shipment-created:${shipmentId}`, {
+    orderId: data.id,
+    shipmentId,
     to: data.email,
     orderNumber: data.shopify_order_number,
     carrier: shipment.carrier,
     trackingNumber: shipment.tracking_number,
     trackingUrl: shipment.tracking_url,
     lookupToken: shipment.public_lookup_token,
-  });
-
-  await supabase.from('notification_logs').insert({
-    order_id: data.id,
-    shipment_id: shipmentId,
-    channel: 'email',
-    event_type: 'shipment_created',
-    recipient: data.email,
-    provider_message_id: result.id,
   });
 }
 

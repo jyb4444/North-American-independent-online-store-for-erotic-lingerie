@@ -25,7 +25,7 @@ const BAG_ITEM = {
 async function startWithBag(page: Page) {
   await page.addInitScript((item) => {
     if (!sessionStorage.getItem('e2e-bag-seeded')) {
-      localStorage.setItem('cart-storage', JSON.stringify({ state: { items: [item] }, version: 0 }));
+      localStorage.setItem('cart-storage', JSON.stringify({ state: { items: [item], cartOwner: 'guest' }, version: 0 }));
       sessionStorage.setItem('e2e-bag-seeded', '1');
     }
   }, BAG_ITEM);
@@ -131,14 +131,14 @@ test.describe('D25 / D30 age gate and pop-ups', () => {
     expect(['none', 'removed']).toContain(display);
   });
 
-  test('the first-order offer waits until the age gate is passed', async ({ page }) => {
+  test('the unimplemented first-order offer is not advertised', async ({ page }) => {
     await page.goto('/');
     await expect(page.getByRole('dialog', { name: 'Adults Only' })).toBeVisible();
-    await page.waitForTimeout(2_500);
     await expect(page.getByRole('button', { name: 'Close first free offer' })).toHaveCount(0);
 
     await page.getByRole('button', { name: 'I am 18 or older — Enter' }).click();
-    await expect(page.getByRole('button', { name: 'Close first free offer' })).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByRole('button', { name: 'Close first free offer' })).toHaveCount(0);
+    await expect(page.getByText('Your first style is free')).toHaveCount(0);
   });
 });
 

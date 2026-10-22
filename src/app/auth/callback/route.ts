@@ -5,6 +5,7 @@ import { sendWelcomeEmail } from '@/lib/email';
 import { createAdminClient } from '@/lib/supabase/server';
 import { safeRedirectPath } from '@/lib/redirect';
 import { issueReferralReward, missingRewardSchema, referralRewardsEnabled } from '@/lib/referral-rewards';
+import { createRecoveryProof, recoveryProofMaxAge } from '@/lib/password-recovery';
 
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
@@ -63,13 +64,20 @@ export async function GET(request: NextRequest) {
           .select('referred_user_id')
           .eq('referred_user_id', user.id)
           .maybeSingle();
-        if (!referralError && redemption) {
+        if (referralRewardsEnabled() && !referralError && redemption) {
           await issueReferralReward({ userId: user.id, email: user.email, kind: 'welcome', referredUserId: user.id })
             .catch((error) => console.error('Welcome referral reward failed:', error));
         }
       }
 
-      return NextResponse.redirect(`${origin}${next}`);
+      const response = NextResponse.redirect(`${origin}${next}`);
+      if (next === '/update-password' && user) {
+        response.cookies.set('password_recovery_authorized', createRecoveryProof(user.id), {
+          httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production',
+          path: '/api/account/recover-password', maxAge: recoveryProofMaxAge,
+        });
+      }
+      return response;
     }
   }
 

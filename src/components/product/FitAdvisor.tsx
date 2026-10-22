@@ -109,10 +109,8 @@ export default function FitAdvisor({ open, onClose, product, onSelectSize }: Pro
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          productTitle: product.title,
-          productDescription: product.description,
+          productHandle: product.handle,
           bodyDescription: result.aiPromptDescription,
-          productImage: product.images[0],
         }),
       });
       const contentType = res.headers.get('content-type') ?? '';
@@ -132,9 +130,9 @@ export default function FitAdvisor({ open, onClose, product, onSelectSize }: Pro
   }
 
   const confidenceConfig = result ? {
-    perfect: { label: 'Perfect Match', color: 'text-green-400', border: 'border-green-600/40', bg: 'bg-green-900/20' },
-    good: { label: 'Good Fit', color: 'text-gold-400', border: 'border-gold-400/40', bg: 'bg-gold-400/10' },
-    approximate: { label: 'Approximate Fit', color: 'text-ivory-muted', border: 'border-wine-700', bg: 'bg-wine-800' },
+    perfect: { label: 'Chart Match', color: 'text-green-400', border: 'border-green-600/40', bg: 'bg-green-900/20' },
+    good: { label: 'Chart Estimate', color: 'text-gold-400', border: 'border-gold-400/40', bg: 'bg-gold-400/10' },
+    approximate: { label: 'Review Size Chart', color: 'text-ivory-muted', border: 'border-wine-700', bg: 'bg-wine-800' },
   }[result.confidence] : null;
 
   return (
@@ -264,11 +262,11 @@ export default function FitAdvisor({ open, onClose, product, onSelectSize }: Pro
               {/* Step 2: Results */}
               {step === 2 && result && confidenceConfig && (
                 <div className="space-y-5">
-                  {/* Size recommendation */}
+                  {/* General size-chart estimate */}
                   <div className={`border ${confidenceConfig.border} ${confidenceConfig.bg} p-5`}>
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-xs font-medium uppercase tracking-widest text-ivory-muted">Recommended Size</p>
+                        <p className="text-xs font-medium uppercase tracking-widest text-ivory-muted">Estimated Size</p>
                         <p className="font-serif text-4xl font-light text-ivory mt-1">{result.recommendedSize}</p>
                       </div>
                       <div className={`border ${confidenceConfig.border} px-3 py-1`}>
@@ -364,12 +362,12 @@ export default function FitAdvisor({ open, onClose, product, onSelectSize }: Pro
                     </div>
                   )}
 
-                  {/* AI Preview */}
+                  {/* AI style inspiration */}
                   <div className="border border-gold-600/20 bg-wine-800">
                     <div className="px-4 pt-4">
-                      <p className="text-xs font-medium uppercase tracking-widest text-gold-400">AI Style Preview</p>
+                      <p className="text-xs font-medium uppercase tracking-widest text-gold-400">AI Style Inspiration</p>
                       <p className="mt-1 text-xs text-ivory-dim">
-                        See how this style looks on a figure similar to yours. AI-generated for reference only.
+                        Generate a general style illustration from text prompts. It does not depict this exact product or predict fit.
                       </p>
                     </div>
                     <div className="px-4 pt-3">
@@ -379,7 +377,7 @@ export default function FitAdvisor({ open, onClose, product, onSelectSize }: Pro
                     {!aiPreview && !aiLoading && (
                       <button onClick={generateAiPreview}
                         className="mx-4 my-4 flex w-[calc(100%-2rem)] items-center justify-center gap-2 border border-gold-400 py-3 text-xs font-medium uppercase tracking-widest text-gold-400 transition hover:bg-gold-400 hover:text-wine-950">
-                        <Sparkles size={13} /> Generate Preview
+                        <Sparkles size={13} /> Generate Illustration
                       </button>
                     )}
 
@@ -403,7 +401,7 @@ export default function FitAdvisor({ open, onClose, product, onSelectSize }: Pro
                           <Image src={aiPreview} alt="AI style preview" fill sizes="360px" className="object-cover" />
                         </div>
                         <p className="mt-2 text-[10px] text-ivory-dim text-center">
-                          AI-generated preview. Colors and details may vary from actual product.
+                          AI-generated illustration. It is not a virtual try-on; product, colours, proportions, and details may differ.
                         </p>
                         <SaveLookCTA
                           imageUrl={aiPreview}
@@ -422,7 +420,7 @@ export default function FitAdvisor({ open, onClose, product, onSelectSize }: Pro
                     onClick={() => { onSelectSize(result.recommendedSize); onClose(); }}
                     className="w-full border border-gold-400 py-4 text-xs font-medium uppercase tracking-[0.2em] text-gold-400 transition hover:bg-gold-400 hover:text-wine-950"
                   >
-                    Use Recommended Size {result.recommendedSize}
+                    Select Estimated Size {result.recommendedSize}
                   </button>
 
                   <button onClick={() => setStep(0)} className="w-full text-xs uppercase tracking-widest text-ivory-dim hover:text-gold-400 transition">

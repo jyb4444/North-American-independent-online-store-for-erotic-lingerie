@@ -1,6 +1,7 @@
 export type ProductVariant = {
   id: string;
-  size: 'XS' | 'S' | 'M' | 'L' | 'XL' | 'XXL' | 'Free Size';
+  /** Shopify's exact customer-facing size label. Never silently coerce an unknown label. */
+  size: string;
   color: string;
   colorHex: string;
   stock: number;

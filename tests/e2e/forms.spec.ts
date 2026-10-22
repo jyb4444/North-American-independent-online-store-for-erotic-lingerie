@@ -43,7 +43,7 @@ test('buying a gift card for someone goes to Shopify checkout', async ({ page })
 test('AI preview explains when the service is unavailable instead of failing silently', async ({ page }) => {
   // HF_TOKEN is empty in the test environment, so the API answers 503 with an explanation.
   const res = await page.request.post('/api/ai-preview', {
-    data: { productTitle: MOCK_PRODUCTS[0].title, bodyDescription: 'a woman, size M' },
+    data: { productHandle: MOCK_PRODUCTS[0].handle, bodyDescription: 'a woman, size M' },
   });
   expect(res.status()).toBe(503);
   expect((await res.json()).error).toMatch(/HF_TOKEN/);

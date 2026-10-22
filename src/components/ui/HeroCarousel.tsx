@@ -22,10 +22,10 @@ const SLIDES: Slide[] = [
   {
     id: 's1',
     image: 'https://images.unsplash.com/photo-1574539602047-548bf9557352?auto=format&fit=crop&w=1600&h=900&q=80',
-    tag: 'AI Try-On Preview',
-    headline: 'See It On\nYour Shape',
-    sub: 'Preview lingerie styles on a figure matched to your body profile before you decide.',
-    cta: 'Try AI Preview',
+    tag: 'AI Style Inspiration',
+    headline: 'Explore A\nStyle Direction',
+    sub: 'Create a private, AI-generated style illustration for inspiration. It is not a virtual try-on.',
+    cta: 'Create Inspiration',
     href: TRY_ON_PRODUCT_PATH,
   },
   {

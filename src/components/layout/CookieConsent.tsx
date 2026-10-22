@@ -23,10 +23,19 @@ export default function CookieConsent() {
 
   useEffect(() => {
     const existing = getCookieConsent();
+    let timer: number | undefined;
     if (!existing) {
-      const t = window.setTimeout(() => setVisible(true), 1200);
-      return () => window.clearTimeout(t);
+      timer = window.setTimeout(() => setVisible(true), 1200);
     }
+    const openPreferences = () => {
+      setExpanded(true);
+      setVisible(true);
+    };
+    window.addEventListener('velour:open-cookie-settings', openPreferences);
+    return () => {
+      if (timer) window.clearTimeout(timer);
+      window.removeEventListener('velour:open-cookie-settings', openPreferences);
+    };
   }, []);
 
   function accept() {
@@ -54,7 +63,7 @@ export default function CookieConsent() {
             <div className="min-w-0">
               <p className="text-xs text-ivory-muted leading-relaxed">
                 We use essential cookies to keep your session, and optional analytics cookies to improve the experience.
-                We never share personal data or track sensitive activity.{' '}
+                Analytics are optional. We do not send product, variant, size, fit recommendation, or bag-content identifiers to analytics.{' '}
                 <a href="/pages/privacy" className="text-gold-400 hover:underline">Privacy Policy</a>
               </p>
               {expanded && (
@@ -64,7 +73,7 @@ export default function CookieConsent() {
                     <span className="text-ivory-dim">Always on</span>
                   </div>
                   <div className="flex items-center justify-between text-xs">
-                    <span className="text-ivory-muted"><strong className="text-ivory">Analytics</strong> — anonymised page views and feature usage (PostHog). No measurements or personal data.</span>
+                    <span className="text-ivory-muted"><strong className="text-ivory">Analytics</strong> — page paths and general feature usage (PostHog), without account or product identifiers.</span>
                     <span className="text-ivory-dim">Optional</span>
                   </div>
                 </div>
@@ -91,7 +100,7 @@ export default function CookieConsent() {
             >
               Accept
             </button>
-            <button onClick={decline} aria-label="Close" className="ml-1 text-ivory-dim hover:text-gold-400 transition">
+            <button onClick={() => setVisible(false)} aria-label="Close cookie preferences" className="ml-1 text-ivory-dim hover:text-gold-400 transition">
               <X size={15} />
             </button>
           </div>

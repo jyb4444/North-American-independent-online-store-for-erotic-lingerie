@@ -15,6 +15,12 @@ let aliceId: string;
 let bobId: string;
 let malloryId: string;
 
+test('ordinary users cannot access merchant review or return operations', async ({ request }) => {
+  const headers = { cookie: await sessionCookieHeader(USERS.alice) };
+  expect((await request.patch('/api/admin/reviews/not-a-review', { headers, data: { decision: 'approve' } })).status()).toBe(403);
+  expect((await request.patch('/api/admin/returns/not-a-return', { headers, data: { status: 'approved' } })).status()).toBe(403);
+});
+
 test.beforeAll(async () => {
   [aliceId, bobId, malloryId] = await Promise.all([
     userIdFor(USERS.alice),

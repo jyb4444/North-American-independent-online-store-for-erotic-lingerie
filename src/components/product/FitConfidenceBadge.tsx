@@ -17,9 +17,9 @@ type Props = {
 };
 
 function confidenceCopy(confidence: string) {
-  if (confidence === 'perfect') return 'Best match based on your saved measurements';
-  if (confidence === 'good') return 'Comfort fit recommended';
-  return 'Size guidance available';
+  if (confidence === 'perfect') return 'General chart estimate based on your measurements';
+  if (confidence === 'good') return 'General size-chart estimate';
+  return 'General size guidance available';
 }
 
 export default function FitConfidenceBadge({

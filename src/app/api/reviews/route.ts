@@ -2,6 +2,7 @@ import { pendingReviewFields, validReviewBody, publicReviewRow } from '@/lib/rev
 import { NextResponse } from 'next/server';
 import { createAdminClient, createClient } from '@/lib/supabase/server';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
+import { REVIEW_MEDIA_BUCKET, reviewMediaPathForUser, signReviewMedia } from '@/lib/review-media';
 
 function maskEmail(email: string): string {
   const [local, domain] = email.split('@');
@@ -31,6 +32,12 @@ export async function GET(req: Request) {
   const selectWithUser = 'id,product_id,user_id,rating,body,nickname,verified_purchase,approved,photo_urls,video_urls,is_anonymous,created_at';
   const selectWithoutUser = 'id,product_id,rating,body,nickname,verified_purchase,approved,photo_urls,video_urls,is_anonymous,created_at';
   const selectBase = 'id,product_id,rating,body,nickname,verified_purchase,approved,photo_urls,created_at';
+
+  const presentReviews = async (rows: Record<string, unknown>[]) => Promise.all(rows.map(async (row) => ({
+    ...publicReviewRow(row),
+    photo_urls: await signReviewMedia(reader.storage, row.photo_urls),
+    video_urls: await signReviewMedia(reader.storage, row.video_urls),
+  })));
 
   const approvedBaseQuery = () => reader
     .from('reviews')
@@ -63,7 +70,7 @@ export async function GET(req: Request) {
       : await fallbackQuery.eq('approved', true);
     if (!fallback.error) {
       return NextResponse.json({
-        reviews: (fallback.data ?? []).map(publicReviewRow),
+        reviews: await presentReviews((fallback.data ?? []) as Record<string, unknown>[]),
       });
     }
   }
@@ -71,13 +78,13 @@ export async function GET(req: Request) {
   if (error) {
     if (error.message.includes('photo_urls') || error.message.includes('video_urls') || error.message.includes('is_anonymous')) {
       const fallback = await approvedBaseQuery();
-      if (!fallback.error) return NextResponse.json({ reviews: fallback.data ?? [] });
+      if (!fallback.error) return NextResponse.json({ reviews: await presentReviews((fallback.data ?? []) as Record<string, unknown>[]) });
     }
     console.warn('Reviews fetch failed:', error.message);
     return NextResponse.json({ reviews: [] });
   }
   return NextResponse.json({
-    reviews: (data ?? []).map(publicReviewRow),
+    reviews: await presentReviews((data ?? []) as Record<string, unknown>[]),
   });
 }
 
@@ -127,6 +134,9 @@ export async function POST(req: Request) {
   if (Array.isArray(video_urls) && video_urls.length > 1) {
     return NextResponse.json({ error: 'Upload up to 1 video.' }, { status: 400 });
   }
+  if ([...(photo_urls ?? []), ...(video_urls ?? [])].some((value) => typeof value !== 'string' || !reviewMediaPathForUser(value, user.id))) {
+    return NextResponse.json({ error: 'Invalid review media path.' }, { status: 400 });
+  }
 
   const phone = user.phone ?? getMetadataPhone(user.user_metadata);
   const privateContact = (user.email || phone || user.id).toLowerCase();
@@ -151,15 +161,16 @@ export async function POST(req: Request) {
     video_urls: Array.isArray(video_urls) ? video_urls.slice(0, 1) : [],
     is_anonymous: !!is_anonymous,
   };
-  const buildSubmittedReview = (inserted?: { id?: string; created_at?: string }) => ({
+  const writer = createAdminClient();
+  const buildSubmittedReview = async (inserted?: { id?: string; created_at?: string }) => ({
     id: inserted?.id ?? `pending-${crypto.randomUUID()}`,
     product_id: review.product_id,
     rating: review.rating,
     body: review.body,
     nickname: review.nickname,
     verified_purchase: false,
-    photo_urls: review.photo_urls,
-    video_urls: review.video_urls,
+    photo_urls: await signReviewMedia(writer.storage, review.photo_urls),
+    video_urls: await signReviewMedia(writer.storage, review.video_urls),
     is_anonymous: review.is_anonymous,
     created_at: inserted?.created_at ?? new Date().toISOString(),
     pending: true,
@@ -167,7 +178,10 @@ export async function POST(req: Request) {
 
   // Users cannot insert reviews directly (RLS); the validated row is written with the
   // service role so `approved` / `verified_purchase` keep their database defaults.
-  const writer = createAdminClient();
+  const uploadedPaths = [...review.photo_urls, ...review.video_urls];
+  const removeUploadedMedia = async () => {
+    if (uploadedPaths.length > 0) await writer.storage.from(REVIEW_MEDIA_BUCKET).remove(uploadedPaths);
+  };
   const { data: insertedReview, error } = await writer
     .from('reviews')
     .insert(review)
@@ -175,6 +189,7 @@ export async function POST(req: Request) {
     .single();
 
   if (error?.message.includes('photo_urls')) {
+    await removeUploadedMedia();
     return NextResponse.json(
       { error: 'Review photo storage is not ready. Please run the review_photo_urls migration.' },
       { status: 500 },
@@ -197,13 +212,17 @@ export async function POST(req: Request) {
       .insert(reviewWithoutNewColumns)
       .select('id,created_at')
       .single();
-    if (!retry.error) return NextResponse.json({ ok: true, review: buildSubmittedReview(retry.data) });
+    if (!retry.error) return NextResponse.json({ ok: true, review: await buildSubmittedReview(retry.data) });
 
     if (!retry.error?.message.includes('photo_urls')) {
+      await removeUploadedMedia();
       return NextResponse.json({ error: retry.error?.message ?? 'Failed to submit review' }, { status: 500 });
     }
   }
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ ok: true, review: buildSubmittedReview(insertedReview) });
+  if (error) {
+    await removeUploadedMedia();
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+  return NextResponse.json({ ok: true, review: await buildSubmittedReview(insertedReview) });
 }

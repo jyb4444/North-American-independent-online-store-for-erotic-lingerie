@@ -10,6 +10,7 @@
  *   - mutation CreateRewardDiscount  → discount node (or userErrors after POST /__admin-fail)
  *   - query OrdersForEmail           → no orders
  *   - mutation SyncReturnRequest     → success
+ *   - query OrderForCart             → an order only after POST /__complete-cart
  * GET /__admin-requests lists recorded Admin calls.
  *
  *   - query CartStatus(id)             → the cart, or null once "ordered" (deleted by Shopify)
@@ -62,6 +63,11 @@ function snapshot(input: Record<string, unknown>) {
 
 
 function adminResponse(body: GraphQLRequest) {
+  if (/query\s+OrderForCart\b/.test(body.query)) {
+    const token = String(body.variables?.query ?? '').replace(/^cart_token:/, '');
+    const completed = [...completedCarts].some((id) => id.match(/^gid:\/\/shopify\/Cart\/([^?]+)/)?.[1] === token);
+    return { data: { orders: { nodes: completed ? [{ id: 'gid://shopify/Order/e2e-complete' }] : [] } } };
+  }
   if (/query\s+ReferralScopes\b/.test(body.query)) return {data:{currentAppInstallation:{accessScopes:rewardScopes.map((handle)=>({handle}))},shop:{currencyCode:'USD'}}};
   if (/query\s+ReferralCustomer\b/.test(body.query)) return {data:{customers:{nodes:referralCustomers.filter((c)=>String(body.variables?.query).includes(c.email)),pageInfo:{hasNextPage:false}}}};
   if (/query\s+ReferralOrderHistory\b/.test(body.query)) return {data:{orders:{nodes:referralOrders.filter((o)=>String(body.variables?.query).includes(String(o.email))),pageInfo:{hasNextPage:false,endCursor:null}}}};
@@ -80,7 +86,7 @@ function adminResponse(body: GraphQLRequest) {
     discounts.set(code,{id,codeDiscount:snapshot(input)});
     return { data: { discountCodeBasicCreate: { codeDiscountNode: { id }, userErrors: [] } } };
   }
-  if (/query\s+OrdersForEmail\b/.test(body.query)) return { data: { orders: { nodes: [] } } };
+  if (/query\s+OrdersFor(Account|Email)\b/.test(body.query)) return { data: { orders: { nodes: [] } } };
   if (/mutation\s+SyncReturnRequest\b/.test(body.query)) return { data: { tagsAdd: { userErrors: [] }, metafieldsSet: { userErrors: [] } } };
   return { errors: [{ message: 'Not implemented by the e2e Shopify Admin mock' }] };
 }

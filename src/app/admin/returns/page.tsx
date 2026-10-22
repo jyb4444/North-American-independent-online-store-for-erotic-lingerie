@@ -1,0 +1,6 @@
+import { redirect } from 'next/navigation';
+import { currentAdmin } from '@/lib/admin-access';
+import { createAdminClient } from '@/lib/supabase/server';
+import ModerationActions from '@/components/admin/ModerationActions';
+
+export default async function AdminReturnsPage(){if(!await currentAdmin())redirect('/account');const {data}=await createAdminClient().from('return_requests').select('id,request_number,status,reason,customer_note,created_at,orders(shopify_order_number)').order('created_at',{ascending:false}).limit(100);return <main className="mx-auto max-w-4xl px-4 py-16"><h1 className="font-serif text-3xl">Return Requests</h1><div className="mt-8 space-y-4">{(data??[]).map(r=><article key={r.id} className="border border-gold-600/20 p-5"><p className="text-xs text-ivory-dim">{r.request_number} · {r.status} · {r.reason}</p><p className="mt-2">{r.customer_note||'No customer note.'}</p><ModerationActions endpoint={`/api/admin/returns/${r.id}`} actions={[{value:'needs_more_info',label:'Need info'},{value:'approved',label:'Approve'},{value:'rejected',label:'Reject'},{value:'received',label:'Received'},{value:'refunded',label:'Refunded'},{value:'closed',label:'Close'}]}/></article>)}</div></main>}

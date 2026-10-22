@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
 import { createClient } from '@/lib/supabase/server';
+import { getProductByHandle } from '@/lib/products';
 
 export const runtime = 'nodejs';
 
@@ -10,10 +11,8 @@ const MAX_RETRIES = 3;
 const REQUEST_TIMEOUT_MS = 120_000;
 
 type AiPreviewRequest = {
-  productTitle?: string;
-  productDescription?: string;
+  productHandle?: string;
   bodyDescription?: string;
-  productImage?: string;
 };
 
 type HuggingFaceError = {
@@ -164,15 +163,18 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
   }
 
-  const { productTitle, productDescription, bodyDescription } = body;
-  if (typeof productTitle !== 'string' || typeof bodyDescription !== 'string' || !productTitle.trim() || !bodyDescription.trim()) {
+  const { productHandle, bodyDescription } = body;
+  if (typeof productHandle !== 'string' || typeof bodyDescription !== 'string' || !productHandle.trim() || !bodyDescription.trim()) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
   }
-  if (productTitle.length > 200 || bodyDescription.length > 300 || (typeof productDescription === 'string' && productDescription.length > 2000)) {
+  if (!/^[a-z0-9][a-z0-9-]{0,199}$/.test(productHandle) || bodyDescription.length > 300) {
     return NextResponse.json({ error: 'Description is too long.' }, { status: 400 });
   }
   const refusal = refuseBodyDescription(bodyDescription);
   if (refusal) return NextResponse.json({ error: refusal }, { status: 400 });
+
+  const product = await getProductByHandle(productHandle);
+  if (!product) return NextResponse.json({ error: 'Product not found.' }, { status: 404 });
 
   const config = getHuggingFaceConfig();
 
@@ -186,7 +188,7 @@ export async function POST(req: Request) {
     );
   }
 
-  const prompt = buildPrompt(productTitle, productDescription ?? '', bodyDescription);
+  const prompt = buildPrompt(product.title, product.description, bodyDescription);
 
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
     let res: Response;

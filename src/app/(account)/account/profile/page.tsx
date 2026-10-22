@@ -28,6 +28,9 @@ export default function ProfilePage() {
   const [pwLoading, setPwLoading] = useState(false);
   const [pwSuccess, setPwSuccess] = useState(false);
   const [pwError, setPwError] = useState('');
+  const [deletionBusy, setDeletionBusy] = useState(false);
+  const [deletionRequested, setDeletionRequested] = useState(false);
+  const [deletionError, setDeletionError] = useState('');
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -92,6 +95,16 @@ export default function ProfilePage() {
     setConfirmPw('');
     setPwLoading(false);
     setTimeout(() => setPwSuccess(false), 3000);
+  }
+
+  async function requestDeletion() {
+    if (!window.confirm('Submit an account deletion request? Your account will remain available while our team reviews the request.')) return;
+    setDeletionBusy(true); setDeletionError('');
+    const response = await fetch('/api/account/deletion-request', { method: 'POST' });
+    const body = await response.json().catch(() => ({})) as { error?: string };
+    setDeletionBusy(false);
+    if (!response.ok) { setDeletionError(body.error ?? 'Unable to submit request.'); return; }
+    setDeletionRequested(true);
   }
 
   return (
@@ -219,6 +232,14 @@ export default function ProfilePage() {
 
       <section className="border border-gold-600/20 bg-wine-900 p-6">
         <AddressManager />
+      </section>
+
+      <section className="mt-8 border border-crimson-400/30 bg-wine-900 p-6">
+        <h2 className="font-serif text-lg">Delete account</h2>
+        <p className="mt-2 text-sm text-ivory-dim">Submit a request to remove your account and personal profile. We review open orders, returns, and legally required transaction records before deletion. This button does not immediately erase your account.</p>
+        {deletionRequested ? <p className="mt-4 text-sm text-green-400">Your deletion request has been submitted.</p> :
+          <button type="button" onClick={requestDeletion} disabled={deletionBusy} className="mt-4 border border-crimson-400 px-4 py-3 text-xs uppercase tracking-widest text-crimson-400 disabled:opacity-50">{deletionBusy ? 'Submitting…' : 'Request account deletion'}</button>}
+        {deletionError && <p className="mt-3 text-sm text-crimson-400">{deletionError}</p>}
       </section>
     </div>
   );

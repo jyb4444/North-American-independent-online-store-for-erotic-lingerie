@@ -88,7 +88,7 @@ export default function FitProfilePage() {
         <div>
           <p className="mb-1 text-xs font-medium uppercase tracking-[0.3em] text-gold-400">Private size guidance</p>
           <h1 className="font-serif text-3xl font-light text-ivory">Your Fit Profile</h1>
-          <p className="mt-2 max-w-xl text-sm leading-6 text-ivory-dim">Your measurements stay in this browser and are used only to personalize size recommendations.</p>
+          <p className="mt-2 max-w-xl text-sm leading-6 text-ivory-dim">Your measurements stay in this browser and are used for general estimates against our current size chart. Always check the product options and size guide before ordering.</p>
         </div>
         <Link href="/account" className="shrink-0 text-xs uppercase tracking-widest text-ivory-dim transition hover:text-gold-400">← Account</Link>
       </div>

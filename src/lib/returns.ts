@@ -1,6 +1,8 @@
 import crypto from 'crypto';
 import { createAdminClient } from '@/lib/supabase/server';
 import { syncReturnRequestToShopify } from '@/lib/shopify/admin';
+import { sendReturnRequestConfirmation, sendReturnRequestNotification } from '@/lib/email';
+import { enqueueNotification } from '@/lib/notification-jobs';
 import type { OrderItem, OrderWithShipments } from '@/lib/logistics';
 
 export type ReturnRequestOrderSummary = {
@@ -134,106 +136,6 @@ function requestNumber() {
   return `RMA-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${crypto.randomBytes(3).toString('hex').toUpperCase()}`;
 }
 
-function daysSince(value: string | null) {
-  if (!value) return null;
-  const ms = Date.now() - new Date(value).getTime();
-  return Math.floor(ms / 86_400_000);
-}
-
-function hasDeliveredShipment(order: OrderWithShipments) {
-  return order.shipments.some((shipment) => shipment.status === 'delivered' || shipment.delivered_at);
-}
-
-function hasShippedShipment(order: OrderWithShipments) {
-  return order.shipments.some((shipment) => shipment.status !== 'preparing' || shipment.tracking_number);
-}
-
-function isMerchantFault(reason: ReturnReason) {
-  return ['quality_issue', 'wrong_item', 'missing_item', 'damaged_in_transit', 'privacy_packaging'].includes(reason);
-}
-
-function evaluateEligibility(input: {
-  order: OrderWithShipments;
-  items: Array<OrderItem & { requestedQuantity: number; itemCondition: ItemCondition }>;
-  reason: ReturnReason;
-  desiredResolution: DesiredResolution;
-  hasMedia: boolean;
-}) {
-  const notes: string[] = [];
-  let eligibility: 'eligible' | 'ineligible' | 'review_required' = 'eligible';
-  const delivered = hasDeliveredShipment(input.order);
-  const shipped = hasShippedShipment(input.order);
-  // The return window runs from delivery (the latest delivered shipment), falling back to
-  // the order date when there is no delivery record yet.
-  const deliveredAt = input.order.shipments
-    .map((shipment) => shipment.delivered_at)
-    .filter((value): value is string => Boolean(value))
-    .sort()
-    .at(-1) ?? null;
-  const orderAgeDays = daysSince(deliveredAt ?? input.order.processed_at ?? input.order.created_at);
-  const merchantFault = isMerchantFault(input.reason);
-
-  if (input.desiredResolution === 'cancel_order') {
-    if (!shipped) {
-      notes.push('Order has not shipped yet; cancellation can be reviewed for a full refund.');
-      return { eligibilityStatus: 'eligible' as const, notes };
-    }
-
-    notes.push('Order has shipped; cancellation may require carrier intercept or customer refusal, and original shipping may be deducted.');
-    return { eligibilityStatus: 'review_required' as const, notes };
-  }
-
-  if (!delivered && shipped) {
-    notes.push('Order appears shipped but not delivered; merchant review is required before approving a return or refund.');
-    eligibility = 'review_required';
-  }
-
-  if (delivered && orderAgeDays !== null && orderAgeDays > 30 && !merchantFault) {
-    notes.push('Return window has passed. Non-defect returns are accepted within 30 days of delivery/order activity.');
-    eligibility = 'ineligible';
-  }
-
-  for (const item of input.items) {
-    if (item.requestedQuantity > item.quantity) {
-      notes.push(`${item.title}: requested quantity exceeds purchased quantity.`);
-      eligibility = 'ineligible';
-    }
-
-    if (item.return_category === 'underwear' && !merchantFault) {
-      notes.push(`${item.title}: underwear/bottom intimate items are final sale for hygiene reasons.`);
-      eligibility = 'ineligible';
-    }
-
-    if (item.return_category === 'hosiery' && item.itemCondition === 'damaged' && !merchantFault) {
-      notes.push(`${item.title}: damaged hosiery/stockings cannot be returned, even with tags attached.`);
-      eligibility = 'ineligible';
-    }
-
-    if (['opened_unused', 'used', 'damaged'].includes(item.itemCondition) && !merchantFault) {
-      notes.push(`${item.title}: opened, used, or customer-damaged items are not eligible for no-fault returns.`);
-      eligibility = 'ineligible';
-    }
-
-    if (merchantFault && ['quality_issue', 'damaged_in_transit'].includes(input.reason)) {
-      notes.push(input.hasMedia
-        ? `${item.title}: photos received for quality or transit damage review.`
-        : `${item.title}: photos are required for quality or transit damage review.`);
-      if (eligibility !== 'ineligible') eligibility = 'review_required';
-    }
-  }
-
-  if (input.reason === 'privacy_packaging') {
-    notes.push('Privacy packaging claims are reviewed manually against the original fulfillment record.');
-    if (eligibility !== 'ineligible') eligibility = 'review_required';
-  }
-
-  if (notes.length === 0) {
-    notes.push('Item appears eligible for review under the unopened, tags-attached return policy.');
-  }
-
-  return { eligibilityStatus: eligibility, notes };
-}
-
 export async function getReturnRequestsForOrder(orderId: string, userId: string): Promise<ReturnRequestWithDetails[]> {
   const supabase = createAdminClient();
   const { data, error } = await supabase
@@ -321,6 +223,9 @@ export async function createReturnRequest(input: CreateReturnRequestInput): Prom
       throw new Error('Invalid photo upload. Please upload your photos again.');
     }
   }
+  if (['quality_issue', 'damaged_in_transit'].includes(reason) && mediaUrls.length === 0) {
+    throw new Error('Add at least one photo for quality or transit damage review.');
+  }
 
   const supabase = createAdminClient();
   const { data: order, error: orderError } = await supabase
@@ -360,70 +265,147 @@ export async function createReturnRequest(input: CreateReturnRequestInput): Prom
     }
   }
 
-  const selectedItems = requestedItems.map((item) => {
-    const orderItem = itemMap.get(item.orderItemId);
-    if (!orderItem) throw new Error('One or more selected items are not part of this order.');
-    return {
-      ...orderItem,
-      requestedQuantity: item.quantity,
-      itemCondition: item.itemCondition,
-    };
-  });
+  // The customer reports the issue; the merchant makes the eligibility and remedy decision.
+  // Keep the legacy columns populated for schema compatibility without presenting an
+  // automated approval or rejection as a business decision.
+  const eligibilityStatus = 'review_required' as const;
+  const notes = ['Your request will be reviewed by our support team. Please do not ship anything until you receive instructions.'];
 
-  const { eligibilityStatus, notes } = evaluateEligibility({
-    order: orderWithItems,
-    items: selectedItems,
-    reason,
-    desiredResolution,
-    hasMedia: mediaUrls.length > 0,
-  });
-
-  const { data: request, error: requestError } = await supabase
-    .from('return_requests')
-    .insert({
+  const requestData = {
       user_id: input.userId,
       order_id: input.orderId,
       request_number: requestNumber(),
       desired_resolution: desiredResolution,
       reason,
       eligibility_status: eligibilityStatus,
-      status: eligibilityStatus === 'ineligible' ? 'rejected' : 'submitted',
+      status: 'submitted',
       policy_notes: notes,
       customer_note: customerNote,
       media_urls: mediaUrls,
-    })
-    .select('*')
-    .single();
-
-  if (requestError) throw new Error(requestError.message);
-
-  const rows = requestedItems.map((item) => ({
-    return_request_id: request.id,
+  };
+  const rpcItems = requestedItems.map((item) => ({
     order_item_id: item.orderItemId,
     quantity: item.quantity,
     item_condition: item.itemCondition,
     reason_detail: item.reasonDetail,
   }));
-
-  const { error: itemsError } = await supabase.from('return_request_items').insert(rows);
-  if (itemsError) {
-    // Do not leave a request without items behind.
-    await supabase.from('return_requests').delete().eq('id', request.id);
-    throw new Error(itemsError.message);
-  }
-
-  await supabase.from('return_request_events').insert({
-    return_request_id: request.id,
-    event_type: 'submitted',
-    title: eligibilityStatus === 'ineligible' ? 'Request received but not eligible' : 'Return request submitted',
-    description: notes.join(' '),
-    metadata: { eligibility_status: eligibilityStatus },
+  const atomic = await supabase.rpc('create_return_request_atomic', {
+    p_user_id: input.userId,
+    p_order_id: input.orderId,
+    p_request_number: requestData.request_number,
+    p_desired_resolution: desiredResolution,
+    p_reason: reason,
+    p_policy_notes: notes,
+    p_customer_note: customerNote,
+    p_media_urls: mediaUrls,
+    p_items: rpcItems,
   });
 
-  await syncRequestToShopify(request.id, orderWithItems.shopify_order_id);
-  const created = await getReturnRequestById(request.id, input.userId);
+  let requestId = typeof atomic.data === 'string' ? atomic.data : null;
+  if (atomic.error && ['PGRST202', '42883'].includes(atomic.error.code)) {
+    // Compatibility release for the current production schema. Once the atomic
+    // migration is applied this branch is no longer used.
+    const { data: request, error: requestError } = await supabase
+      .from('return_requests').insert(requestData).select('id').single();
+    if (requestError) throw new Error(requestError.message);
+    requestId = request.id;
+    const rows = rpcItems.map((item) => ({ ...item, return_request_id: requestId! }));
+    const { error: itemsError } = await supabase.from('return_request_items').insert(rows);
+    if (itemsError) {
+      await supabase.from('return_requests').delete().eq('id', requestId);
+      throw new Error(itemsError.message);
+    }
+    const { error: eventError } = await supabase.from('return_request_events').insert({
+      return_request_id: requestId,
+      event_type: 'submitted',
+      title: 'Return request submitted',
+      description: notes.join(' '),
+      metadata: { eligibility_status: eligibilityStatus },
+    });
+    if (eventError) {
+      await supabase.from('return_requests').delete().eq('id', requestId);
+      throw new Error(eventError.message);
+    }
+  } else if (atomic.error) {
+    throw new Error(atomic.error.message);
+  }
+  if (!requestId) throw new Error('Return request could not be created.');
+
+  await syncRequestToShopify(requestId, orderWithItems.shopify_order_id);
+  const created = await getReturnRequestById(requestId, input.userId);
   if (!created) throw new Error('Return request could not be loaded.');
+  await sendReturnNotifications(created, input.userId);
   return created;
+}
+
+async function sendReturnNotifications(request: ReturnRequestWithDetails, userId: string) {
+  const supabase = createAdminClient();
+  const { data: userData } = await supabase.auth.admin.getUserById(userId);
+  const customerEmail = userData.user?.email?.trim().toLowerCase() || null;
+  const orderNumber = request.orders?.shopify_order_number;
+  if (!customerEmail || !orderNumber) return;
+
+  const signedPhotos = await getSignedReturnMediaUrls(request.media_urls, userId);
+  const messages = [
+    {
+      eventType: 'return_request_customer_confirmation',
+      recipient: customerEmail,
+      kind: 'return_customer' as const,
+      payload: { to: customerEmail, requestNumber: request.request_number, orderNumber },
+      send: () => sendReturnRequestConfirmation({ to: customerEmail, requestNumber: request.request_number, orderNumber }),
+    },
+    {
+      eventType: 'return_request_merchant_notification',
+      recipient: process.env.CONTACT_RECIPIENT_EMAIL ?? 'ykj2018720@gmail.com',
+      kind: 'return_merchant' as const,
+      payload: {
+        requestNumber: request.request_number, orderNumber, customerEmail, reason: request.reason,
+        note: request.customer_note,
+        items: request.return_request_items.map((item) => ({ title: item.order_items.title, quantity: item.quantity })),
+        photoUrls: signedPhotos.map((photo) => photo.signedUrl),
+      },
+      send: () => sendReturnRequestNotification({
+        requestNumber: request.request_number,
+        orderNumber,
+        customerEmail,
+        reason: request.reason,
+        note: request.customer_note,
+        items: request.return_request_items.map((item) => ({ title: item.order_items.title, quantity: item.quantity })),
+        photoUrls: signedPhotos.map((photo) => photo.signedUrl),
+      }),
+    },
+  ];
+
+  for (const message of messages) {
+    const identity = `${message.kind}:${request.request_number}`;
+    try {
+      await enqueueNotification(message.kind, identity, message.payload);
+    } catch (error) {
+      // Compatibility release: notification_jobs is created by the later migration.
+      console.warn('Durable notification queue is not available yet:', error);
+    }
+    try {
+      const result = await message.send();
+      await supabase.from('notification_jobs' as never).update({
+        status: 'sent', provider_message_id: result.id, sent_at: new Date().toISOString(), last_error: null,
+      } as never).eq('identity', identity);
+      await supabase.from('notification_logs').insert({
+        order_id: request.orders?.id ?? null,
+        channel: 'email',
+        event_type: `${message.eventType}:${request.request_number}`,
+        recipient: message.recipient,
+        provider_message_id: result.id,
+      });
+    } catch (error) {
+      console.error('Return request email failed:', { requestNumber: request.request_number, eventType: message.eventType, error });
+      await supabase.from('return_request_events').insert({
+        return_request_id: request.id,
+        event_type: 'notification_pending',
+        title: 'Email notification pending',
+        description: 'The return request was saved successfully. Our team can still review it and resend the email notification.',
+      });
+    }
+  }
 }
 
 export async function updateReturnTracking(input: {

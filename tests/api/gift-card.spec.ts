@@ -92,6 +92,17 @@ test.describe('D04 buying a gift card', () => {
 });
 
 test.describe('D05 redeeming a gift card at checkout', () => {
+  test('gift card validation is rate limited to prevent enumeration', async ({ request }) => {
+    const headers = { 'x-forwarded-for': `198.51.100.${Date.now() % 200 + 20}` };
+    let lastStatus = 0;
+    for (let attempt = 0; attempt < 11; attempt++) {
+      lastStatus = (await request.post('/api/shopify/cart', {
+        headers,
+        data: { lines: [{ merchandiseId: REGULAR_VARIANT, quantity: 1 }], giftCardCode: `UNKNOWN-${attempt}` },
+      })).status();
+    }
+    expect(lastStatus).toBe(429);
+  });
   test('the code is sent to Shopify and the balance comes from Shopify', async ({ request }) => {
     const res = await request.post('/api/shopify/cart', {
       data: {
@@ -184,6 +195,20 @@ test.describe('D05 redeeming a gift card at checkout', () => {
           size: 'M',
           color: 'Black',
         }],
+      },
+    });
+    expect(res.status()).toBe(400);
+    expect((await res.json()).error).toContain('not connected to Shopify checkout');
+    expect(await recordedCartCreates()).toEqual([]);
+  });
+
+  test('checkout rejects the whole bag when only some items resolve to Shopify', async ({ request }) => {
+    const res = await request.post('/api/shopify/cart', {
+      data: {
+        items: [
+          { productId: 'valid', variantId: REGULAR_VARIANT, shopifyVariantId: REGULAR_VARIANT, quantity: 1, size: 'M', color: 'Black' },
+          { productId: 'local-product', variantId: 'local-variant', quantity: 1, size: 'S', color: 'Red' },
+        ],
       },
     });
     expect(res.status()).toBe(400);

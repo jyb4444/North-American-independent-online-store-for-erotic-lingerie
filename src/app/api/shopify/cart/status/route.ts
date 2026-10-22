@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server';
 import { shopifyCartExists } from '@/lib/shopify/cart';
+import { shopifyOrderExistsForCart } from '@/lib/shopify/admin';
 
-// POST { cartId } → { exists }. Lets the bag find out whether a checkout became an order.
+// POST { cartId } → { completed, exists }. An Admin order matched by cart token is the
+// authoritative completion signal. `exists` is retained for compatibility/diagnostics.
 export async function POST(req: Request) {
   let cartId = '';
   try {
@@ -15,7 +17,16 @@ export async function POST(req: Request) {
   }
 
   try {
-    return NextResponse.json({ exists: await shopifyCartExists(cartId) });
+    const order = await shopifyOrderExistsForCart(cartId);
+    if (order.completed) {
+      return NextResponse.json({ completed: true, exists: false, verificationAvailable: true });
+    }
+    const exists = await shopifyCartExists(cartId);
+    return NextResponse.json({
+      completed: order.completed,
+      exists,
+      verificationAvailable: !order.skipped && !order.error,
+    });
   } catch (error) {
     console.error('Cart status check failed:', error);
     return NextResponse.json({ error: 'Could not check cart' }, { status: 502 });

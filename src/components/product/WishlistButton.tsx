@@ -144,6 +144,7 @@ export default function WishlistButton({
     return (
       <button
         type="button"
+        data-wishlist-source={source}
         onClick={(event) => {
           event.preventDefault();
           event.stopPropagation();
@@ -172,6 +173,7 @@ export default function WishlistButton({
     <div className={className}>
       <button
         type="button"
+        data-wishlist-source={source}
         onClick={toggle}
         disabled={updating}
         title={!userId ? 'Sign in to save' : saved ? 'Remove from wishlist' : 'Save to wishlist'}

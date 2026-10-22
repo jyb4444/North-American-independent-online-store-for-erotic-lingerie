@@ -12,6 +12,13 @@ export default function CartSyncProvider() {
   const emailRef = useRef<string | null>(null);
   const syncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hasRestoredRef = useRef(false);
+  const completedCheckoutRef = useRef(false);
+
+  function enterCartScope(nextOwner: string | 'guest', preserveGuestCart: boolean) {
+    const state = useCartStore.getState();
+    const mayPreserve = preserveGuestCart && state.cartOwner === 'guest';
+    state.setCartOwner(nextOwner, mayPreserve);
+  }
 
   async function restoreCartFromSupabase(userId: string) {
     if (hasRestoredRef.current) return;
@@ -24,7 +31,7 @@ export default function CartSyncProvider() {
       .eq('user_id', userId)
       .maybeSingle(); // most users have no saved cart yet
 
-    if (!data?.items) return;
+    if (!data?.items || completedCheckoutRef.current) return;
 
     const savedItems = data.items as CartItem[];
     if (!Array.isArray(savedItems) || savedItems.length === 0) return;
@@ -51,9 +58,12 @@ export default function CartSyncProvider() {
     // Get initial session and restore cart if logged in
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (user) {
+        enterCartScope(user.id, true);
         userIdRef.current = user.id;
         emailRef.current = user.email ?? null;
         restoreCartFromSupabase(user.id);
+      } else {
+        enterCartScope('guest', false);
       }
     });
 
@@ -65,6 +75,7 @@ export default function CartSyncProvider() {
 
       // Restore cart when a user logs in (not already restored for this user)
       if (event === 'SIGNED_IN' && session?.user && session.user.id !== prevUserId) {
+        enterCartScope(session.user.id, prevUserId === null);
         hasRestoredRef.current = false;
         restoreCartFromSupabase(session.user.id);
       }
@@ -74,7 +85,7 @@ export default function CartSyncProvider() {
       // (the sync effect skips writes while nobody is signed in).
       if (event === 'SIGNED_OUT') {
         hasRestoredRef.current = false;
-        useCartStore.getState().clearCart();
+        useCartStore.getState().setCartOwner('guest');
       }
     });
 
@@ -82,27 +93,53 @@ export default function CartSyncProvider() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // After returning from Shopify checkout: clear the bag only if the order was placed.
-  // Shopify deletes a cart when it becomes an order; it also deletes abandoned carts after
-  // ~10 days, so a missing cart only means "ordered" for a recent checkout.
+  // After returning from Shopify checkout, clear only when Shopify Admin confirms that this
+  // exact cart token produced an order. A readable/missing Storefront cart alone is not a
+  // reliable payment signal. Retry briefly because the new order can take a few seconds to
+  // become queryable after the buyer returns.
   useEffect(() => {
     const pending = useCartStore.getState().pendingCheckout;
     if (!pending) return;
     const ORDER_WINDOW_MS = 9 * 24 * 60 * 60 * 1000;
+    let cancelled = false;
+    let retryTimer: ReturnType<typeof setTimeout> | null = null;
+    let attempts = 0;
 
-    fetch('/api/shopify/cart/status', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ cartId: pending.cartId }),
-    })
-      .then((res) => (res.ok ? res.json() as Promise<{ exists: boolean }> : null))
-      .then((status) => {
-        if (!status || status.exists) return;
-        const store = useCartStore.getState();
-        if (Date.now() - pending.startedAt < ORDER_WINDOW_MS) store.clearCart();
-        else store.setPendingCheckout(null);
-      })
-      .catch(() => { /* keep the bag; try again on the next page load */ });
+    const check = async () => {
+      attempts += 1;
+      try {
+        const res = await fetch('/api/shopify/cart/status', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ cartId: pending.cartId }),
+        });
+        const status = res.ok ? await res.json() as { completed?: boolean } : null;
+        if (cancelled) return;
+        if (status?.completed) {
+          completedCheckoutRef.current = true;
+          useCartStore.getState().clearCart();
+          const userId = userIdRef.current;
+          if (userId) {
+            await createClient().from('cart_snapshots').delete().eq('user_id', userId);
+          }
+          return;
+        }
+        if (Date.now() - pending.startedAt >= ORDER_WINDOW_MS) {
+          useCartStore.getState().setPendingCheckout(null);
+          return;
+        }
+        if (attempts < 6) retryTimer = setTimeout(check, 5_000);
+      } catch {
+        // Keep the bag and retry on this page or the next visit.
+        if (!cancelled && attempts < 6) retryTimer = setTimeout(check, 5_000);
+      }
+    };
+
+    void check();
+    return () => {
+      cancelled = true;
+      if (retryTimer) clearTimeout(retryTimer);
+    };
   }, []);
 
   // Save cart to Supabase for logged-in users (debounced 2s)

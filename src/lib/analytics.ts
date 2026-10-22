@@ -18,6 +18,36 @@ function textLengthBucket(text: string) {
   return '31+';
 }
 
+const SENSITIVE_ANALYTICS_KEYS = new Set(['product_id', 'product_handle', 'variant_id', 'size', 'color', 'items', 'total', 'price', 'recommended_size']);
+
+function safePagePath(path: string) {
+  const pathname = path.split(/[?#]/, 1)[0] || '/';
+  if (pathname.startsWith('/products/')) return '/products/:product';
+  if (pathname.startsWith('/collections/')) return '/collections/:collection';
+  if (/^\/orders\/[^/]+/.test(pathname)) return '/orders/:order';
+  if (/^\/returns\/[^/]+/.test(pathname)) return '/returns/:request';
+  if (/^\/track\/[^/]+/.test(pathname)) return '/track/:token';
+  return pathname;
+}
+
+function capture(event: string, properties?: Record<string, unknown>) {
+  const safeProperties = properties
+    ? Object.fromEntries(Object.entries(properties).filter(([key]) => !SENSITIVE_ANALYTICS_KEYS.has(key)))
+    : undefined;
+  posthog.capture(event, safeProperties);
+}
+
+export function disableAnalytics() {
+  if (typeof window === 'undefined') return;
+  posthog.opt_out_capturing();
+  posthog.reset();
+}
+
+export function enableAnalytics() {
+  if (typeof window === 'undefined') return;
+  posthog.opt_in_capturing();
+}
+
 export function initAnalytics() {
   if (typeof window === 'undefined') return;
   if (!process.env.NEXT_PUBLIC_POSTHOG_KEY) return;
@@ -31,11 +61,11 @@ export function initAnalytics() {
 
 export const track = {
   pageView: (path: string) => {
-    posthog.capture('$pageview', { path });
+    capture('$pageview', { path: safePagePath(path) });
   },
 
   productViewed: (product: Product) => {
-    posthog.capture('product_viewed', {
+    capture('product_viewed', {
       product_id: product.id,
       product_handle: product.handle,
       category: product.category,
@@ -45,11 +75,11 @@ export const track = {
   },
 
   productImageViewed: (productId: string, imageIndex: number) => {
-    posthog.capture('product_image_viewed', { product_id: productId, image_index: imageIndex });
+    capture('product_image_viewed', { product_id: productId, image_index: imageIndex });
   },
 
   variantSelected: (productId: string, variant: ProductVariant) => {
-    posthog.capture('variant_selected', {
+    capture('variant_selected', {
       product_id: productId,
       variant_id: variant.id,
       size: variant.size,
@@ -58,7 +88,7 @@ export const track = {
   },
 
   addedToCart: (product: Product, variant: ProductVariant, quantity: number) => {
-    posthog.capture('added_to_cart', {
+    capture('added_to_cart', {
       product_id: product.id,
       product_handle: product.handle,
       variant_id: variant.id,
@@ -70,7 +100,7 @@ export const track = {
   },
 
   removedFromCart: (item: CartItem) => {
-    posthog.capture('removed_from_cart', {
+    capture('removed_from_cart', {
       product_id: item.productId,
       variant_id: item.variantId,
       price: item.price,
@@ -78,7 +108,7 @@ export const track = {
   },
 
   cartViewed: (items: CartItem[], total: number) => {
-    posthog.capture('cart_viewed', {
+    capture('cart_viewed', {
       item_count: items.length,
       total,
       items: items.map((i) => ({ product_id: i.productId, variant_id: i.variantId })),
@@ -86,7 +116,7 @@ export const track = {
   },
 
   checkoutStarted: (items: CartItem[], total: number) => {
-    posthog.capture('checkout_started', { item_count: items.length, total });
+    capture('checkout_started', { item_count: items.length, total });
   },
 
   cartFitSummaryViewed: (payload: {
@@ -96,7 +126,7 @@ export const track = {
     product_handle?: string;
     recommended_size?: string;
   }) => {
-    posthog.capture('cart_fit_summary_viewed', payload);
+    capture('cart_fit_summary_viewed', payload);
   },
 
   cartFitCtaClicked: (payload: {
@@ -106,19 +136,19 @@ export const track = {
     product_handle?: string;
     recommended_size?: string;
   }) => {
-    posthog.capture('cart_fit_cta_clicked', payload);
+    capture('cart_fit_cta_clicked', payload);
   },
 
   cartSaveForLaterClicked: (payload: { product_id: string; product_handle: string; source: 'cart_drawer' }) => {
-    posthog.capture('cart_save_for_later_clicked', payload);
+    capture('cart_save_for_later_clicked', payload);
   },
 
   cartItemMovedToWishlist: (payload: { product_id: string; product_handle: string; source: 'cart_drawer' }) => {
-    posthog.capture('cart_item_moved_to_wishlist', payload);
+    capture('cart_item_moved_to_wishlist', payload);
   },
 
   cartSaveForLaterFailed: (payload: { product_id: string; product_handle: string; source: 'cart_drawer' }) => {
-    posthog.capture('cart_save_for_later_failed', payload);
+    capture('cart_save_for_later_failed', payload);
   },
 
   cartRecommendationsViewed: (payload: {
@@ -127,7 +157,7 @@ export const track = {
     source: 'cart_drawer';
     recommendation_type: 'soft_match' | 'featured' | 'category_match';
   }) => {
-    posthog.capture('cart_recommendations_viewed', payload);
+    capture('cart_recommendations_viewed', payload);
   },
 
   cartRecommendationClicked: (payload: {
@@ -136,7 +166,7 @@ export const track = {
     source: 'cart_drawer';
     recommendation_type: 'soft_match' | 'featured' | 'category_match';
   }) => {
-    posthog.capture('cart_recommendation_clicked', payload);
+    capture('cart_recommendation_clicked', payload);
   },
 
   cartRecommendationAdded: (payload: {
@@ -145,15 +175,15 @@ export const track = {
     source: 'cart_drawer';
     recommendation_type: 'soft_match' | 'featured' | 'category_match';
   }) => {
-    posthog.capture('cart_recommendation_added', payload);
+    capture('cart_recommendation_added', payload);
   },
 
   cartPrivacyReminderViewed: (payload: { cart_item_count: number; source: 'cart_drawer' }) => {
-    posthog.capture('cart_privacy_reminder_viewed', payload);
+    capture('cart_privacy_reminder_viewed', payload);
   },
 
   emptyCartGuidanceViewed: (payload: { has_fit_profile: boolean; saved_count: number; is_authenticated: boolean }) => {
-    posthog.capture('empty_cart_guidance_viewed', payload);
+    capture('empty_cart_guidance_viewed', payload);
   },
 
   emptyCartGuidanceClicked: (payload: {
@@ -162,11 +192,11 @@ export const track = {
     saved_count: number;
     is_authenticated: boolean;
   }) => {
-    posthog.capture('empty_cart_guidance_clicked', payload);
+    capture('empty_cart_guidance_clicked', payload);
   },
 
   searchPerformed: (query: string, resultCount: number) => {
-    posthog.capture('search_performed', {
+    capture('search_performed', {
       has_query: query.trim().length > 0,
       query_length_bucket: textLengthBucket(query),
       result_count: resultCount,
@@ -174,23 +204,23 @@ export const track = {
   },
 
   collectionViewed: (handle: string) => {
-    posthog.capture('collection_viewed', { collection_handle: handle });
+    capture('collection_viewed', { collection_handle: handle });
   },
 
   memberRegistered: (tier: string) => {
-    posthog.capture('member_registered', { tier });
+    capture('member_registered', { tier });
   },
 
   fitProfileSaved: (payload: { source: string; has_profile: boolean; profile_fields_count: number }) => {
-    posthog.capture('fit_profile_saved', payload);
+    capture('fit_profile_saved', payload);
   },
 
   fitProfileUpdated: (payload: { source: string; has_profile: boolean; profile_fields_count: number }) => {
-    posthog.capture('fit_profile_updated', payload);
+    capture('fit_profile_updated', payload);
   },
 
   fitProfileCleared: (payload: { source: string; has_profile: boolean; profile_fields_count: number }) => {
-    posthog.capture('fit_profile_cleared', payload);
+    capture('fit_profile_cleared', payload);
   },
 
   fitConfidenceBadgeViewed: (payload: {
@@ -200,7 +230,7 @@ export const track = {
     recommended_size: string;
     placement: string;
   }) => {
-    posthog.capture('fit_confidence_badge_viewed', payload);
+    capture('fit_confidence_badge_viewed', payload);
   },
 
   fitConfidenceBadgeClicked: (payload: {
@@ -210,35 +240,35 @@ export const track = {
     recommended_size: string | null;
     placement: string;
   }) => {
-    posthog.capture('fit_confidence_badge_clicked', payload);
+    capture('fit_confidence_badge_clicked', payload);
   },
 
   privacyTrustBadgeViewed: (payload: { context: string; item_count: number }) => {
-    posthog.capture('privacy_trust_badge_viewed', payload);
+    capture('privacy_trust_badge_viewed', payload);
   },
 
   wishlistAdded: (payload: { product_id: string; product_handle: string; source: string }) => {
-    posthog.capture('wishlist_added', payload);
+    capture('wishlist_added', payload);
   },
 
   wishlistRemoved: (payload: { product_id: string; product_handle: string; source: string }) => {
-    posthog.capture('wishlist_removed', payload);
+    capture('wishlist_removed', payload);
   },
 
   wishlistReminderViewed: (payload: { saved_count: number; source: string; is_authenticated: boolean }) => {
-    posthog.capture('wishlist_reminder_viewed', payload);
+    capture('wishlist_reminder_viewed', payload);
   },
 
   wishlistReminderClicked: (payload: { saved_count: number; source: string; is_authenticated: boolean }) => {
-    posthog.capture('wishlist_reminder_clicked', payload);
+    capture('wishlist_reminder_clicked', payload);
   },
 
   wishlistCountViewed: (payload: { saved_count: number; source: string; is_authenticated: boolean }) => {
-    posthog.capture('wishlist_count_viewed', payload);
+    capture('wishlist_count_viewed', payload);
   },
 
   aiPreviewTried: (payload: { product_id: string; product_handle: string; source: string }) => {
-    posthog.capture('ai_preview_tried', payload);
+    capture('ai_preview_tried', payload);
   },
 
   aiPreviewSavePromptViewed: (payload: {
@@ -248,7 +278,7 @@ export const track = {
     source: string;
     saved_count: number;
   }) => {
-    posthog.capture('ai_preview_save_prompt_viewed', payload);
+    capture('ai_preview_save_prompt_viewed', payload);
   },
 
   aiLookSaved: (payload: {
@@ -258,15 +288,15 @@ export const track = {
     source: string;
     saved_count: number;
   }) => {
-    posthog.capture('ai_look_saved', payload);
+    capture('ai_look_saved', payload);
   },
 
   aiLookDeleted: (payload: { source: string; saved_count: number }) => {
-    posthog.capture('ai_look_deleted', payload);
+    capture('ai_look_deleted', payload);
   },
 
   aiLookbookViewed: (payload: { source: string; saved_count: number }) => {
-    posthog.capture('ai_lookbook_viewed', payload);
+    capture('ai_lookbook_viewed', payload);
   },
 
   dailyRewardViewed: (payload: {
@@ -277,7 +307,7 @@ export const track = {
     ai_look_count_bucket: '0' | '1-3' | '4+';
     is_authenticated: boolean;
   }) => {
-    posthog.capture('daily_reward_viewed', payload);
+    capture('daily_reward_viewed', payload);
   },
 
   dailyRewardRevealed: (payload: {
@@ -288,7 +318,7 @@ export const track = {
     ai_look_count_bucket: '0' | '1-3' | '4+';
     is_authenticated: boolean;
   }) => {
-    posthog.capture('daily_reward_revealed', payload);
+    capture('daily_reward_revealed', payload);
   },
 
   dailyRewardDismissed: (payload: {
@@ -299,7 +329,7 @@ export const track = {
     ai_look_count_bucket: '0' | '1-3' | '4+';
     is_authenticated: boolean;
   }) => {
-    posthog.capture('daily_reward_dismissed', payload);
+    capture('daily_reward_dismissed', payload);
   },
 
   dailyRewardCtaClicked: (payload: {
@@ -310,7 +340,7 @@ export const track = {
     ai_look_count_bucket: '0' | '1-3' | '4+';
     is_authenticated: boolean;
   }) => {
-    posthog.capture('daily_reward_cta_clicked', payload);
+    capture('daily_reward_cta_clicked', payload);
   },
 
   softCountdownViewed: (payload: {
@@ -322,7 +352,7 @@ export const track = {
     cta_type: string;
     is_authenticated: boolean;
   }) => {
-    posthog.capture('soft_countdown_viewed', payload);
+    capture('soft_countdown_viewed', payload);
   },
 
   softCountdownClicked: (payload: {
@@ -334,7 +364,7 @@ export const track = {
     cta_type: string;
     is_authenticated: boolean;
   }) => {
-    posthog.capture('soft_countdown_clicked', payload);
+    capture('soft_countdown_clicked', payload);
   },
 
   styleEditViewed: (payload: {
@@ -346,7 +376,7 @@ export const track = {
     cta_type: string;
     is_authenticated: boolean;
   }) => {
-    posthog.capture('style_edit_viewed', payload);
+    capture('style_edit_viewed', payload);
   },
 
   styleEditCtaClicked: (payload: {
@@ -358,7 +388,7 @@ export const track = {
     cta_type: string;
     is_authenticated: boolean;
   }) => {
-    posthog.capture('style_edit_cta_clicked', payload);
+    capture('style_edit_cta_clicked', payload);
   },
 
   onboardingTaskViewed: (payload: {
@@ -367,7 +397,7 @@ export const track = {
     total_count: number;
     source: string;
   }) => {
-    posthog.capture('onboarding_task_viewed', payload);
+    capture('onboarding_task_viewed', payload);
   },
 
   onboardingTaskCompleted: (payload: {
@@ -376,30 +406,31 @@ export const track = {
     total_count: number;
     source: string;
   }) => {
-    posthog.capture('onboarding_task_completed', payload);
+    capture('onboarding_task_completed', payload);
   },
 
   onboardingChecklistDismissed: (payload: { completed_count: number; total_count: number; source: string }) => {
-    posthog.capture('onboarding_checklist_dismissed', payload);
+    capture('onboarding_checklist_dismissed', payload);
   },
 
   onboardingChecklistCompleted: (payload: { completed_count: number; total_count: number; source: string }) => {
-    posthog.capture('onboarding_checklist_completed', payload);
+    capture('onboarding_checklist_completed', payload);
   },
 
   ageGatePassed: () => {
-    posthog.capture('age_gate_passed');
+    capture('age_gate_passed');
   },
 
   ageGateDenied: () => {
-    posthog.capture('age_gate_denied');
+    capture('age_gate_denied');
   },
 
   identify: (userId: string) => {
-    posthog.identify(userId);
+    // Account identifiers are intentionally not sent to analytics.
+    void userId;
   },
 
   reset: () => {
-    posthog.reset();
+    disableAnalytics();
   },
 };

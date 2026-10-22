@@ -9,9 +9,7 @@ import AnalyticsProvider from '@/components/layout/AnalyticsProvider';
 import CookieConsent from '@/components/layout/CookieConsent';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import ContextTranslateMenu from '@/components/layout/ContextTranslateMenu';
-import FirstFreeSignupModal from '@/components/promotion/FirstFreeSignupModal';
 import MobileBottomNav from '@/components/layout/MobileBottomNav';
-import NewsletterSlide from '@/components/ui/NewsletterSlide';
 import { AGE_GATE_PREPAINT_SCRIPT } from '@/lib/popups';
 import JsonLd from '@/components/seo/JsonLd';
 import { DEFAULT_DESCRIPTION, SITE_NAME, SITE_URL, absoluteUrl } from '@/lib/seo';
@@ -81,10 +79,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <CartDrawer />
           <CartSyncProvider />
           <ContextTranslateMenu />
-          <FirstFreeSignupModal />
           <CookieConsent />
           <MobileBottomNav />
-          <NewsletterSlide />
         </AnalyticsProvider>
       </body>
     </html>

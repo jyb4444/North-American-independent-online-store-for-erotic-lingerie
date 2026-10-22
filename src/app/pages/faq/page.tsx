@@ -31,7 +31,7 @@ export const FAQS = [
   },
   {
     q: 'My size is out of stock — will it come back?',
-    a: 'Popular styles are restocked regularly. Use the "Notify me" button on any out-of-stock size to receive a private email when it returns. You can also save it to your wishlist to keep it in view.',
+    a: 'Restock timing varies. Save the product to your wishlist so you can check its availability later. We will only promise email restock alerts after automated delivery is fully available.',
   },
   {
     q: 'How do I care for my items?',

@@ -51,7 +51,7 @@ function productUrl(handle: unknown): string {
 
 // ─── Delivery ──────────────────────────────────────────────────────────────────
 
-type OutgoingEmail = { to: string; subject: string; html: string; replyTo?: string };
+type OutgoingEmail = { to: string; subject: string; html: string; replyTo?: string; headers?: Record<string, string> };
 
 /**
  * Sends an email and throws if the provider rejects it (the Resend SDK reports failures in
@@ -189,7 +189,7 @@ function wishlistReminderHtml(firstName: string, productTitle: string, productIm
   `);
 }
 
-function abandonedCartHtml(firstName: string, items: CartItem[]) {
+function abandonedCartHtml(firstName: string, items: CartItem[], unsubscribeUrl: string) {
   const rows = items.slice(0, 3).map((item) =>
     productRow(item.image, `${item.title} — ${item.color} / ${item.size}`, item.price, productUrl(item.productId))
   ).join('');
@@ -203,6 +203,7 @@ function abandonedCartHtml(firstName: string, items: CartItem[]) {
     ${more}
     ${button('Return to Your Bag', BASE_URL)}
     ${para('Your bag stays private in this browser. Billing appears discreetly.')}
+    ${para(`<a href="${escapeHtml(unsubscribeUrl)}" style="color:${MUTED};">Unsubscribe from marketing emails</a>`)}
   `);
 }
 
@@ -329,8 +330,17 @@ export async function sendWishlistReminderEmail(
   });
 }
 
-export async function sendAbandonedCartEmail(to: string, firstName: string, items: CartItem[]) {
-  return deliver({ to, subject: 'You left something in your private bag', html: abandonedCartHtml(firstName, items) });
+export async function sendAbandonedCartEmail(to: string, firstName: string, items: CartItem[], unsubscribeToken: string) {
+  const unsubscribeUrl = `${BASE_URL}/api/newsletter/unsubscribe?token=${encodeURIComponent(unsubscribeToken)}`;
+  return deliver({
+    to,
+    subject: 'You left something in your private bag',
+    html: abandonedCartHtml(firstName, items, unsubscribeUrl),
+    headers: {
+      'List-Unsubscribe': `<${unsubscribeUrl}>`,
+      'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+    },
+  });
 }
 
 export async function sendRestockAlertEmail(
@@ -381,8 +391,90 @@ export async function sendContactNotification(
   });
 }
 
-export async function sendNewsletterWelcomeEmail(to: string) {
-  return deliver({ to, subject: 'Welcome to Self Love — Your Private Access', html: newsletterWelcomeHtml() });
+export async function sendReturnRequestConfirmation(input: {
+  to: string;
+  requestNumber: string;
+  orderNumber: string;
+}) {
+  return deliver({
+    to: input.to,
+    subject: headerText(`We received return request ${input.requestNumber}`),
+    html: emailWrapper(`
+      ${heading('We received your return request')}
+      ${para(`Request ${strong(input.requestNumber)} for order ${strong(`#${input.orderNumber}`)} is now under review.`)}
+      ${para('We aim to reply within two business days. Please do not ship anything until you receive return instructions from us.')}
+      ${button('View return request', `${BASE_URL}/returns`)}
+    `),
+  }, `return-customer:${input.requestNumber}`);
+}
+
+export async function sendReturnRequestNotification(input: {
+  requestNumber: string;
+  orderNumber: string;
+  customerEmail: string;
+  reason: string;
+  note: string | null;
+  items: Array<{ title: string; quantity: number }>;
+  photoUrls: string[];
+}) {
+  const recipientEmail = process.env.CONTACT_RECIPIENT_EMAIL ?? 'ykj2018720@gmail.com';
+  const itemRows = input.items.map((item) =>
+    `<li>${escapeHtml(item.title)} × ${escapeHtml(item.quantity)}</li>`
+  ).join('');
+  const photoRows = input.photoUrls.length
+    ? `<p style="font-family:Arial,sans-serif;font-size:13px;color:${MUTED};">Photos (links expire in 30 minutes):</p><ul>${input.photoUrls.map((url, index) => `<li><a href="${safeUrl(url)}" style="color:${GOLD};">Photo ${index + 1}</a></li>`).join('')}</ul>`
+    : '';
+  return deliver({
+    to: recipientEmail,
+    replyTo: input.customerEmail,
+    subject: headerText(`[Return Request] ${input.requestNumber} — Order #${input.orderNumber}`),
+    html: emailWrapper(`
+      ${heading('New return request')}
+      ${para(`${strong(input.requestNumber)} · Order ${strong(`#${input.orderNumber}`)}`)}
+      ${para(`Customer: ${strong(input.customerEmail)}<br/>Reason: ${strong(input.reason.replace(/_/g, ' '))}`)}
+      <ul style="font-family:Arial,sans-serif;font-size:14px;line-height:1.8;color:${MUTED};">${itemRows}</ul>
+      ${input.note ? para(`Customer note: ${escapeHtml(input.note)}`) : ''}
+      ${photoRows}
+      ${para('Review the Shopify order tagged with this RMA. Reply to the customer with approval, denial, or a request for more information.')}
+    `),
+  }, `return-merchant:${input.requestNumber}`);
+}
+
+export async function sendReturnStatusEmail(input: {
+  to: string;
+  requestNumber: string;
+  orderNumber: string;
+  status: string;
+  note?: string | null;
+}) {
+  const label = input.status.replaceAll('_', ' ');
+  return deliver({
+    to: input.to,
+    subject: headerText(`Return request ${input.requestNumber}: ${label}`),
+    html: emailWrapper(`
+      ${heading('Your return request was updated')}
+      ${para(`Request ${strong(input.requestNumber)} for order ${strong(`#${input.orderNumber}`)} is now ${strong(label)}.`)}
+      ${input.note ? para(`Message from our team: ${escapeHtml(input.note)}`) : ''}
+      ${button('View return request', `${BASE_URL}/returns`)}
+      ${para('Please do not ship an item until the instructions in your request explicitly ask you to do so.')}
+    `),
+  }, `return-status:${input.requestNumber}:${input.status}`);
+}
+
+export async function sendNewsletterWelcomeEmail(to: string, unsubscribeToken?: string) {
+  const unsubscribe = unsubscribeToken
+    ? `${BASE_URL}/api/newsletter/unsubscribe?token=${encodeURIComponent(unsubscribeToken)}`
+    : null;
+  const footer = unsubscribe ? `<p style="font-family:Arial,sans-serif;font-size:12px;color:${MUTED};"><a href="${escapeHtml(unsubscribe)}" style="color:${MUTED};">Unsubscribe</a></p>` : '';
+  return deliver({ to, subject: 'Welcome to Self Love — Your Private Access', html: newsletterWelcomeHtml().replace('</body>', `${footer}</body>`) });
+}
+
+export async function sendNewsletterConfirmationEmail(to: string, confirmationUrl: string) {
+  return deliver({
+    to,
+    subject: 'Confirm your Self Love email subscription',
+    html: emailWrapper(`${heading('Confirm your subscription')}${para('Use the button below to confirm that you want email updates from Self Love.')}${button('Confirm subscription', confirmationUrl)}${para('If you did not request this, you can ignore this email.')}`),
+  });
 }
 
 export async function sendGiftCardEmail(input: {
