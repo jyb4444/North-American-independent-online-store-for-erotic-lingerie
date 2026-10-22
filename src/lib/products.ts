@@ -13,7 +13,7 @@ import { MOCK_COLLECTIONS, getCollectionByHandle as mockGetCollection } from '@/
 import type { Collection, Product, ProductVariant } from '@/types';
 import { hasShopifyConfig, shopifyFetch } from '@/lib/shopify/client';
 import { GET_COLLECTIONS, GET_COLLECTION_PRODUCTS, GET_PRODUCT_BY_HANDLE, GET_PRODUCTS } from '@/lib/shopify/queries';
-import { isPublicCollectionHandle, isPublicProductHandle } from '@/lib/catalog-visibility';
+import { hasPublicCatalogTags, isPublicCollectionHandle, isPublicProductHandle } from '@/lib/catalog-visibility';
 
 type ShopifyMoney = { amount: string; currencyCode: string };
 type ShopifyImage = { url: string; altText: string | null };
@@ -86,7 +86,7 @@ function allowMockFallback() {
 }
 
 function publicProducts(products: Product[]) {
-  return products.filter((product) => isPublicProductHandle(product.handle));
+  return products.filter((product) => isPublicProductHandle(product.handle) && hasPublicCatalogTags(product.tags));
 }
 
 function publicCollections(collections: Collection[]) {
@@ -268,7 +268,10 @@ export async function getAllProducts(): Promise<Product[]> {
 
 export async function getProductByHandle(handle: string): Promise<Product | undefined> {
   if (!isPublicProductHandle(handle)) return undefined;
-  if (!hasShopifyConfig()) return mockGetByHandle(handle);
+  if (!hasShopifyConfig()) {
+    const product = mockGetByHandle(handle);
+    return product && hasPublicCatalogTags(product.tags) ? product : undefined;
+  }
 
   try {
     const data = await shopifyFetch<ProductResponse>({
@@ -276,11 +279,13 @@ export async function getProductByHandle(handle: string): Promise<Product | unde
       variables: { handle },
       cache: 'no-store',
     });
-    return data.product ? mapShopifyProduct(data.product) : undefined;
+    if (!data.product || !hasPublicCatalogTags(data.product.tags)) return undefined;
+    return mapShopifyProduct(data.product);
   } catch (error) {
     if (!allowMockFallback()) throw error;
     console.error('Shopify product fetch failed, using mock product:', error);
-    return mockGetByHandle(handle);
+    const product = mockGetByHandle(handle);
+    return product && hasPublicCatalogTags(product.tags) ? product : undefined;
   }
 }
 
@@ -397,8 +402,11 @@ export async function getCollectionByHandle(handle: string): Promise<Collection 
 
 /** Average rating and count of approved reviews for one product. */
 export async function getReviewStats(productId: string): Promise<{ rating: number; reviewCount: number }> {
-  const { createAdminClient } = await import('@/lib/supabase/server');
-  const { data, error } = await createAdminClient()
+  // Approved reviews are intentionally public through RLS. Use the request-scoped
+  // client so product pages do not depend on a service-role secret being present.
+  const { createClient } = await import('@/lib/supabase/server');
+  const supabase = await createClient();
+  const { data, error } = await supabase
     .from('reviews')
     .select('rating')
     .eq('product_id', productId)

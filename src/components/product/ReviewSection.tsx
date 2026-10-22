@@ -261,25 +261,28 @@ export default function ReviewSection({ productId, productHandle, seedRating = 0
   }
 
   async function uploadMedia(files: File[], folder: 'photos' | 'videos'): Promise<string[]> {
-    const supabase = createClient();
-    const urls: string[] = [];
-    for (const file of files) {
-      const ext = file.name.split('.').pop() ?? (folder === 'photos' ? 'jpg' : 'mp4');
-      const path = `reviews/${folder}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-      const { data, error } = await supabase.storage.from('ugc').upload(path, file, { upsert: false });
-      if (error) {
-        throw new Error(`Could not upload ${folder === 'photos' ? 'photo' : 'video'}: ${error.message}`);
+    const paths: string[] = [];
+    try {
+      for (const file of files) {
+        const formData = new FormData();
+        formData.set('file', file);
+        formData.set('kind', folder === 'photos' ? 'photo' : 'video');
+        const response = await fetch('/api/reviews/media', { method: 'POST', body: formData });
+        const result = await response.json() as { path?: string; error?: string };
+        if (!response.ok || !result.path) throw new Error(result.error ?? 'Could not upload review media.');
+        paths.push(result.path);
       }
-      if (!data) {
-        throw new Error(`Could not upload ${folder === 'photos' ? 'photo' : 'video'}.`);
+    } catch (error) {
+      if (paths.length > 0) {
+        await fetch('/api/reviews/media', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ paths }),
+        }).catch(() => undefined);
       }
-      const { data: publicData } = supabase.storage.from('ugc').getPublicUrl(path);
-      if (!publicData.publicUrl) {
-        throw new Error(`Could not create ${folder === 'photos' ? 'photo' : 'video'} URL.`);
-      }
-      urls.push(publicData.publicUrl);
+      throw error;
     }
-    return urls;
+    return paths;
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -289,9 +292,9 @@ export default function ReviewSection({ productId, productHandle, seedRating = 0
     if (formBody.length > MAX_REVIEW_CHARS) { setSubmitError(`Review must be under ${MAX_REVIEW_CHARS} characters.`); return; }
     setSubmitState('sending');
     setSubmitError('');
+    let photoUrls: string[] = [];
+    let videoUrls: string[] = [];
     try {
-      let photoUrls: string[] = [];
-      let videoUrls: string[] = [];
       if (formPhotos.length > 0) {
         photoUrls = await uploadMedia(formPhotos, 'photos');
       }
@@ -334,6 +337,14 @@ export default function ReviewSection({ productId, productHandle, seedRating = 0
       setMediaError('');
       setRefetchKey((k) => k + 1);
     } catch (err) {
+      const uploadedPaths = [...photoUrls, ...videoUrls];
+      if (uploadedPaths.length > 0) {
+        await fetch('/api/reviews/media', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ paths: uploadedPaths }),
+        }).catch(() => undefined);
+      }
       setSubmitState('error');
       setSubmitError(err instanceof Error ? err.message : 'Something went wrong.');
     }

@@ -24,6 +24,41 @@ export function toShopifyOrderGid(orderId: string) {
   return `gid://shopify/Order/${orderId}`;
 }
 
+function cartTokenFromGid(cartId: string): string | null {
+  const match = cartId.match(/^gid:\/\/shopify\/Cart\/([^?\s]+)(?:\?.*)?$/);
+  return match?.[1] ? decodeURIComponent(match[1]) : null;
+}
+
+/**
+ * Confirms that Shopify created an order from this exact Storefront cart.
+ * A cart remaining readable is not a reliable indication that checkout is unfinished.
+ */
+export async function shopifyOrderExistsForCart(cartId: string): Promise<{
+  completed: boolean;
+  skipped: boolean;
+  error: string | null;
+}> {
+  const cartToken = cartTokenFromGid(cartId);
+  if (!cartToken) return { completed: false, skipped: false, error: 'Invalid Shopify cart ID' };
+
+  const result = await shopifyAdminFetch<{ orders: { nodes: { id: string }[] } }>({
+    query: `
+      query OrderForCart($query: String!) {
+        orders(first: 1, query: $query) {
+          nodes { id }
+        }
+      }
+    `,
+    variables: { query: `cart_token:${cartToken}` },
+  });
+
+  return {
+    completed: (result.data?.orders.nodes.length ?? 0) > 0,
+    skipped: result.skipped,
+    error: result.error,
+  };
+}
+
 export async function shopifyAdminFetch<T>({
   query,
   variables,

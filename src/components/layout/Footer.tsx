@@ -2,57 +2,8 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { useState } from 'react';
 import { Mail } from 'lucide-react';
-
-function NewsletterForm() {
-  const [email, setEmail] = useState('');
-  const [state, setState] = useState<'idle' | 'sending' | 'success'>('idle');
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setState('sending');
-    try {
-      await fetch('/api/newsletter', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
-      });
-    } catch {}
-    setState('success');
-  }
-
-  if (state === 'success') {
-    return (
-      <p className="text-xs text-gold-400">
-        You&rsquo;re on the list. Welcome to Self Love.
-      </p>
-    );
-  }
-
-  return (
-    <form onSubmit={handleSubmit} className="mt-2 flex flex-col gap-2">
-      <div className="flex gap-2">
-        <input
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-          placeholder="your@email.com"
-          className="min-w-0 flex-1 border border-wine-700 bg-wine-800 px-3 py-2 text-xs text-ivory placeholder-ivory-dim focus:border-gold-400 focus:outline-none transition"
-        />
-        <button
-          type="submit"
-          disabled={state === 'sending'}
-          className="flex-shrink-0 border border-gold-400 px-3 py-2 text-[10px] font-medium uppercase tracking-widest text-gold-400 transition hover:bg-gold-400 hover:text-wine-950 disabled:opacity-50"
-        >
-          {state === 'sending' ? '…' : 'Join'}
-        </button>
-      </div>
-      <p className="text-[10px] text-ivory-dim">Sent discreetly. Unsubscribe anytime.</p>
-    </form>
-  );
-}
+import NewsletterForm from '@/components/ui/NewsletterForm';
 
 export default function Footer() {
   return (
@@ -80,12 +31,10 @@ export default function Footer() {
             <p className="text-xs leading-relaxed">
               Premium intimate apparel with discreet shopping and curated essentials.
             </p>
-            <div className="mt-6">
-              <p className="mb-1 flex items-center gap-1.5 text-xs font-medium uppercase tracking-[0.2em] text-ivory-muted">
-                <Mail size={11} /> Private Access
-              </p>
-              <NewsletterForm />
-            </div>
+            <Link href="/pages/contact" className="mt-6 inline-flex items-center gap-2 text-xs text-gold-400 hover:underline">
+              <Mail size={11} /> Contact support
+            </Link>
+            {process.env.NEXT_PUBLIC_NEWSLETTER_ENABLED === 'true' && <NewsletterForm />}
           </div>
 
           <div>
@@ -132,6 +81,13 @@ export default function Footer() {
           <div className="flex gap-5">
             <Link href="/pages/privacy" className="hover:text-gold-400 transition">Privacy Policy</Link>
             <Link href="/pages/terms" className="hover:text-gold-400 transition">Terms of Service</Link>
+            <button
+              type="button"
+              onClick={() => window.dispatchEvent(new Event('velour:open-cookie-settings'))}
+              className="hover:text-gold-400 transition"
+            >
+              Cookie Settings
+            </button>
           </div>
         </div>
       </div>

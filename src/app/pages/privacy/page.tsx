@@ -35,8 +35,8 @@ export default function PrivacyPage() {
         <p><strong className="text-ivory">Address information:</strong> If you provide a shipping address, it is stored in our database.</p>
         <p><strong className="text-ivory">Bag contents:</strong> If you are signed in, the items in your bag are saved to your account so you can continue on another device, and we may send you a reminder email about items left in your bag. Signing out removes the bag from that browser.</p>
         <p><strong className="text-ivory">Orders, returns and reviews:</strong> We keep your order and shipping status, return requests (including any photos you upload, which are private to you and our team), and reviews you write. Reviews are shown publicly under a masked name or &ldquo;Anonymous shopper&rdquo;; your email and phone are never shown.</p>
-        <p><strong className="text-ivory">Browser-only data:</strong> Your exact fit profile measurements, AI preview images and saved AI looks are stored in your browser&rsquo;s local storage and are not uploaded to our servers. See section 5 for what an AI preview request sends.</p>
-        <p><strong className="text-ivory">Usage analytics:</strong> We use PostHog to collect anonymised usage data (pages visited, features used). This data does not include your measurements, wishlist product titles, or AI images. You may opt out via our cookie preferences.</p>
+        <p><strong className="text-ivory">Browser-only data:</strong> Your exact fit profile measurements, AI-generated illustrations and saved AI looks are stored in your browser&rsquo;s local storage and are not uploaded to our servers. See section 5 for what an AI request sends.</p>
+        <p><strong className="text-ivory">Usage analytics:</strong> With your consent, we use PostHog to collect page paths and general feature usage. We do not send account identifiers, product or variant identifiers, selected sizes or colours, bag contents, fit recommendations, measurements, or AI images to analytics.</p>
         <p><strong className="text-ivory">Payment data:</strong> Payments are processed by our payment provider. We do not store card numbers or full payment details on our servers.</p>
       </Section>
 
@@ -49,9 +49,9 @@ export default function PrivacyPage() {
         <p>Charges appear discreetly and never include &ldquo;intimate apparel&rdquo; or any description that reveals the nature of your purchase. Packaging is similarly discreet.</p>
       </Section>
 
-      <Section title="5. AI Preview Privacy">
-        <p>When you request an AI preview, we send a short, general description derived from your fit profile &mdash; a height range, body shape and skin tone, never your exact measurements &mdash; together with the product name, through our server to our image-generation provider, Hugging Face, which creates the image. Please see Hugging Face&rsquo;s privacy policy for how it processes these requests.</p>
-        <p>The generated image is returned to your browser and is not stored on our servers. It stays in your browser&rsquo;s local storage until you clear it. AI previews only depict adult models.</p>
+      <Section title="5. AI Style Inspiration Privacy">
+        <p>When you request an AI illustration, we send a short, general description derived from your fit profile &mdash; a height range, body shape and skin tone, never your exact measurements &mdash; together with the product name, through our server to our image-generation provider, Hugging Face. The result is general inspiration and does not depict the exact product or predict fit. Please see Hugging Face&rsquo;s privacy policy for how it processes these requests.</p>
+        <p>The generated image is returned to your browser and is not stored on our servers. It stays in your browser&rsquo;s local storage until you clear it. AI illustrations only depict adult models.</p>
       </Section>
 
       <Section title="6. Cookies and Tracking">

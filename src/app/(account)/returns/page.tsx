@@ -2,8 +2,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { ArrowLeft, ExternalLink, Package, RotateCcw } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
-import { getReturnRequestsForUser, getSignedReturnMediaUrls } from '@/lib/returns';
-import ReturnPhotoGallery from '@/components/returns/ReturnPhotoGallery';
+import { getReturnRequestsForUser } from '@/lib/returns';
 
 function formatDate(value: string | null) {
   if (!value) return 'Pending';
@@ -30,15 +29,6 @@ export default async function ReturnsPage() {
   if (!user) redirect('/login');
 
   const requests = await getReturnRequestsForUser(user.id);
-  const photoMap = Object.fromEntries(
-    await Promise.all(
-      requests.map(async (request) => [
-        request.id,
-        await getSignedReturnMediaUrls(request.media_urls.slice(0, 4), user.id),
-      ] as const),
-    ),
-  );
-
   return (
     <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6">
       <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -66,7 +56,7 @@ export default async function ReturnsPage() {
           <RotateCcw size={24} className="mx-auto text-gold-400" />
           <h2 className="mt-4 font-serif text-2xl font-light text-ivory">No return requests yet</h2>
           <p className="mx-auto mt-2 max-w-md text-sm text-ivory-dim">
-            Start from an order detail page when you need to request a return, exchange, reshipment, or refund review.
+            Start from an order detail page when you need us to review a return.
           </p>
           <Link
             href="/orders"
@@ -104,13 +94,12 @@ export default async function ReturnsPage() {
                 </div>
               </div>
 
-              <div className="mt-5 grid gap-5 border-t border-gold-600/10 pt-5 lg:grid-cols-[1fr_260px]">
+              <div className="mt-5 border-t border-gold-600/10 pt-5">
                 <div className="space-y-3">
                   {request.return_request_items.map((item) => (
                     <div key={item.id} className="border border-gold-600/10 bg-wine-950/30 p-4">
                       <p className="text-sm text-ivory">{item.order_items.title}</p>
-                      <p className="mt-1 text-xs text-ivory-dim">Qty {item.quantity} · {label(item.item_condition)}</p>
-                      {item.reason_detail && <p className="mt-2 text-xs text-ivory-muted">Item note: {item.reason_detail}</p>}
+                      <p className="mt-1 text-xs text-ivory-dim">Qty {item.quantity}</p>
                     </div>
                   ))}
                   {request.customer_note && (
@@ -118,10 +107,6 @@ export default async function ReturnsPage() {
                   )}
                 </div>
 
-                <div>
-                  <p className="mb-2 text-xs uppercase tracking-widest text-ivory-dim">Photos</p>
-                  <ReturnPhotoGallery photos={photoMap[request.id] ?? []} />
-                </div>
               </div>
 
               <div className="mt-5 flex flex-wrap gap-3">

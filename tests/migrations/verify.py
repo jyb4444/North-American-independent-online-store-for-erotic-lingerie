@@ -16,8 +16,8 @@ def ident(s):return '"'+s.replace('"','""')+'"'
 def catalog_sql():
     out=['BEGIN;']
     # The fixture is a catalog snapshot: no auth users, emails or actual review rows.
-    out+=['DROP TABLE IF EXISTS public.'+ident(t)+' CASCADE;' for t in ['referral_webhook_events','referral_rewards','referral_redemptions']+[x['name'] for x in CAT['tables']]]
-    out.append("DO $$ DECLARE r record; BEGIN FOR r IN SELECT p.oid::regprocedure AS signature FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.proname IN ('handle_new_user','handle_new_membership','set_updated_at','confirmed_user_id_for_email','redeem_referral','claim_referrer_reward','queue_referral_welcome','claim_referral_paid_order','lease_referral_rewards','lease_referral_events','finish_referral_discount') LOOP EXECUTE 'DROP FUNCTION '||r.signature||' CASCADE'; END LOOP; END $$;")
+    out+=['DROP TABLE IF EXISTS public.'+ident(t)+' CASCADE;' for t in ['notification_jobs','newsletter_subscribers','referral_webhook_events','referral_rewards','referral_redemptions']+[x['name'] for x in CAT['tables']]]
+    out.append("DO $$ DECLARE r record; BEGIN FOR r IN SELECT p.oid::regprocedure AS signature FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.proname IN ('lease_notification_jobs','handle_new_user','handle_new_membership','set_updated_at','confirmed_user_id_for_email','redeem_referral','claim_referrer_reward','queue_referral_welcome','claim_referral_paid_order','lease_referral_rewards','lease_referral_events','finish_referral_discount') LOOP EXECUTE 'DROP FUNCTION '||r.signature||' CASCADE'; END LOOP; END $$;")
     for t in CAT['tables']:
         columns=[]
         for c in CAT['columns']:
@@ -75,7 +75,13 @@ if __name__=='__main__':
         assert_sql(db,"EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid='public.referrals'::regclass AND contype='u' AND conname='referrals_referrer_id_key')",'referrer uniqueness')
         assert_sql(db,"(SELECT pg_get_expr(d.adbin,d.adrelid)='false' FROM pg_attrdef d JOIN pg_attribute a ON a.attrelid=d.adrelid AND a.attnum=d.adnum WHERE a.attrelid='public.reviews'::regclass AND a.attname='approved')",'approved default false')
         assert_sql(db,"NOT has_function_privilege('service_role','public.claim_referrer_reward(uuid,numeric)','EXECUTE')",'unsafe old claim revoked')
+        assert_sql(db,"has_function_privilege('service_role','public.create_return_request_atomic(uuid,uuid,text,text,text,text[],text,text[],jsonb)','EXECUTE') AND NOT has_function_privilege('authenticated','public.create_return_request_atomic(uuid,uuid,text,text,text,text[],text,text[],jsonb)','EXECUTE')",'atomic return RPC service-only')
+        assert_sql(db,"EXISTS(SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.proname='create_return_request_atomic' AND p.prosecdef AND array_to_string(p.proconfig,',')='search_path=\"\"')",'atomic return RPC hardened search_path')
     assert_sql('phase4_drift',"(SELECT count(*)=8 AND bool_and(approved) FROM public.reviews)",'eight approved reviews preserved')
+    assert_sql('phase4_drift',"to_regclass('public.notification_jobs') IS NOT NULL AND to_regclass('public.newsletter_subscribers') IS NOT NULL",'durable communication tables created')
+    assert_sql('phase4_drift',"NOT has_table_privilege('authenticated','public.notification_jobs','SELECT') AND NOT has_table_privilege('anon','public.newsletter_subscribers','INSERT')",'communication tables service-only')
+    assert_sql('phase4_drift',"has_function_privilege('service_role','public.lease_notification_jobs(integer)','EXECUTE') AND NOT has_function_privilege('authenticated','public.lease_notification_jobs(integer)','EXECUTE')",'notification lease service-only')
+    assert_sql('phase4_drift',"EXISTS(SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.proname='lease_notification_jobs' AND p.prosecdef AND array_to_string(p.proconfig,',')='search_path=\"\"')",'notification lease hardened search_path')
     assert_sql('phase4_drift',"(SELECT count(*)=5 AND bool_and(confdeltype='a') FROM pg_constraint WHERE conname IN ('profiles_id_fkey','memberships_user_id_fkey','wishlists_user_id_fkey','cart_snapshots_user_id_fkey','referrals_referrer_id_fkey'))",'five NO ACTION FKs unchanged')
     # A bad existing row must abort before the default or constraints are altered.
     run('phase4_conflict',"INSERT INTO public.reviews(product_id,product_handle,rating,body,nickname,email) VALUES ('conflict','conflict',5,'tiny','Fixture','fixture@example.invalid');")

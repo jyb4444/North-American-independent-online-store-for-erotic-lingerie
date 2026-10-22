@@ -3,6 +3,9 @@ import { createAdminClient } from '@/lib/supabase/server';
 import { rateLimit, getClientIp } from '@/lib/rate-limit';
 
 export async function POST(req: Request) {
+  if (process.env.RESTOCK_ALERTS_ENABLED !== 'true') {
+    return NextResponse.json({ error: 'Restock alerts are not currently available.' }, { status: 503 });
+  }
   const { allowed } = await rateLimit(`restock:${getClientIp(req)}`, { limit: 10, windowMs: 60 * 60_000 });
   if (!allowed) return NextResponse.json({ error: 'Too many requests.' }, { status: 429 });
 
@@ -39,13 +42,17 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true, duplicate: true });
   }
 
-  const { error } = await supabase.from('restock_alerts').insert({
+  const { error } = await supabase.from('restock_alerts').upsert({
     email: email.trim().toLowerCase(),
     product_id,
     product_handle,
     size,
     color,
-  });
+    notified: false,
+    attempts: 0,
+    next_attempt_at: new Date().toISOString(),
+    last_error: null,
+  }, { onConflict: 'email,product_id,size,color' });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true });

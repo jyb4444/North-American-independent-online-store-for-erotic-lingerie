@@ -22,7 +22,7 @@ export default function TermsPage() {
       <p className="mb-2 text-xs font-medium uppercase tracking-[0.3em] text-gold-400">Legal</p>
       <h1 className="font-serif text-4xl font-light text-ivory">Terms of Service</h1>
       <div className="mx-auto mt-4 mb-3 h-px w-12 bg-gold-400/40" />
-      <p className="mb-10 text-xs text-ivory-dim">Last updated: June 2026</p>
+      <p className="mb-10 text-xs text-ivory-dim">Last updated: October 2026</p>
 
       <Section title="1. Acceptance of Terms">
         <p>By accessing or using the Self Love website (&ldquo;Site&rdquo;), you agree to be bound by these Terms of Service (&ldquo;Terms&rdquo;). If you do not agree to these Terms, please do not use the Site. These Terms apply to all visitors, users, and customers.</p>
@@ -43,8 +43,8 @@ export default function TermsPage() {
       </Section>
 
       <Section title="5. Returns and Exchanges">
-        <p>We accept returns within 30 days for unworn, unwashed items with original tags attached. Due to hygiene considerations, the following are non-returnable: underwear, thongs, hosiery, and bodystockings once opened. Items marked &ldquo;Final Sale&rdquo; are non-returnable.</p>
-        <p>To initiate a return, please <Link href="/pages/contact" className="text-gold-400 hover:underline">contact us</Link> with your order number and reason for return. Customers are responsible for return shipping costs unless the item was defective or incorrectly shipped.</p>
+        <p>Unopened eligible items may be submitted for review within 30 days with their tags, packaging, and accessories intact. Underwear, panties, thongs, and other bottom intimate items are final sale for hygiene reasons. Used, tried-on, washed, stained, altered, gift-card, and Final Sale items are not returnable. Customer-damaged hosiery is not returnable.</p>
+        <p>Start a request from <Link href="/orders" className="text-gold-400 hover:underline">Order History</Link>. Defects, wrong or missing items, transit damage, and privacy-packaging issues require review and may require photos. Do not ship an item before approval. Approved instructions and responsibility for shipping costs are provided by email based on the reason for the return.</p>
       </Section>
 
       <Section title="6. Privacy">
@@ -59,8 +59,8 @@ export default function TermsPage() {
         <p>You are responsible for maintaining the confidentiality of your account credentials and for all activities that occur under your account. Please notify us immediately of any unauthorised use. We reserve the right to suspend or terminate accounts that violate these Terms.</p>
       </Section>
 
-      <Section title="9. AI Preview Feature">
-        <p>Our AI Preview feature generates images based on product and body description inputs. These images are for personal styling guidance only and are not a guarantee of fit or appearance. Images are not stored on our servers and are private to your browser. Self Love is not liable for any decisions made based on AI-generated previews.</p>
+      <Section title="9. AI Style Inspiration">
+        <p>Our AI feature creates a general style illustration from text descriptions. It is not a virtual try-on, an image of the selected product, or a guarantee of fit, colour, material, or appearance. Generated images are not stored on our servers and remain in your browser unless you remove them.</p>
       </Section>
 
       <Section title="10. Disclaimer of Warranties">

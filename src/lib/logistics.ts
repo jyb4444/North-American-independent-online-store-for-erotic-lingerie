@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { sendShipmentCreatedEmail } from '@/lib/email';
 import { shopifyAdminFetch } from '@/lib/shopify/admin';
+import { readOrderAttribution } from '@/lib/shopify/order-attribution';
 
 export type ShipmentEvent = {
   id: string;
@@ -76,6 +77,7 @@ type ShopifyOrderPayload = {
   processed_at?: string | null;
   fulfillments?: ShopifyFulfillmentPayload[];
   line_items?: ShopifyLineItemPayload[];
+  note_attributes?: Array<{ name?: string | null; value?: string | null }>;
 };
 
 type ShopifyFulfillmentPayload = {
@@ -140,6 +142,7 @@ type ShopifyAdminOrderNode = {
       };
     }>;
   };
+  customAttributes?: Array<{ key: string; value: string | null }>;
 };
 
 function normalizeId(value: unknown): string {
@@ -154,6 +157,11 @@ function normalizeAmount(value: unknown): number | null {
   if (value === null || value === undefined || value === '') return null;
   const number = Number(value);
   return Number.isFinite(number) ? number : null;
+}
+
+export function shopifyOrderEmailQuery(email: string): string {
+  const escaped = email.trim().toLowerCase().replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+  return `email:"${escaped}"`;
 }
 
 function generateLookupToken(): string {
@@ -253,7 +261,8 @@ export async function upsertOrderFromShopify(payload: ShopifyOrderPayload): Prom
   if (!shopifyOrderId || !email || !orderNumber) return null;
 
   const supabase = createAdminClient();
-  const userId = await getUserIdForEmail(email);
+  const attributedUserId = readOrderAttribution(payload.note_attributes);
+  const userId = attributedUserId ?? await getUserIdForEmail(email);
 
   const { data: order, error } = await supabase
     .from('orders')
@@ -339,8 +348,8 @@ export async function syncShopifyOrdersForUser(input: {
     };
   }>({
     query: `
-      query OrdersForEmail($first: Int!, $query: String!) {
-        orders(first: $first, sortKey: CREATED_AT, reverse: true, query: $query) {
+      query OrdersForAccount($first: Int!, $query: String!) {
+        orders(first: $first, query: $query, sortKey: CREATED_AT, reverse: true) {
           nodes {
             legacyResourceId
             name
@@ -350,6 +359,7 @@ export async function syncShopifyOrdersForUser(input: {
             displayFulfillmentStatus
             createdAt
             processedAt
+            customAttributes { key value }
             currentTotalPriceSet {
               shopMoney {
                 amount
@@ -377,8 +387,8 @@ export async function syncShopifyOrdersForUser(input: {
       }
     `,
     variables: {
-      first: input.limit ?? 20,
-      query: `email:${email}`,
+      first: Math.max(1, Math.min(input.limit ?? 100, 250)),
+      query: shopifyOrderEmailQuery(email),
     },
   });
 
@@ -387,6 +397,8 @@ export async function syncShopifyOrdersForUser(input: {
 
   let synced = 0;
   for (const order of result.data?.orders.nodes ?? []) {
+    const attributedUserId = readOrderAttribution(order.customAttributes);
+    if (attributedUserId !== input.userId && order.email?.trim().toLowerCase() !== email) continue;
     const upserted = await upsertAdminOrderForUser(order, input.userId);
     if (upserted) synced += 1;
   }

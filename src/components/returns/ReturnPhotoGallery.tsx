@@ -32,6 +32,7 @@ export default function ReturnPhotoGallery({ photos }: ReturnPhotoGalleryProps) 
               alt={`Return photo ${index + 1}`}
               width={96}
               height={96}
+              unoptimized
               className="h-full w-full object-cover"
             />
             <span className="absolute inset-0 flex items-center justify-center bg-wine-950/0 text-ivory opacity-0 transition group-hover:bg-wine-950/45 group-hover:opacity-100">
@@ -62,6 +63,7 @@ export default function ReturnPhotoGallery({ photos }: ReturnPhotoGalleryProps) 
               alt="Return photo preview"
               width={1200}
               height={900}
+              unoptimized
               className="max-h-[82vh] w-full object-contain"
               priority
             />

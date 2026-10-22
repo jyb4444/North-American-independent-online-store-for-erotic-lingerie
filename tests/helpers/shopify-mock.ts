@@ -6,6 +6,7 @@ export type CartCreateInput = {
   lines: { merchandiseId: string; quantity: number; attributes?: { key: string; value: string }[] }[];
   giftCardCodes?: string[];
   buyerIdentity?: { email?: string };
+  attributes?: { key: string; value: string }[];
 };
 
 export const GIFT_CARD_VARIANT = {

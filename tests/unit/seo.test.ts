@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { isPublicCollectionHandle, isPublicProductHandle } from '../../src/lib/catalog-visibility';
+import { hasPublicCatalogTags, isPublicCollectionHandle, isPublicProductHandle } from '../../src/lib/catalog-visibility';
 import { conciseDescription, safeJsonLd } from '../../src/lib/seo';
 
 test('catalog visibility keeps products awaiting manual review out of public routes', () => {
@@ -10,6 +10,12 @@ test('catalog visibility keeps products awaiting manual review out of public rou
   assert.equal(isPublicProductHandle('bow-corset-garter-set'), true);
   assert.equal(isPublicCollectionHandle('frontpage'), false);
   assert.equal(isPublicCollectionHandle('all'), true);
+});
+
+test('Shopify moderation tags hide products without a code change', () => {
+  assert.equal(hasPublicCatalogTags(['Bodysuit', 'manual-review']), false);
+  assert.equal(hasPublicCatalogTags(['hide-from-storefront']), false);
+  assert.equal(hasPublicCatalogTags(['Bodysuit', 'active']), true);
 });
 
 test('SEO text is plain, bounded and safe inside JSON-LD script tags', () => {

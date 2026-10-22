@@ -80,12 +80,26 @@ test.describe('SEC-09 / D22 newsletter', () => {
     expect(await readOutbox()).toEqual([]);
   });
 
-  test('sends one welcome email per address, however often it is submitted', async ({ request }) => {
-    for (let i = 0; i < 2; i++) {
-      const res = await request.post('/api/newsletter', { data: { email: 'subscriber@test.local' } });
-      expect(res.status()).toBe(200);
+  test('queues one confirmation per address, however often it is submitted', async ({ request }) => {
+    const email = 'subscriber@test.local';
+    const db = admin();
+    await db.from('notification_jobs' as never).delete().like('identity', `newsletter-confirm:${email}:%`);
+    await db.from('newsletter_subscribers' as never).delete().eq('email', email);
+    try {
+      for (let i = 0; i < 2; i++) {
+        const res = await request.post('/api/newsletter', { data: { email } });
+        expect(res.status()).toBe(200);
+      }
+      expect(await readOutbox()).toEqual([]);
+      const cron = await request.get('/api/cron/notifications', {
+        headers: { authorization: `Bearer ${process.env.CRON_SECRET}` },
+      });
+      expect(cron.status(), await cron.text()).toBe(200);
+      expect(onlyEmailTo(await readOutbox(), email).subject).toContain('Confirm');
+    } finally {
+      await db.from('notification_jobs' as never).delete().like('identity', `newsletter-confirm:${email}:%`);
+      await db.from('newsletter_subscribers' as never).delete().eq('email', email);
     }
-    expect(onlyEmailTo(await readOutbox(), 'subscriber@test.local').subject).toContain('Welcome');
   });
 });
 

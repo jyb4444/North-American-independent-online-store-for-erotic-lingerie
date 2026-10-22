@@ -85,6 +85,9 @@ export type Database = {
           size: string;
           color: string;
           notified: boolean;
+          attempts: number;
+          next_attempt_at: string;
+          last_error: string | null;
           created_at: string;
         };
         Insert: {
@@ -93,8 +96,12 @@ export type Database = {
           product_handle: string;
           size: string;
           color: string;
+          notified?: boolean;
+          attempts?: number;
+          next_attempt_at?: string;
+          last_error?: string | null;
         };
-        Update: { notified?: boolean };
+        Update: { notified?: boolean; attempts?: number; next_attempt_at?: string; last_error?: string | null };
       };
       cart_snapshots: {
         Row: {

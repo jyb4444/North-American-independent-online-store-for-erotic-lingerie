@@ -4,6 +4,7 @@ import { getProductByHandle } from '@/lib/products';
 import { MOCK_PRODUCTS } from '@/mock/products';
 import { createClient } from '@/lib/supabase/server';
 import type { CartItem } from '@/types';
+import { createOrderAttribution } from '@/lib/shopify/order-attribution';
 
 function isShopifyVariantGid(value?: string) {
   return !!value && value.startsWith('gid://shopify/ProductVariant/');
@@ -89,11 +90,13 @@ export async function POST(req: NextRequest) {
     // override this email, so Shopify orders can be reconciled to the correct local account.
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
+    const attribution = user ? createOrderAttribution(user.id) : null;
     const cart = await createShopifyCart({
       lines: cartLines,
       giftCardCodes: giftCardCode ? [giftCardCode] : [],
       buyerEmail: user?.email,
       buyerIp: getBuyerIp(req),
+      attributes: attribution ? [attribution] : [],
     });
 
     return NextResponse.json({

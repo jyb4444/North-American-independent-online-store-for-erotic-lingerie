@@ -25,6 +25,41 @@ test.describe('D10 abandoned-cart cron authorization', () => {
   });
 });
 
+test.describe('durable newsletter delivery', () => {
+  const email = 'newsletter-delivery@example.test';
+  test.beforeEach(async () => {
+    await admin().from('notification_jobs' as never).delete().like('identity', `newsletter-%:${email}%`);
+    await admin().from('newsletter_subscribers' as never).delete().eq('email', email);
+    await clearOutbox();
+  });
+  test.afterEach(async () => {
+    await admin().from('notification_jobs' as never).delete().like('identity', `newsletter-%:${email}%`);
+    await admin().from('newsletter_subscribers' as never).delete().eq('email', email);
+  });
+
+  test('requires confirmation, persists both deliveries, and supports unsubscribe', async ({ request }) => {
+    const signup = await request.post('/api/newsletter', { data: { email } });
+    expect(signup.status(), await signup.text()).toBe(200);
+    let subscriber = (await admin().from('newsletter_subscribers' as never).select('status').eq('email', email).single()).data as unknown as { status: string };
+    expect(subscriber.status).toBe('pending');
+    expect((await request.get('/api/cron/notifications', { headers: { authorization: `Bearer ${process.env.CRON_SECRET}` } })).status()).toBe(200);
+    expect((await readOutbox()).some((mail) => mail.to === email && mail.subject.includes('Confirm'))).toBe(true);
+
+    const job = (await admin().from('notification_jobs' as never).select('payload').like('identity', `newsletter-confirm:${email}:%`).single()).data as unknown as { payload: { confirmationToken: string; unsubscribeToken: string } };
+    const confirm = await request.get(`/api/newsletter/confirm?token=${encodeURIComponent(job.payload.confirmationToken)}&unsubscribe=${encodeURIComponent(job.payload.unsubscribeToken)}`, { maxRedirects: 0 });
+    expect(confirm.status()).toBe(307);
+    subscriber = (await admin().from('newsletter_subscribers' as never).select('status').eq('email', email).single()).data as unknown as { status: string };
+    expect(subscriber.status).toBe('active');
+    expect((await request.get('/api/cron/notifications', { headers: { authorization: `Bearer ${process.env.CRON_SECRET}` } })).status()).toBe(200);
+    expect((await readOutbox()).some((mail) => mail.to === email && mail.subject.includes('Welcome'))).toBe(true);
+
+    const unsubscribe = await request.get(`/api/newsletter/unsubscribe?token=${encodeURIComponent(job.payload.unsubscribeToken)}`, { maxRedirects: 0 });
+    expect(unsubscribe.status()).toBe(307);
+    subscriber = (await admin().from('newsletter_subscribers' as never).select('status').eq('email', email).single()).data as unknown as { status: string };
+    expect(subscriber.status).toBe('unsubscribed');
+  });
+});
+
 test('D13 a signed-in visitor sent to /login?redirectTo= goes back to that page', async ({ request }) => {
   const res = await request.get('/login?redirectTo=%2Forders', {
     headers: { cookie: await sessionCookieHeader(USERS.alice) },
@@ -101,11 +136,44 @@ test.describe('D15–D17 return requests', () => {
     expect((await submit(request, { items: [item(robeId, 1)] })).status()).toBe(200);
   });
 
-  test('invalid reasons and conditions get a clear message', async ({ request }) => {
+  test('concurrent return submissions claim an item only once', async ({ request }) => {
+    const [first, second] = await Promise.all([
+      submit(request, { items: [item(robeId, 2)] }),
+      submit(request, { items: [item(robeId, 2)] }),
+    ]);
+    expect([first.status(), second.status()].sort()).toEqual([200, 400]);
+    const { data: rows } = await admin().from('return_requests').select('id, return_request_items(id), return_request_events(id)').eq('order_id', orderId);
+    expect(rows).toHaveLength(1);
+    expect(rows?.[0].return_request_items).toHaveLength(1);
+    expect(rows?.[0].return_request_events).toHaveLength(1);
+  });
+
+  test('atomic return RPC rolls back the request when an item insert fails', async () => {
+    const aliceId = await userIdFor(USERS.alice);
+    const requestNumber = `ROLLBACK-${Date.now()}`;
+    const result = await admin().rpc('create_return_request_atomic', {
+      p_user_id: aliceId,
+      p_order_id: orderId,
+      p_request_number: requestNumber,
+      p_desired_resolution: 'return_refund',
+      p_reason: 'size_fit',
+      p_policy_notes: ['rollback test'],
+      p_customer_note: null,
+      p_media_urls: [],
+      p_items: [{ order_item_id: robeId, quantity: 1, item_condition: 'invalid-condition', reason_detail: null }],
+    });
+    expect(result.error).not.toBeNull();
+    const { count } = await admin().from('return_requests').select('id', { count: 'exact', head: true }).eq('request_number', requestNumber);
+    expect(count).toBe(0);
+  });
+
+  test('invalid reasons are rejected and client-supplied conditions are ignored', async ({ request }) => {
     const reason = await submit(request, { reason: 'because', items: [item(robeId)] });
     const condition = await submit(request, { items: [item(robeId, 1, { itemCondition: 'pristine' })] });
     expect((await reason.json()).error).toBe('Choose a valid reason.');
-    expect((await condition.json()).error).toBe('Choose a valid item condition.');
+    expect(condition.status()).toBe(200);
+    const { data } = await admin().from('return_request_items').select('item_condition').eq('return_request_id', (await condition.json()).request.id).single();
+    expect(data?.item_condition).toBe('opened_unused');
   });
 
   test('photos must come from the customer\'s own upload folder', async ({ request }) => {
@@ -114,7 +182,7 @@ test.describe('D15–D17 return requests', () => {
     expect(res.status()).toBe(400);
   });
 
-  test('D16 the 30-day window runs from delivery, not from the order date', async ({ request }) => {
+  test('age and policy cases are sent to merchant review instead of auto-approved or rejected', async ({ request }) => {
     const aliceId = await userIdFor(USERS.alice);
     const daysAgo = (days: number) => new Date(Date.now() - days * 86_400_000).toISOString();
     const db = admin();
@@ -137,7 +205,8 @@ test.describe('D15–D17 return requests', () => {
           data: { orderId: order!.id, desiredResolution: 'return_refund', reason: 'changed_mind', items: [item(line!.id)] },
         });
         const { request: created } = await res.json();
-        expect(created.eligibility_status, `${label}: delivered ${deliveredDaysAgo} days ago`).toBe(label === 'late' ? 'eligible' : 'ineligible');
+        expect(created.eligibility_status, `${label}: delivered ${deliveredDaysAgo} days ago`).toBe('review_required');
+        expect(created.status).toBe('submitted');
       }
     } finally {
       await db.from('orders').delete().in('id', ids);

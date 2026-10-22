@@ -83,6 +83,7 @@ export async function createShopifyCart(input: {
   giftCardCodes?: string[];
   buyerEmail?: string;
   buyerIp?: string;
+  attributes?: CartLineAttribute[];
 }) {
   const giftCardCodes = (input.giftCardCodes ?? []).map(normalizeGiftCardCode).filter(Boolean);
   const buyerEmail = input.buyerEmail?.trim().toLowerCase();
@@ -92,6 +93,7 @@ export async function createShopifyCart(input: {
     variables: {
       input: {
         lines: input.lines,
+        ...(input.attributes?.length ? { attributes: input.attributes } : {}),
         ...(giftCardCodes.length > 0 ? { giftCardCodes } : {}),
         ...(buyerEmail ? { buyerIdentity: { email: buyerEmail } } : {}),
       },

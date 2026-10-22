@@ -15,11 +15,17 @@ export async function POST(req: Request) {
     const request = await createReturnRequest({
       userId: user.id,
       orderId: body.orderId,
-      desiredResolution: body.desiredResolution,
+      desiredResolution: 'return_refund',
       reason: body.reason,
       customerNote: body.customerNote,
       mediaUrls: Array.isArray(body.mediaUrls) ? body.mediaUrls : [],
-      items: Array.isArray(body.items) ? body.items : [],
+      items: Array.isArray(body.items)
+        ? body.items.map((item: { orderItemId?: unknown; quantity?: unknown }) => ({
+            orderItemId: item.orderItemId,
+            quantity: item.quantity,
+            itemCondition: 'opened_unused',
+          }))
+        : [],
     });
 
     return NextResponse.json({ request });
