@@ -29,7 +29,9 @@ def catalog_sql():
     names={c['name'] for c in CAT['constraints']}
     for i in CAT['indexes']:
         if i['name'] not in names:out.append(i['definition']+';')
-    out += [f['definition']+';' for f in CAT['functions']]
+    for f in CAT['functions']:
+        out.append(f['definition']+';')
+        out.append('ALTER FUNCTION public.'+ident(f['name'])+'('+f['args']+') OWNER TO '+ident(f['owner'])+';')
     for p in CAT['policies']:
         cmd={'r':'SELECT','a':'INSERT','w':'UPDATE','d':'DELETE','*':'ALL'}[p['command']]
         out.append('DROP POLICY IF EXISTS '+ident(p['name'])+' ON '+ident(p['schema'])+'.'+ident(p['table'])+';')
@@ -77,6 +79,8 @@ if __name__=='__main__':
         assert_sql(db,"NOT has_function_privilege('service_role','public.claim_referrer_reward(uuid,numeric)','EXECUTE')",'unsafe old claim revoked')
         assert_sql(db,"has_function_privilege('service_role','public.create_return_request_atomic(uuid,uuid,text,text,text,text[],text,text[],jsonb)','EXECUTE') AND NOT has_function_privilege('authenticated','public.create_return_request_atomic(uuid,uuid,text,text,text,text[],text,text[],jsonb)','EXECUTE')",'atomic return RPC service-only')
         assert_sql(db,"EXISTS(SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.proname='create_return_request_atomic' AND p.prosecdef AND array_to_string(p.proconfig,',')='search_path=\"\"')",'atomic return RPC hardened search_path')
+        assert_sql(db,"(SELECT count(*)=2 AND bool_and(array_to_string(p.proconfig,',')='search_path=\"\"') FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.proname IN ('handle_new_user','handle_new_membership'))",'auth trigger functions hardened search_path')
+        assert_sql(db,"NOT has_function_privilege('authenticated','public.handle_new_user()','EXECUTE') AND NOT has_function_privilege('anon','public.handle_new_membership()','EXECUTE')",'auth trigger functions not directly executable')
     assert_sql('phase4_drift',"(SELECT count(*)=8 AND bool_and(approved) FROM public.reviews)",'eight approved reviews preserved')
     assert_sql('phase4_drift',"to_regclass('public.notification_jobs') IS NOT NULL AND to_regclass('public.newsletter_subscribers') IS NOT NULL",'durable communication tables created')
     assert_sql('phase4_drift',"NOT has_table_privilege('authenticated','public.notification_jobs','SELECT') AND NOT has_table_privilege('anon','public.newsletter_subscribers','INSERT')",'communication tables service-only')
