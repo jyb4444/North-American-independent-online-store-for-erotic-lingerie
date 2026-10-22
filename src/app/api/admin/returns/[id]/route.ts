@@ -11,8 +11,10 @@ export async function PATCH(req: Request, context: { params: Promise<{ id: strin
   const body = await req.json() as { status?: string; note?: string };
   if (!body.status || !STATUSES.has(body.status)) return NextResponse.json({ error: 'Invalid status' }, { status: 400 });
   const db = createAdminClient();
-  const { error } = await db.from('return_requests').update({ status: body.status, admin_notes: body.note?.trim().slice(0, 1000) || null }).eq('id', id);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  await db.from('return_request_events').insert({ return_request_id: id, event_type: 'merchant_update', title: `Request ${body.status.replaceAll('_',' ')}`, description: body.note?.trim().slice(0,1000) || null, metadata: { admin_id: admin.id } });
+  const { error } = await db.rpc('update_return_request_admin' as never, {
+    p_request_id: id, p_status: body.status, p_note: body.note?.trim().slice(0, 1000) || '', p_admin_user_id: admin.id,
+  } as never);
+  if (error && ['42883', 'PGRST202'].includes(error.code ?? '')) return NextResponse.json({ error: 'Return administration is temporarily unavailable during the database upgrade.' }, { status: 503 });
+  if (error) return NextResponse.json({ error: 'Return request could not be updated.' }, { status: 500 });
   return NextResponse.json({ ok: true });
 }

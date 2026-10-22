@@ -438,6 +438,10 @@ export default function CartDrawer() {
                     {items.map((item) => (
                       (() => {
                         const product = findProduct(item);
+                        const selectedVariant = product?.variants.find((variant) =>
+                          variant.id === item.variantId || variant.shopifyVariantId === item.shopifyVariantId
+                        ) ?? product?.variants.find((variant) => variant.size === item.size && variant.color === item.color);
+                        const maxQuantity = Math.max(1, Math.min(99, selectedVariant?.stock ?? 99));
                         const fitResult = product ? getFitResult(product) : null;
                         const showSizeNudge = !!fitResult
                           && item.size !== 'Free Size'
@@ -489,8 +493,9 @@ export default function CartDrawer() {
                                 <span className="w-4 text-center text-sm text-ivory">{item.quantity}</span>
                                 <button
                                   onClick={() => updateQuantity(item.variantId, item.quantity + 1)}
+                                  disabled={item.quantity >= maxQuantity}
                                   aria-label="Increase quantity"
-                                  className="text-ivory-muted hover:text-gold-400 transition"
+                                  className="text-ivory-muted hover:text-gold-400 transition disabled:cursor-not-allowed disabled:opacity-30"
                                 >
                                   +
                                 </button>

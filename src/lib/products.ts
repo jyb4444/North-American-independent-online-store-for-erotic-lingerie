@@ -93,8 +93,6 @@ function publicCollections(collections: Collection[]) {
   return collections.filter((collection) => isPublicCollectionHandle(collection.handle));
 }
 
-const SIZE_VALUES = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'Free Size'] as const;
-
 // In stock but the exact quantity is unknown (the Storefront token may not have inventory
 // access). Large enough that no "only N left" scarcity message is shown.
 const IN_STOCK_QUANTITY_UNKNOWN = 999;
@@ -121,13 +119,12 @@ function moneyToNumber(money?: ShopifyMoney) {
   return Number.isFinite(value) ? value : 0;
 }
 
-function normalizeSize(value?: string): ProductVariant['size'] {
+export function normalizeSize(value?: string): ProductVariant['size'] {
   if (!value || value === 'Default Title') return 'Free Size';
   const normalized = value.trim().toUpperCase();
-  if (normalized === 'ONE SIZE' || normalized === 'ONESIZE' || normalized === 'FREE') return 'Free Size';
-  return SIZE_VALUES.includes(normalized as ProductVariant['size'])
-    ? normalized as ProductVariant['size']
-    : 'Free Size';
+  if (['ONE SIZE', 'ONESIZE', 'ONE-SIZE', 'FREE', 'FREE SIZE'].includes(normalized)) return 'Free Size';
+  const aliases: Record<string, string> = { '2XL': 'XXL', '3XL': 'XXXL' };
+  return aliases[normalized] ?? value.trim();
 }
 
 function colorHex(color: string) {
@@ -242,7 +239,6 @@ function collectionFilter(handle: string, products: Product[]) {
     case 'all': return products;
     case 'new-arrivals': return products.filter((p) => p.isNew);
     case 'discount': return products.filter((p) => !!p.compareAtPrice);
-    case 'first-free': return products.slice(0, 4);
     case 'bestsellers': return products.filter((p) => p.isBestseller);
     case 'plus-size': return products.filter((p) => p.tags.includes('plus-size') || p.variants.some((v) => ['XL', 'XXL'].includes(v.size)));
     case 'babydoll': return products.filter((p) => p.category === 'babydoll');

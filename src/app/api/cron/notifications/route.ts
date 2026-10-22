@@ -3,7 +3,8 @@ import { isAuthorizedCronRequest } from '@/lib/cron-auth';
 import { createAdminClient } from '@/lib/supabase/server';
 import { retryAt } from '@/lib/notification-jobs';
 import { getProductByHandle } from '@/lib/products';
-import { sendNewsletterConfirmationEmail, sendNewsletterWelcomeEmail, sendRestockAlertEmail, sendReturnRequestConfirmation, sendReturnRequestNotification } from '@/lib/email';
+import { sendNewsletterConfirmationEmail, sendNewsletterWelcomeEmail, sendRestockAlertEmail, sendReturnRequestConfirmation, sendReturnRequestNotification, sendReturnStatusEmail, sendShipmentCreatedEmail } from '@/lib/email';
+import { replayPendingFulfillments } from '@/lib/shopify/webhook-inbox';
 
 export const runtime = 'nodejs';
 type Job = { id: string; kind: string; payload: Record<string, unknown>; attempts: number; lease_token: string };
@@ -27,7 +28,16 @@ async function deliverJob(job: Job) {
       items: Array.isArray(p.items) ? p.items as Array<{ title: string; quantity: number }> : [],
       photoUrls: Array.isArray(p.photoUrls) ? p.photoUrls.filter((v): v is string => typeof v === 'string') : [],
     });
+    case 'return_status': return sendReturnStatusEmail({
+      to: text(p.to), requestNumber: text(p.requestNumber), orderNumber: text(p.orderNumber),
+      status: text(p.status), note: text(p.note) || null,
+    });
     case 'restock': return sendRestockAlertEmail(text(p.email), text(p.productTitle), text(p.size), text(p.color), text(p.productHandle));
+    case 'shipment_created': return sendShipmentCreatedEmail({
+      to: text(p.to), orderNumber: text(p.orderNumber), carrier: text(p.carrier) || null,
+      trackingNumber: text(p.trackingNumber), trackingUrl: text(p.trackingUrl) || null,
+      lookupToken: text(p.lookupToken),
+    });
     default: throw new Error('Unsupported notification kind');
   }
 }
@@ -54,6 +64,7 @@ async function queueAvailableRestock() {
 export async function GET(req: Request) {
   if (!isAuthorizedCronRequest(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   await queueAvailableRestock();
+  const fulfillmentReplay = await replayPendingFulfillments();
   const db = createAdminClient();
   const { data, error } = await db.rpc('lease_notification_jobs' as never, { p_limit: 25 } as never) as { data: Job[] | null; error: { message: string } | null };
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
@@ -62,6 +73,12 @@ export async function GET(req: Request) {
     try {
       const result = await deliverJob(job);
       await db.from('notification_jobs' as never).update({ status: 'sent', provider_message_id: result.id, sent_at: new Date().toISOString(), lease_token: null, lease_until: null, last_error: null } as never).eq('id', job.id).eq('lease_token', job.lease_token);
+      if (job.kind === 'shipment_created') {
+        await db.from('notification_logs').insert({
+          order_id: text(job.payload.orderId), shipment_id: text(job.payload.shipmentId), channel: 'email',
+          event_type: 'shipment_created', recipient: text(job.payload.to), provider_message_id: result.id,
+        });
+      }
       const alertId = text(job.payload.alertId);
       if (alertId) await db.from('restock_alerts').update({ notified: true, last_error: null }).eq('id', alertId);
       sent++;
@@ -71,5 +88,5 @@ export async function GET(req: Request) {
       failed++;
     }
   }
-  return NextResponse.json({ processed: data?.length ?? 0, sent, failed });
+  return NextResponse.json({ processed: data?.length ?? 0, sent, failed, fulfillmentReplay });
 }

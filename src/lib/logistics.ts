@@ -1,7 +1,7 @@
 import crypto from 'crypto';
 import { createAdminClient } from '@/lib/supabase/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { sendShipmentCreatedEmail } from '@/lib/email';
+import { enqueueNotification } from '@/lib/notification-jobs';
 import { shopifyAdminFetch } from '@/lib/shopify/admin';
 import { readOrderAttribution } from '@/lib/shopify/order-attribution';
 
@@ -145,8 +145,11 @@ type ShopifyAdminOrderNode = {
   customAttributes?: Array<{ key: string; value: string | null }>;
 };
 
-function normalizeId(value: unknown): string {
-  return String(value ?? '').trim();
+export function canonicalShopifyId(value: unknown, resource?: string): string {
+  const normalized = String(value ?? '').trim();
+  if (!normalized) return '';
+  if (!resource) return normalized.replace(/^gid:\/\/shopify\/[^/]+\//, '');
+  return normalized.replace(new RegExp(`^gid://shopify/${resource}/`), '');
 }
 
 function normalizeOrderNumber(payload: ShopifyOrderPayload): string {
@@ -176,11 +179,12 @@ function getTrackingUrl(fulfillment: ShopifyFulfillmentPayload): string | null {
   return fulfillment.tracking_url ?? fulfillment.tracking_urls?.[0] ?? null;
 }
 
-function normalizeShipmentStatus(fulfillment: ShopifyFulfillmentPayload): string {
-  const raw = (fulfillment.shipment_status ?? fulfillment.status ?? '').toLowerCase();
-  if (raw.includes('deliver')) return 'delivered';
-  if (raw.includes('failure') || raw.includes('error')) return 'exception';
-  if (raw.includes('transit') || raw.includes('confirmed')) return 'in_transit';
+export function normalizeShipmentStatus(fulfillment: ShopifyFulfillmentPayload): string {
+  const raw = (fulfillment.shipment_status ?? fulfillment.status ?? '').toLowerCase().replace(/[\s-]+/g, '_');
+  if (raw === 'delivered') return 'delivered';
+  if (['failure', 'failed', 'error', 'attempted_delivery'].includes(raw)) return 'exception';
+  if (['in_transit', 'out_for_delivery', 'confirmed'].includes(raw)) return 'in_transit';
+  if (['cancelled', 'canceled'].includes(raw)) return 'cancelled';
   if (getTrackingNumber(fulfillment)) return 'shipped';
   return 'preparing';
 }
@@ -254,7 +258,7 @@ async function getUserIdForEmail(email: string): Promise<string | null> {
 }
 
 export async function upsertOrderFromShopify(payload: ShopifyOrderPayload): Promise<OrderWithShipments | null> {
-  const shopifyOrderId = normalizeId(payload.id ?? payload.admin_graphql_api_id);
+  const shopifyOrderId = canonicalShopifyId(payload.id ?? payload.admin_graphql_api_id, 'Order');
   const email = (payload.email ?? payload.contact_email ?? '').trim().toLowerCase();
   const orderNumber = normalizeOrderNumber(payload);
 
@@ -407,7 +411,7 @@ export async function syncShopifyOrdersForUser(input: {
 }
 
 async function upsertOrderItem(orderId: string, lineItem: ShopifyLineItemPayload): Promise<void> {
-  const lineItemId = normalizeId(lineItem.id ?? lineItem.admin_graphql_api_id);
+  const lineItemId = canonicalShopifyId(lineItem.id ?? lineItem.admin_graphql_api_id, 'LineItem');
   const title = (lineItem.title ?? lineItem.name ?? '').trim();
   if (!lineItemId || !title) return;
 
@@ -417,7 +421,7 @@ async function upsertOrderItem(orderId: string, lineItem: ShopifyLineItemPayload
     .upsert({
       order_id: orderId,
       shopify_line_item_id: lineItemId,
-      shopify_variant_id: normalizeId(lineItem.variant_admin_graphql_api_id ?? lineItem.variant_id) || null,
+      shopify_variant_id: canonicalShopifyId(lineItem.variant_admin_graphql_api_id ?? lineItem.variant_id, 'ProductVariant') || null,
       title,
       variant_title: lineItem.variant_title ?? null,
       sku: lineItem.sku ?? null,
@@ -432,7 +436,7 @@ async function upsertOrderItem(orderId: string, lineItem: ShopifyLineItemPayload
 }
 
 export async function upsertFulfillmentFromShopify(payload: ShopifyFulfillmentPayload): Promise<ShipmentWithEvents | null> {
-  const shopifyOrderId = normalizeId(payload.order_id);
+  const shopifyOrderId = canonicalShopifyId(payload.order_id, 'Order');
   if (!shopifyOrderId) return null;
 
   const supabase = createAdminClient();
@@ -448,7 +452,7 @@ export async function upsertFulfillmentFromShopify(payload: ShopifyFulfillmentPa
 
 export async function upsertShipmentForOrder(orderId: string, fulfillment: ShopifyFulfillmentPayload): Promise<ShipmentWithEvents> {
   const supabase = createAdminClient();
-  const fulfillmentId = normalizeId(fulfillment.id ?? fulfillment.admin_graphql_api_id) || null;
+  const fulfillmentId = canonicalShopifyId(fulfillment.id ?? fulfillment.admin_graphql_api_id, 'Fulfillment') || null;
   const trackingNumber = getTrackingNumber(fulfillment);
   const status = normalizeShipmentStatus(fulfillment);
   const shippedAt = status === 'preparing' ? null : fulfillment.created_at ?? new Date().toISOString();
@@ -548,22 +552,15 @@ async function maybeSendShipmentEmail(orderId: string, shipmentId: string) {
   const shipment = data?.shipments?.[0];
   if (!data || !shipment?.tracking_number) return;
 
-  const result = await sendShipmentCreatedEmail({
+  await enqueueNotification('shipment_created', `shipment-created:${shipmentId}`, {
+    orderId: data.id,
+    shipmentId,
     to: data.email,
     orderNumber: data.shopify_order_number,
     carrier: shipment.carrier,
     trackingNumber: shipment.tracking_number,
     trackingUrl: shipment.tracking_url,
     lookupToken: shipment.public_lookup_token,
-  });
-
-  await supabase.from('notification_logs').insert({
-    order_id: data.id,
-    shipment_id: shipmentId,
-    channel: 'email',
-    event_type: 'shipment_created',
-    recipient: data.email,
-    provider_message_id: result.id,
   });
 }
 

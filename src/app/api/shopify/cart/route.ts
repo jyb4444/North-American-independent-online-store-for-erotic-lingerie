@@ -5,6 +5,7 @@ import { MOCK_PRODUCTS } from '@/mock/products';
 import { createClient } from '@/lib/supabase/server';
 import type { CartItem } from '@/types';
 import { createOrderAttribution } from '@/lib/shopify/order-attribution';
+import { rateLimit } from '@/lib/rate-limit';
 
 function isShopifyVariantGid(value?: string) {
   return !!value && value.startsWith('gid://shopify/ProductVariant/');
@@ -24,8 +25,7 @@ async function resolveItemToLine(item: CartItem): Promise<CartLine | null> {
   const shopifyProduct = await getProductByHandle(mockProduct.handle);
   const variant = shopifyProduct?.variants.find((candidate) =>
     candidate.size === item.size && candidate.color.toLowerCase() === item.color.toLowerCase()
-  ) ?? shopifyProduct?.variants.find((candidate) => candidate.size === item.size)
-    ?? shopifyProduct?.variants[0];
+  );
 
   const resolvedId = [variant?.shopifyVariantId, variant?.id].find(isShopifyVariantGid);
   return resolvedId ? { merchandiseId: resolvedId, quantity: item.quantity } : null;
@@ -74,10 +74,21 @@ export async function POST(req: NextRequest) {
   if (giftCardCode.length > 64) {
     return NextResponse.json({ error: 'Invalid gift card code.' }, { status: 400 });
   }
+  if (giftCardCode) {
+    const key = `gift-card-check:${getBuyerIp(req) ?? 'unknown'}`;
+    const { allowed } = await rateLimit(key, { limit: 10, windowMs: 60_000 });
+    if (!allowed) return NextResponse.json({ error: 'Too many gift card attempts. Please wait a minute.' }, { status: 429 });
+  }
 
   try {
     const resolvedLines = (await Promise.all(items.map(resolveItemToLine))).filter((line): line is CartLine => !!line);
-    const cartLines = resolvedLines.length > 0 ? resolvedLines : validLines;
+    if (items.length > 0 && resolvedLines.length !== items.length) {
+      return NextResponse.json(
+        { error: 'One or more products are not connected to Shopify checkout. Remove them and add the product again.' },
+        { status: 400 }
+      );
+    }
+    const cartLines = items.length > 0 ? resolvedLines : validLines;
 
     if (cartLines.length === 0) {
       return NextResponse.json(

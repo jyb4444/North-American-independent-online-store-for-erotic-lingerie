@@ -163,7 +163,7 @@ Upstash 要验证实际运行时共享键，而非仅变量存在；故障时现
 - `npm run test:unit`
 - `npm run test:migrations`：固定本地 Docker 容器内 clean/drift/conflict 数据库，不连接生产。
 - `python3 tests/migrations/verify.py --legacy-api`：仅重建 self-love-e2e 专用本地测试栈为生产 catalog 漂移，无生产数据。
-- `E2E_SCHEMA_MODE=legacy CI=1 npm run test:e2e`：兼容 API 测试，奖励关闭。
+- `npm run test:compatibility`：先重建捕获的 production-drift schema，运行兼容 API 测试（奖励关闭），最后恢复完整本地 migrations。
 - 应用四项候选 migration 到该专用本地漂移栈后，再运行全量 API/E2E。
 - `supabase db reset --local --no-seed`：重建专用干净测试栈后运行全量；必须显式 --local。
 
@@ -176,5 +176,6 @@ Upstash 要验证实际运行时共享键，而非仅变量存在；故障时现
 | `REFERRAL_REWARDS_ENABLED` | `false` | 经配置和调度验证后才开启发码/发信 |
 | `REFERRAL_REWARD_AMOUNT` | `10` | 每个折扣码减免的金额（美元） |
 | `REFERRAL_REWARD_MIN_SUBTOTAL` | `30` | 使用折扣码的最低订单金额（设为 `0` 表示无门槛） |
+| `ORDER_ATTRIBUTION_SECRET` | 无 | 至少 32 个字符；独立签名 Shopify checkout 与本地账号的 7 天归属凭证，不得与 webhook secret 共用 |
 
 注意：推荐页和注册页上的宣传文案里写的是 "$10" 和 "$30+"。如果修改了这两个变量，记得同步修改 `src/app/pages/referral/page.tsx` 和 `src/app/(account)/login/page.tsx` 里的文案。

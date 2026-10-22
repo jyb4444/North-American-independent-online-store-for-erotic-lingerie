@@ -15,7 +15,9 @@
     "test:report": "playwright show-report",
     "test:api": "playwright test --project=api",
     "test:unit": "node --import tsx --test tests/unit/*.test.ts",
-    "test:migrations": "python3 tests/migrations/verify.py"
+    "test:migrations": "python3 tests/migrations/verify.py",
+    "test:compatibility": "node scripts/test-legacy-compatibility.mjs",
+    "verify:shopify-webhooks": "node scripts/verify-shopify-webhooks.mjs"
   },
   "dependencies": {
     "@shopify/hydrogen-react": "^2026.4.2",

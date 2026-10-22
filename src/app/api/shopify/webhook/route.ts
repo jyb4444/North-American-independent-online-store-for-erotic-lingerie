@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
-import { upsertFulfillmentFromShopify, upsertOrderFromShopify } from '@/lib/logistics';
+import { upsertOrderFromShopify } from '@/lib/logistics';
 import { recordReferralPayment, knownReferralPayment } from '@/lib/referral-rewards';
+import { acceptFulfillmentWebhook, replayPendingFulfillments } from '@/lib/shopify/webhook-inbox';
 
 function verifyWebhook(body: Buffer, signature: string): boolean {
   const secret = process.env.SHOPIFY_WEBHOOK_SECRET;
@@ -36,25 +37,32 @@ export async function POST(req: Request) {
   }
 
   try {
-    if (['orders/create','orders/paid','orders/updated','orders/fulfilled'].includes(topic) && await knownReferralPayment(eventId, expectedShop, crypto.createHash('sha256').update(raw).digest('hex'))) return NextResponse.json({ received: true, duplicate: true });
+    const bodyHash = crypto.createHash('sha256').update(raw).digest('hex');
+    if (['orders/create','orders/paid','orders/updated','orders/fulfilled'].includes(topic) && await knownReferralPayment(eventId, expectedShop, bodyHash)) return NextResponse.json({ received: true, duplicate: true });
     switch (topic) {
       case 'orders/create':
       case 'orders/paid':
       case 'orders/updated':
       case 'orders/fulfilled': {
         const order = await upsertOrderFromShopify(payload);
+        if (order) await replayPendingFulfillments(order.shopify_order_id);
         // A referred customer's first paid order earns the referrer their reward (once).
         if (order?.user_id && order.financial_status === 'paid') {
-          await recordReferralPayment({ eventId, shop: expectedShop, hash: crypto.createHash('sha256').update(raw).digest('hex'), orderId: `gid://shopify/Order/${order.shopify_order_id.replace('gid://shopify/Order/', '')}`, userId: order.user_id });
+          await recordReferralPayment({ eventId, shop: expectedShop, hash: bodyHash, orderId: `gid://shopify/Order/${order.shopify_order_id}`, userId: order.user_id });
         }
         break;
       }
 
       case 'fulfillments/create':
       case 'fulfillments/update':
-      case 'fulfillment_events/create':
-        await upsertFulfillmentFromShopify(payload);
+        await acceptFulfillmentWebhook({ eventId, topic, shop: expectedShop, bodyHash, payload });
         break;
+
+      case 'fulfillment_events/create':
+        // This payload contains `fulfillment_id`, not a full fulfillment. Treating its
+        // event id as a fulfillment id creates phantom shipments, so ignore it until a
+        // dedicated parent-fulfillment reconciler exists.
+        return NextResponse.json({ received: true, ignored: true });
 
       default:
         break;

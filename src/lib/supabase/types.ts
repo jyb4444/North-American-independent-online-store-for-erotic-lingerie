@@ -110,6 +110,8 @@ export type Database = {
           email: string;
           items: unknown;
           reminder_sent: boolean;
+          reminder_attempts: number;
+          reminder_last_error: string | null;
           updated_at: string;
         };
         Insert: {
@@ -117,10 +119,14 @@ export type Database = {
           email: string;
           items: unknown;
           reminder_sent?: boolean;
+          reminder_attempts?: number;
+          reminder_last_error?: string | null;
         };
         Update: {
           items?: unknown;
           reminder_sent?: boolean;
+          reminder_attempts?: number;
+          reminder_last_error?: string | null;
           updated_at?: string;
         };
       };

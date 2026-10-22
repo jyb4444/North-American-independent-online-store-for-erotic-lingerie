@@ -1,6 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/server';
 
-export type NotificationKind = 'return_customer' | 'return_merchant' | 'newsletter_confirmation' | 'newsletter_welcome' | 'restock';
+export type NotificationKind = 'return_customer' | 'return_merchant' | 'return_status' | 'newsletter_confirmation' | 'newsletter_welcome' | 'restock' | 'shipment_created';
 
 export async function enqueueNotification(kind: NotificationKind, identity: string, payload: Record<string, unknown>) {
   const db = createAdminClient();

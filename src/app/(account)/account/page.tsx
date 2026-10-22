@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Package, Heart, ChevronRight, UserCog, PackageSearch, Ruler } from 'lucide-react';
+import { Package, Heart, ChevronRight, UserCog, PackageSearch, Ruler, ShieldAlert } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import LocalLookbookPanel from '@/components/ai/LocalLookbookPanel';
 import WishlistReminderBanner from '@/components/wishlist/WishlistReminderBanner';
@@ -21,6 +21,9 @@ export default async function AccountPage() {
     { href: '/account/fit-profile', icon: Ruler, label: 'Fit Profile', sub: 'Save measurements for size estimates' },
     { href: '/account/profile', icon: UserCog, label: 'Edit Profile', sub: 'Name, password and addresses' },
   ];
+  if (user.app_metadata?.role === 'admin') {
+    quickLinks.push({ href: '/admin/operations', icon: ShieldAlert, label: 'Store Operations', sub: 'Returns, reviews and failed jobs' });
+  }
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-14 sm:px-6">

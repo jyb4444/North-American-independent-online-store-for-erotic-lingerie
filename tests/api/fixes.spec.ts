@@ -19,6 +19,21 @@ test.describe('D10 abandoned-cart cron authorization', () => {
     expect(res.status()).toBe(200);
   });
 
+  test('empty carts and carts followed by a paid order are closed without email', async ({ request }) => {
+    const userId = await userIdFor(USERS.alice);
+    await clearOutbox();
+    await admin().from('cart_snapshots').delete().eq('user_id', userId);
+    await admin().from('cart_snapshots').insert({
+      user_id: userId, email: USERS.alice, items: [], reminder_sent: false, updated_at: '2000-01-01T00:00:00Z',
+    });
+    const res = await request.get('/api/cron/abandoned-cart', { headers: { authorization: `Bearer ${process.env.CRON_SECRET}` } });
+    expect(res.status()).toBe(200);
+    const snapshot = await admin().from('cart_snapshots').select('reminder_sent').eq('user_id', userId).single();
+    expect(snapshot.data?.reminder_sent).toBe(true);
+    expect((await readOutbox()).filter((mail) => mail.to === USERS.alice)).toHaveLength(0);
+    await admin().from('cart_snapshots').delete().eq('user_id', userId);
+  });
+
   test('rejects a missing or wrong secret', async ({ request }) => {
     expect((await request.get('/api/cron/abandoned-cart')).status()).toBe(401);
     expect((await request.get('/api/cron/abandoned-cart', { headers: { authorization: 'Bearer nope' } })).status()).toBe(401);
@@ -243,6 +258,102 @@ test('D24 a signed webhook with malformed JSON is a 400, not a crash', async ({ 
   expect(res.status()).toBe(400);
 });
 
+test('a fulfillment event cannot create a phantom shipment', async ({ request }) => {
+  const eventId = crypto.randomUUID();
+  const body = JSON.stringify({
+    id: 987654,
+    fulfillment_id: 123456,
+    order_id: `gid://shopify/Order/event-only-${Date.now()}`,
+    status: 'delivered',
+    happened_at: new Date().toISOString(),
+  });
+  const before = await admin().from('shipments').select('id', { count: 'exact', head: true });
+  const response = await request.post('/api/shopify/webhook', {
+    headers: {
+      'content-type': 'application/json',
+      'x-shopify-shop-domain': 'e2e-store.myshopify.com',
+      'x-shopify-event-id': eventId,
+      'x-shopify-topic': 'fulfillment_events/create',
+      'x-shopify-hmac-sha256': signShopifyWebhook(body),
+    },
+    data: body,
+  });
+  expect(response.status(), await response.text()).toBe(200);
+  expect(await response.json()).toMatchObject({ received: true, ignored: true });
+  const after = await admin().from('shipments').select('id', { count: 'exact', head: true });
+  expect(after.count).toBe(before.count);
+  expect((await admin().from('shopify_webhook_inbox' as never).select('event_id').eq('event_id', eventId)).data).toEqual([]);
+});
+
+test('an out-of-order fulfillment is persisted and replayed when its order arrives', async ({ request }) => {
+  const orderId = `out-of-order-${Date.now()}`;
+  const fulfillmentEventId = crypto.randomUUID();
+  const fulfillmentBody = JSON.stringify({
+    id: `gid://shopify/Fulfillment/${orderId}-f`,
+    order_id: `gid://shopify/Order/${orderId}`,
+    shipment_status: 'out_for_delivery',
+    tracking_number: 'TRACK-E2E',
+    tracking_url: 'https://example.test/track/TRACK-E2E',
+  });
+  const headers = (topic: string, eventId: string, body: string) => ({
+    'content-type': 'application/json',
+    'x-shopify-shop-domain': 'e2e-store.myshopify.com',
+    'x-shopify-event-id': eventId,
+    'x-shopify-topic': topic,
+    'x-shopify-hmac-sha256': signShopifyWebhook(body),
+  });
+
+  try {
+    await clearOutbox();
+    const fulfillment = await request.post('/api/shopify/webhook', {
+      headers: headers('fulfillments/create', fulfillmentEventId, fulfillmentBody), data: fulfillmentBody,
+    });
+    expect(fulfillment.status(), await fulfillment.text()).toBe(200);
+    const pending = await admin().from('shopify_webhook_inbox' as never).select('status').eq('event_id', fulfillmentEventId).single();
+    expect((pending.data as unknown as { status: string }).status).toBe('pending');
+
+    const orderBody = JSON.stringify({
+      id: `gid://shopify/Order/${orderId}`,
+      name: `#${orderId}`,
+      email: USERS.alice,
+      financial_status: 'pending',
+      total_price: '30.00',
+      currency: 'USD',
+      line_items: [],
+    });
+    const order = await request.post('/api/shopify/webhook', {
+      headers: headers('orders/create', crypto.randomUUID(), orderBody), data: orderBody,
+    });
+    expect(order.status(), await order.text()).toBe(200);
+
+    const storedOrder = await admin().from('orders').select('id').eq('shopify_order_id', orderId).single();
+    const shipment = await admin().from('shipments').select('status').eq('order_id', storedOrder.data!.id).single();
+    expect(shipment.data?.status).toBe('in_transit');
+    const completed = await admin().from('shopify_webhook_inbox' as never).select('status').eq('event_id', fulfillmentEventId).single();
+    expect((completed.data as unknown as { status: string }).status).toBe('complete');
+
+    const queued = await admin().from('notification_jobs' as never).select('id,status').like('identity', 'shipment-created:%').eq('payload->>orderId', storedOrder.data!.id).single();
+    expect((queued.data as unknown as { status: string }).status).toBe('pending');
+    const cronHeaders = { authorization: `Bearer ${process.env.CRON_SECRET}` };
+    const [firstCron, secondCron] = await Promise.all([
+      request.get('/api/cron/notifications', { headers: cronHeaders }),
+      request.get('/api/cron/notifications', { headers: cronHeaders }),
+    ]);
+    expect(firstCron.status()).toBe(200);
+    expect(secondCron.status()).toBe(200);
+    const shipmentEmails = (await readOutbox()).filter((mail) => mail.to === USERS.alice && mail.subject.includes(orderId));
+    expect(shipmentEmails).toHaveLength(1);
+  } finally {
+    const storedOrder = await admin().from('orders').select('id').eq('shopify_order_id', orderId).maybeSingle();
+    if (storedOrder.data?.id) {
+      await admin().from('shipments').delete().eq('order_id', storedOrder.data.id);
+      await admin().from('orders').delete().eq('id', storedOrder.data.id);
+    }
+    await admin().from('shopify_webhook_inbox' as never).delete().eq('event_id', fulfillmentEventId);
+    await admin().from('notification_jobs' as never).delete().like('identity', 'shipment-created:%');
+  }
+});
+
 test.describe('D32 AI preview input', () => {
   const refused = [
     'a 16 year old girl, petite',
@@ -254,7 +365,7 @@ test.describe('D32 AI preview input', () => {
     test(`refuses "${bodyDescription}"`, async ({ request }) => {
       const res = await request.post('/api/ai-preview', {
         headers: { 'x-forwarded-for': `198.51.100.${refused.indexOf(bodyDescription) + 1}` },
-        data: { productTitle: 'Lace Set', bodyDescription },
+        data: { productHandle: 'bow-corset-garter-set', bodyDescription },
       });
       expect(res.status()).toBe(400);
     });
@@ -263,7 +374,7 @@ test.describe('D32 AI preview input', () => {
   test('a normal description passes validation (then needs the AI provider)', async ({ request }) => {
     const res = await request.post('/api/ai-preview', {
       headers: { 'x-forwarded-for': '198.51.100.50' },
-      data: { productTitle: 'Lace Set', bodyDescription: 'a tall woman with an hourglass figure, warm medium skin tone' },
+      data: { productHandle: 'bow-corset-garter-set', bodyDescription: 'a tall woman with an hourglass figure, warm medium skin tone' },
     });
     expect(res.status()).toBe(503); // HF_TOKEN is not configured in tests
   });

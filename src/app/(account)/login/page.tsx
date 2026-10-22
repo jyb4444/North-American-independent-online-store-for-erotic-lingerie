@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import Image from 'next/image';
 import { createClient } from '@/lib/supabase/client';
 import { safeRedirectPath } from '@/lib/redirect';
@@ -63,7 +64,6 @@ export default function LoginPage() {
           data: {
             first_name: firstName,
             last_name: lastName,
-            first_free_offer_reserved: new URLSearchParams(window.location.search).get('offer') === 'first-free',
             // Credited server-side in /auth/callback once the email is confirmed.
             ...(referralCode.trim() ? { referral_code: referralCode.trim().toUpperCase() } : {}),
           },
@@ -271,6 +271,11 @@ export default function LoginPage() {
             >
               {loading ? '...' : mode === 'signin' ? 'Sign In' : 'Create Account'}
             </button>
+            {mode === 'signin' && (
+              <Link href="/forgot-password" className="block text-center text-xs text-ivory-dim underline-offset-4 hover:text-gold-400 hover:underline">
+                Forgot your password?
+              </Link>
+            )}
           </form>
 
           {/* Divider */}

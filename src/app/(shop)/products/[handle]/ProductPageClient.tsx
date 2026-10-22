@@ -42,6 +42,7 @@ export default function ProductPageClient({ product, relatedProducts }: Props) {
   const [recommendedSize, setRecommendedSize] = useState<string | null>(null);
   const { recordView } = useRecentlyViewed();
   const addItem = useCartStore((s) => s.addItem);
+  const displayedPrice = selectedVariant?.price ?? product.price;
 
   useEffect(() => {
     recordView(product.id);
@@ -66,7 +67,7 @@ export default function ProductPageClient({ product, relatedProducts }: Props) {
       productId: product.id,
       title: product.title,
       image: product.images[0],
-      price: product.price,
+      price: displayedPrice,
       size: selectedVariant.size,
       color: selectedVariant.color,
       colorHex: selectedVariant.colorHex,
@@ -139,7 +140,7 @@ export default function ProductPageClient({ product, relatedProducts }: Props) {
             )}
 
             <div className="mt-5 flex items-baseline gap-3">
-              <span className="font-serif text-3xl font-light text-gold-400">${product.price.toFixed(2)}</span>
+              <span className="font-serif text-3xl font-light text-gold-400">${displayedPrice.toFixed(2)}</span>
               {product.compareAtPrice && (
                 <span className="text-lg text-ivory-dim line-through">${product.compareAtPrice.toFixed(2)}</span>
               )}
@@ -231,7 +232,7 @@ export default function ProductPageClient({ product, relatedProducts }: Props) {
         <div className="flex items-center gap-3">
           <div className="min-w-0 flex-1">
             <p className="truncate text-xs text-ivory">{product.title}</p>
-            <p className="font-serif text-base text-gold-400">${product.price.toFixed(2)}</p>
+            <p className="font-serif text-base text-gold-400">${displayedPrice.toFixed(2)}</p>
           </div>
           <button
             onClick={handleAddToCart}

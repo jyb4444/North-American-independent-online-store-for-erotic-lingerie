@@ -51,7 +51,7 @@ function productUrl(handle: unknown): string {
 
 // ─── Delivery ──────────────────────────────────────────────────────────────────
 
-type OutgoingEmail = { to: string; subject: string; html: string; replyTo?: string };
+type OutgoingEmail = { to: string; subject: string; html: string; replyTo?: string; headers?: Record<string, string> };
 
 /**
  * Sends an email and throws if the provider rejects it (the Resend SDK reports failures in
@@ -189,7 +189,7 @@ function wishlistReminderHtml(firstName: string, productTitle: string, productIm
   `);
 }
 
-function abandonedCartHtml(firstName: string, items: CartItem[]) {
+function abandonedCartHtml(firstName: string, items: CartItem[], unsubscribeUrl: string) {
   const rows = items.slice(0, 3).map((item) =>
     productRow(item.image, `${item.title} — ${item.color} / ${item.size}`, item.price, productUrl(item.productId))
   ).join('');
@@ -203,6 +203,7 @@ function abandonedCartHtml(firstName: string, items: CartItem[]) {
     ${more}
     ${button('Return to Your Bag', BASE_URL)}
     ${para('Your bag stays private in this browser. Billing appears discreetly.')}
+    ${para(`<a href="${escapeHtml(unsubscribeUrl)}" style="color:${MUTED};">Unsubscribe from marketing emails</a>`)}
   `);
 }
 
@@ -329,8 +330,17 @@ export async function sendWishlistReminderEmail(
   });
 }
 
-export async function sendAbandonedCartEmail(to: string, firstName: string, items: CartItem[]) {
-  return deliver({ to, subject: 'You left something in your private bag', html: abandonedCartHtml(firstName, items) });
+export async function sendAbandonedCartEmail(to: string, firstName: string, items: CartItem[], unsubscribeToken: string) {
+  const unsubscribeUrl = `${BASE_URL}/api/newsletter/unsubscribe?token=${encodeURIComponent(unsubscribeToken)}`;
+  return deliver({
+    to,
+    subject: 'You left something in your private bag',
+    html: abandonedCartHtml(firstName, items, unsubscribeUrl),
+    headers: {
+      'List-Unsubscribe': `<${unsubscribeUrl}>`,
+      'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+    },
+  });
 }
 
 export async function sendRestockAlertEmail(
@@ -428,6 +438,27 @@ export async function sendReturnRequestNotification(input: {
       ${para('Review the Shopify order tagged with this RMA. Reply to the customer with approval, denial, or a request for more information.')}
     `),
   }, `return-merchant:${input.requestNumber}`);
+}
+
+export async function sendReturnStatusEmail(input: {
+  to: string;
+  requestNumber: string;
+  orderNumber: string;
+  status: string;
+  note?: string | null;
+}) {
+  const label = input.status.replaceAll('_', ' ');
+  return deliver({
+    to: input.to,
+    subject: headerText(`Return request ${input.requestNumber}: ${label}`),
+    html: emailWrapper(`
+      ${heading('Your return request was updated')}
+      ${para(`Request ${strong(input.requestNumber)} for order ${strong(`#${input.orderNumber}`)} is now ${strong(label)}.`)}
+      ${input.note ? para(`Message from our team: ${escapeHtml(input.note)}`) : ''}
+      ${button('View return request', `${BASE_URL}/returns`)}
+      ${para('Please do not ship an item until the instructions in your request explicitly ask you to do so.')}
+    `),
+  }, `return-status:${input.requestNumber}:${input.status}`);
 }
 
 export async function sendNewsletterWelcomeEmail(to: string, unsubscribeToken?: string) {

@@ -14,6 +14,12 @@ export default function CartSyncProvider() {
   const hasRestoredRef = useRef(false);
   const completedCheckoutRef = useRef(false);
 
+  function enterCartScope(nextOwner: string | 'guest', preserveGuestCart: boolean) {
+    const state = useCartStore.getState();
+    const mayPreserve = preserveGuestCart && state.cartOwner === 'guest';
+    state.setCartOwner(nextOwner, mayPreserve);
+  }
+
   async function restoreCartFromSupabase(userId: string) {
     if (hasRestoredRef.current) return;
     hasRestoredRef.current = true;
@@ -52,9 +58,12 @@ export default function CartSyncProvider() {
     // Get initial session and restore cart if logged in
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (user) {
+        enterCartScope(user.id, true);
         userIdRef.current = user.id;
         emailRef.current = user.email ?? null;
         restoreCartFromSupabase(user.id);
+      } else {
+        enterCartScope('guest', false);
       }
     });
 
@@ -66,6 +75,7 @@ export default function CartSyncProvider() {
 
       // Restore cart when a user logs in (not already restored for this user)
       if (event === 'SIGNED_IN' && session?.user && session.user.id !== prevUserId) {
+        enterCartScope(session.user.id, prevUserId === null);
         hasRestoredRef.current = false;
         restoreCartFromSupabase(session.user.id);
       }
@@ -75,7 +85,7 @@ export default function CartSyncProvider() {
       // (the sync effect skips writes while nobody is signed in).
       if (event === 'SIGNED_OUT') {
         hasRestoredRef.current = false;
-        useCartStore.getState().clearCart();
+        useCartStore.getState().setCartOwner('guest');
       }
     });
 

@@ -15,10 +15,12 @@ export type PendingCheckout = { cartId: string; startedAt: number };
 
 type CartState = {
   items: CartItem[];
+  cartOwner: string | 'guest' | null;
   isOpen: boolean;
   giftCard: AppliedGiftCard | null;
   pendingCheckout: PendingCheckout | null;
   setPendingCheckout: (pending: PendingCheckout | null) => void;
+  setCartOwner: (owner: string | 'guest', preserveItems?: boolean) => void;
   addItem: (item: CartItem) => void;
   removeItem: (variantId: string) => void;
   updateQuantity: (variantId: string, quantity: number) => void;
@@ -36,18 +38,30 @@ export const useCartStore = create<CartState>()(
   persist(
     (set, get) => ({
       items: [],
+      cartOwner: null,
       isOpen: false,
       giftCard: null,
       pendingCheckout: null,
+
+      setCartOwner: (cartOwner, preserveItems = false) => set((state) => {
+        if (state.cartOwner === cartOwner) return state;
+        return {
+          cartOwner,
+          items: preserveItems ? state.items : [],
+          giftCard: null,
+          pendingCheckout: null,
+        };
+      }),
 
       addItem: (newItem) => {
         set((state) => {
           const existing = state.items.find((i) => i.variantId === newItem.variantId);
           if (existing) {
+            const nextQuantity = Math.min(99, existing.quantity + newItem.quantity);
             return {
               items: state.items.map((i) =>
                 i.variantId === newItem.variantId
-                  ? { ...i, quantity: i.quantity + newItem.quantity }
+                  ? { ...i, quantity: nextQuantity }
                   : i
               ),
               isOpen: true,
@@ -66,9 +80,10 @@ export const useCartStore = create<CartState>()(
           get().removeItem(variantId);
           return;
         }
+        const bounded = Math.min(99, Math.floor(quantity));
         set((state) => ({
           items: state.items.map((i) =>
-            i.variantId === variantId ? { ...i, quantity } : i
+            i.variantId === variantId ? { ...i, quantity: bounded } : i
           ),
         }));
       },
@@ -88,7 +103,7 @@ export const useCartStore = create<CartState>()(
     }),
     {
       name: 'cart-storage',
-      partialize: (state) => ({ items: state.items, pendingCheckout: state.pendingCheckout }),
+      partialize: (state) => ({ items: state.items, pendingCheckout: state.pendingCheckout, cartOwner: state.cartOwner }),
     }
   )
 );

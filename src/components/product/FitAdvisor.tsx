@@ -109,10 +109,8 @@ export default function FitAdvisor({ open, onClose, product, onSelectSize }: Pro
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          productTitle: product.title,
-          productDescription: product.description,
+          productHandle: product.handle,
           bodyDescription: result.aiPromptDescription,
-          productImage: product.images[0],
         }),
       });
       const contentType = res.headers.get('content-type') ?? '';
