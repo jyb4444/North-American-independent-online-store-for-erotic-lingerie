@@ -258,6 +258,39 @@ test('D24 a signed webhook with malformed JSON is a 400, not a crash', async ({ 
   expect(res.status()).toBe(400);
 });
 
+test('a late older order webhook cannot overwrite newer Shopify state', async ({ request }) => {
+  const orderId = `stale-order-${Date.now()}`;
+  const headers = (topic: string, body: string) => ({
+    'content-type': 'application/json',
+    'x-shopify-shop-domain': 'e2e-store.myshopify.com',
+    'x-shopify-event-id': crypto.randomUUID(),
+    'x-shopify-topic': topic,
+    'x-shopify-hmac-sha256': signShopifyWebhook(body),
+  });
+  const payload = (updatedAt: string, financialStatus: string) => JSON.stringify({
+    id: `gid://shopify/Order/${orderId}`,
+    name: `#${orderId}`,
+    email: USERS.alice,
+    financial_status: financialStatus,
+    fulfillment_status: null,
+    total_price: '30.00',
+    currency: 'USD',
+    updated_at: updatedAt,
+    line_items: [],
+  });
+  try {
+    const newer = payload('2026-10-22T12:00:00Z', 'paid');
+    const older = payload('2026-10-22T11:00:00Z', 'pending');
+    expect((await request.post('/api/shopify/webhook', { headers: headers('orders/updated', newer), data: newer })).status()).toBe(200);
+    expect((await request.post('/api/shopify/webhook', { headers: headers('orders/updated', older), data: older })).status()).toBe(200);
+    const stored = await admin().from('orders').select('financial_status,shopify_updated_at').eq('shopify_order_id', orderId).single();
+    expect(stored.data?.financial_status).toBe('paid');
+    expect(stored.data?.shopify_updated_at).toBe('2026-10-22T12:00:00+00:00');
+  } finally {
+    await admin().from('orders').delete().eq('shopify_order_id', orderId);
+  }
+});
+
 test('a fulfillment event cannot create a phantom shipment', async ({ request }) => {
   const eventId = crypto.randomUUID();
   const body = JSON.stringify({

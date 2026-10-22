@@ -75,6 +75,7 @@ type ShopifyOrderPayload = {
   currency?: string | null;
   currency_code?: string | null;
   processed_at?: string | null;
+  updated_at?: string | null;
   fulfillments?: ShopifyFulfillmentPayload[];
   line_items?: ShopifyLineItemPayload[];
   note_attributes?: Array<{ name?: string | null; value?: string | null }>;
@@ -267,10 +268,11 @@ export async function upsertOrderFromShopify(payload: ShopifyOrderPayload): Prom
   const supabase = createAdminClient();
   const attributedUserId = readOrderAttribution(payload.note_attributes);
   const userId = attributedUserId ?? await getUserIdForEmail(email);
-
-  const { data: order, error } = await supabase
-    .from('orders')
-    .upsert({
+  const parsedUpdatedAt = Date.parse(payload.updated_at ?? '');
+  const shopifyUpdatedAt = Number.isFinite(parsedUpdatedAt)
+    ? new Date(parsedUpdatedAt).toISOString()
+    : new Date().toISOString();
+  const orderValues = {
       user_id: userId,
       shopify_order_id: shopifyOrderId,
       shopify_order_number: orderNumber,
@@ -281,21 +283,45 @@ export async function upsertOrderFromShopify(payload: ShopifyOrderPayload): Prom
       total_amount: normalizeAmount(payload.current_total_price ?? payload.total_price),
       currency: payload.currency_code ?? payload.currency ?? 'USD',
       processed_at: payload.processed_at ?? null,
-    }, { onConflict: 'shopify_order_id' })
-    .select('*, shipments(*, shipment_events(*))')
-    .single();
+  };
+  let orderId: string;
+  let applied = true;
+  const guarded = await supabase.rpc('upsert_shopify_order_if_fresh' as never, {
+    p_user_id: orderValues.user_id,
+    p_shopify_order_id: orderValues.shopify_order_id,
+    p_shopify_order_number: orderValues.shopify_order_number,
+    p_email: orderValues.email,
+    p_phone: orderValues.phone,
+    p_financial_status: orderValues.financial_status,
+    p_fulfillment_status: orderValues.fulfillment_status,
+    p_total_amount: orderValues.total_amount,
+    p_currency: orderValues.currency,
+    p_processed_at: orderValues.processed_at,
+    p_shopify_updated_at: shopifyUpdatedAt,
+  } as never);
+  if (guarded.error && ['PGRST202','42883'].includes(guarded.error.code ?? '')) {
+    const legacy = await supabase.from('orders').upsert(orderValues, { onConflict: 'shopify_order_id' }).select('id').single();
+    if (legacy.error) throw new Error(legacy.error.message);
+    orderId = legacy.data.id;
+  } else {
+    if (guarded.error) throw new Error('Order synchronization unavailable');
+    const result = (guarded.data as unknown as Array<{order_id:string;applied:boolean}> | null)?.[0];
+    if (!result) throw new Error('Order synchronization returned no result');
+    orderId = result.order_id;
+    applied = result.applied;
+  }
 
-  if (error) throw new Error(error.message);
+  if (!applied) return getOrderById(orderId);
 
   for (const lineItem of payload.line_items ?? []) {
-    await upsertOrderItem(order.id, lineItem);
+    await upsertOrderItem(orderId, lineItem);
   }
 
   for (const fulfillment of payload.fulfillments ?? []) {
-    await upsertShipmentForOrder(order.id, fulfillment);
+    await upsertShipmentForOrder(orderId, fulfillment);
   }
 
-  return getOrderById(order.id);
+  return getOrderById(orderId);
 }
 
 async function upsertAdminOrderForUser(node: ShopifyAdminOrderNode, userId: string): Promise<OrderWithShipments | null> {

@@ -184,6 +184,7 @@ export type Database = {
           total_amount: number | null;
           currency: string;
           processed_at: string | null;
+          shopify_updated_at: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -198,6 +199,7 @@ export type Database = {
           total_amount?: number | null;
           currency?: string;
           processed_at?: string | null;
+          shopify_updated_at?: string | null;
         };
         Update: {
           user_id?: string | null;
@@ -209,6 +211,7 @@ export type Database = {
           total_amount?: number | null;
           currency?: string;
           processed_at?: string | null;
+          shopify_updated_at?: string | null;
           updated_at?: string;
         };
       };
