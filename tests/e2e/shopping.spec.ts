@@ -57,6 +57,15 @@ test('search finds a product by name and opens it', async ({ page }) => {
   await expect(page).toHaveURL(new RegExp(`/products/${PRODUCT.handle}$`));
 });
 
+test('search matches multiple words that appear in different product fields', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('banner').getByRole('button', { name: 'Search' }).click();
+  const input = page.getByPlaceholder('Search products, categories, styles…');
+  await expect(input).toBeFocused();
+  await input.fill('black lace');
+  await expect(page.getByRole('dialog', { name: 'Search' }).getByRole('link', { name: /Mesh Lace Corset Garter Dress/i }).first()).toBeVisible();
+});
+
 test('search with no matches shows an empty state and Escape closes it', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('banner').getByRole('button', { name: 'Search' }).click();
@@ -76,17 +85,17 @@ test('product page requires a size and colour before adding to bag', async ({ pa
   await expect(addButton).toBeDisabled();
 
   await page.locator('main').getByRole('button', { name: 'Black', exact: true }).click();
-  await expect(addButton).toBeDisabled();
+  await expect(page.locator('main').getByRole('button', { name: 'Select Size', exact: true })).toBeDisabled();
 
   await page.reload();
   await page.locator('main').getByRole('button', { name: 'M', exact: true }).click();
-  await expect(page.locator('main').getByRole('button', { name: 'Select Size & Color' })).toBeDisabled();
+  await expect(page.locator('main').getByRole('button', { name: 'Select Color', exact: true })).toBeDisabled();
 });
 
 test('size guide opens and closes', async ({ page }) => {
   await page.goto(`/products/${PRODUCT.handle}`);
   await page.locator('main').getByRole('button', { name: 'Size Guide' }).click();
-  await expect(page.getByRole('dialog').or(page.getByText(/bust|waist|hip/i).first())).toBeVisible();
+  await expect(page.getByRole('dialog', { name: 'Size Guide' })).toBeVisible();
   await page.keyboard.press('Escape');
 });
 

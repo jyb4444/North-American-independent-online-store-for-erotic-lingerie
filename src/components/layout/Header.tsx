@@ -81,6 +81,7 @@ export default function Header() {
   const avatarUrl = user?.user_metadata?.avatar_url as string | undefined;
 
   return (
+    <>
     <header className="sticky top-0 z-50 border-b border-gold-600/20 bg-wine-950/90 backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
 
@@ -126,7 +127,6 @@ export default function Header() {
           <button onClick={() => setSearchOpen(true)} aria-label="Search" className="text-ivory-muted transition hover:text-gold-400">
             <Search size={17} />
           </button>
-          <SearchModal open={searchOpen} onClose={() => setSearchOpen(false)} />
           <HeaderWishlistLink />
 
           {/* Not signed in */}
@@ -142,6 +142,7 @@ export default function Header() {
           {user && (
             <div ref={userMenuRef} className="relative">
               <button onClick={() => setUserMenuOpen((v) => !v)}
+                aria-label={`${displayName} account menu`} aria-expanded={userMenuOpen} aria-controls="account-menu"
                 className="flex items-center gap-2 text-ivory-muted transition hover:text-gold-400">
                 {avatarUrl ? (
                   <Image src={avatarUrl} alt={displayName} width={26} height={26}
@@ -155,7 +156,7 @@ export default function Header() {
               </button>
 
               {userMenuOpen && (
-                <div className="absolute right-0 top-full mt-3 w-52 border border-gold-600/25 bg-wine-900 shadow-2xl">
+                <div id="account-menu" className="absolute right-0 top-full mt-3 w-52 border border-gold-600/25 bg-wine-900 shadow-2xl">
                   {/* User info */}
                   <div className="border-b border-gold-600/15 px-4 py-3">
                     <p className="truncate text-xs font-medium text-ivory">{displayName}</p>
@@ -200,6 +201,7 @@ export default function Header() {
 
           {/* Mobile toggle */}
           <button className="text-ivory-muted transition hover:text-gold-400 md:hidden"
+            aria-label="Main menu" aria-expanded={mobileOpen} aria-controls="mobile-navigation"
             onClick={() => setMobileOpen((v) => !v)}>
             {mobileOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
@@ -208,7 +210,7 @@ export default function Header() {
 
       {/* Mobile nav */}
       {mobileOpen && (
-        <nav className="border-t border-gold-600/20 bg-wine-900 px-4 pb-5 pt-3 md:hidden">
+        <nav id="mobile-navigation" className="border-t border-gold-600/20 bg-wine-900 px-4 pb-5 pt-3 md:hidden">
           {navItems.map((item) => (
             <Link key={item.href} href={item.href}
               aria-current={pathname === item.href ? 'page' : undefined}
@@ -250,5 +252,7 @@ export default function Header() {
         </nav>
       )}
     </header>
+    <SearchModal open={searchOpen} onClose={() => setSearchOpen(false)} />
+    </>
   );
 }

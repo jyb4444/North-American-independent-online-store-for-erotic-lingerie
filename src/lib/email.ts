@@ -202,7 +202,7 @@ function abandonedCartHtml(firstName: string, items: CartItem[], unsubscribeUrl:
     ${rows}
     ${more}
     ${button('Return to Your Bag', BASE_URL)}
-    ${para('Your bag stays private in this browser. Billing appears discreetly.')}
+    ${para('Your saved bag is available when you return to your account. Product availability can change.')}
     ${para(`<a href="${escapeHtml(unsubscribeUrl)}" style="color:${MUTED};">Unsubscribe from marketing emails</a>`)}
   `);
 }
@@ -263,7 +263,7 @@ function contactNotificationHtml(name: string, email: string, subject: string, m
 function newsletterWelcomeHtml() {
   return emailWrapper(`
     ${heading('Welcome to Self Love')}
-    ${para('You now have private early access to new arrivals, member-only offers, and exclusive styling guides — all sent discreetly to this address.')}
+    ${para('You now have early access to new arrivals, product updates, and styling guides sent to this address.')}
     ${para('If you did not sign up, you can ignore this email. To unsubscribe, reply with "unsubscribe".')}
   `);
 }
@@ -288,7 +288,7 @@ export function giftCardHtml(input: {
       <p style="font-size:11px;color:${MUTED};margin:8px 0 0;font-family:Arial,sans-serif;">Balance: ${amount} · Expires: ${input.expiresAt.toLocaleDateString('en-US', { year: 'numeric', month: 'long' })}</p>
     </div>
     ${para('Enter this code at checkout to redeem your gift.')}
-    ${para('Sent discreetly. The gift card is valid for one year from issue date.')}
+    ${para(`Use this card before the expiration date shown above (${escapeHtml(input.expiresAt.toLocaleDateString('en-US'))}).`)}
   `);
 }
 
@@ -474,22 +474,6 @@ export async function sendNewsletterConfirmationEmail(to: string, confirmationUr
     to,
     subject: 'Confirm your Self Love email subscription',
     html: emailWrapper(`${heading('Confirm your subscription')}${para('Use the button below to confirm that you want email updates from Self Love.')}${button('Confirm subscription', confirmationUrl)}${para('If you did not request this, you can ignore this email.')}`),
-  });
-}
-
-export async function sendGiftCardEmail(input: {
-  to: string;
-  code: string;
-  amount: number;
-  recipientName?: string | null;
-  senderName?: string | null;
-  message?: string | null;
-  expiresAt: Date;
-}) {
-  return deliver({
-    to: input.to,
-    subject: headerText(`You've received a Self Love gift card — ${input.senderName || 'A friend'} sent you a gift`),
-    html: giftCardHtml(input),
   });
 }
 

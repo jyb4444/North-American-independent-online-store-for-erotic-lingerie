@@ -11,7 +11,7 @@ export default function robots(): MetadataRoute.Robots {
       userAgent: '*',
       allow: '/',
       // Private, per-customer pages and APIs (these pages also send noindex).
-      disallow: ['/account', '/orders', '/returns', '/track', '/login', '/api/', '/auth/'],
+      disallow: ['/account', '/admin', '/orders', '/returns', '/track', '/login', '/api/', '/auth/'],
     },
     sitemap: absoluteUrl('/sitemap.xml'),
   };

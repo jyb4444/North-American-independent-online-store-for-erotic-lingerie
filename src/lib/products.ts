@@ -156,7 +156,7 @@ function categoryFor(product: ShopifyProduct) {
   return 'lingerie';
 }
 
-function mapShopifyProduct(product: ShopifyProduct): Product {
+export function mapShopifyProduct(product: ShopifyProduct): Product {
   const price = moneyToNumber(product.priceRange.minVariantPrice);
   const compareAt = moneyToNumber(product.compareAtPriceRange.minVariantPrice);
   const tags = product.tags.map((tag) => tag.toLowerCase());
@@ -168,7 +168,7 @@ function mapShopifyProduct(product: ShopifyProduct): Product {
 
   const variants = product.variants.edges.map(({ node }, index): ProductVariant => {
     const color = optionValue(node, ['color', 'colour']) ?? 'Default';
-    const size = normalizeSize(optionValue(node, ['size']) ?? node.title);
+    const size = normalizeSize(optionValue(node, ['size']));
 
     return {
       id: node.id,

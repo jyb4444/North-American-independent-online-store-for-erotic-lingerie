@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import Image from 'next/image';
 import Link from 'next/link';
 import { X, ShoppingBag, Star, ArrowRight } from 'lucide-react';
@@ -9,6 +9,8 @@ import type { Product, ProductVariant } from '@/types';
 import { useCartStore } from '@/store/cart';
 import { track } from '@/lib/analytics';
 import WishlistButton from '@/components/product/WishlistButton';
+import { formatMoney, productImage, productImageAlt } from '@/lib/product-display';
+import { useAccessibleDialog } from '@/components/ui/useAccessibleDialog';
 
 type Props = { product: Product | null; onClose: () => void };
 
@@ -23,6 +25,9 @@ export default function QuickViewModal({ product, onClose }: Props) {
   const [activeImg, setActiveImg] = useState(0);
   const [added, setAdded] = useState(false);
   const addItem = useCartStore((s) => s.addItem);
+  const closeRef = useRef<HTMLButtonElement>(null);
+  const dialogRef = useAccessibleDialog(!!product, onClose, closeRef);
+  const reduceMotion = useReducedMotion();
 
   // Reset state whenever product changes
   useEffect(() => {
@@ -36,13 +41,6 @@ export default function QuickViewModal({ product, onClose }: Props) {
     return () => window.clearTimeout(id);
   }, [product?.id]);
 
-  // Close on Escape
-  useEffect(() => {
-    function handler(e: KeyboardEvent) { if (e.key === 'Escape') onClose(); }
-    document.addEventListener('keydown', handler);
-    return () => document.removeEventListener('keydown', handler);
-  }, [onClose]);
-
   if (!product) return null;
 
   const uniqueColors = [...new Map(product.variants.map((v) => [v.color, v])).values()];
@@ -53,7 +51,8 @@ export default function QuickViewModal({ product, onClose }: Props) {
 
   function resolveVariant(size: string | null, color: string | null) {
     if (!size || !color) return null;
-    return product!.variants.find((v) => v.size === size && v.color === color) ?? null;
+    const variant = product!.variants.find((v) => v.size === size && v.color === color);
+    return variant && variant.stock > 0 ? variant : null;
   }
 
   function handleColor(color: string) {
@@ -73,7 +72,7 @@ export default function QuickViewModal({ product, onClose }: Props) {
   }
 
   function isColorAvailable(color: string) {
-    return product!.variants.some((v) => v.color === color && v.stock > 0);
+    return product!.variants.some((v) => v.color === color && v.stock > 0 && (!selectedSize || v.size === selectedSize));
   }
 
   function isSizeAvailable(size: string) {
@@ -90,8 +89,10 @@ export default function QuickViewModal({ product, onClose }: Props) {
       variantId: selectedVariant.id,
       productId: product!.id,
       title: product!.title,
-      image: product!.images[0],
-      price: product!.price,
+      image: productImage(product!),
+      price: selectedVariant.price ?? product!.price,
+      currency: selectedVariant.currency ?? product!.currency ?? 'USD',
+      stock: selectedVariant.stock,
       size: selectedVariant.size,
       color: selectedVariant.color,
       colorHex: selectedVariant.colorHex,
@@ -101,29 +102,39 @@ export default function QuickViewModal({ product, onClose }: Props) {
         : undefined,
     });
     track.addedToCart(product!, selectedVariant, 1);
-    setAdded(true);
-    setTimeout(() => setAdded(false), 2000);
+    onClose();
   }
+
+  const price = selectedVariant?.price ?? product.price;
+  const currency = selectedVariant?.currency ?? product.currency ?? 'USD';
 
   return (
     <AnimatePresence>
       <motion.div
         initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+        transition={{ duration: reduceMotion ? 0 : 0.2 }}
         onClick={onClose}
         className="fixed inset-0 z-50 flex items-center justify-center bg-wine-950/80 px-4 backdrop-blur-sm"
       >
         <motion.div
-          initial={{ opacity: 0, scale: 0.96, y: 12 }}
+          ref={dialogRef}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="quick-view-title"
+          tabIndex={-1}
+          initial={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.96, y: 12 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.96, y: 12 }}
-          transition={{ duration: 0.22 }}
+          exit={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.96, y: 12 }}
+          transition={{ duration: reduceMotion ? 0 : 0.22 }}
           onClick={(e) => e.stopPropagation()}
-          className="relative flex w-full max-w-3xl overflow-hidden border border-gold-600/20 bg-wine-900 shadow-2xl"
+          className="relative flex max-h-[min(90dvh,720px)] w-full max-w-3xl overflow-hidden border border-gold-600/20 bg-wine-900 shadow-2xl"
         >
           {/* Close */}
           <button
+            ref={closeRef}
             onClick={onClose}
-            className="absolute right-4 top-4 z-10 text-ivory-dim transition hover:text-gold-400"
+            aria-label="Close quick view"
+            className="absolute right-2 top-2 z-10 flex h-11 w-11 items-center justify-center text-ivory-dim transition hover:text-gold-400"
           >
             <X size={18} />
           </button>
@@ -132,8 +143,8 @@ export default function QuickViewModal({ product, onClose }: Props) {
           <div className="relative hidden w-64 flex-shrink-0 sm:block">
             <div className="relative h-full">
               <Image
-                src={product.images[activeImg] ?? product.images[0]}
-                alt={product.title}
+                src={productImage(product, activeImg)}
+                alt={productImageAlt(product, activeImg)}
                 fill
                 sizes="256px"
                 className="object-cover"
@@ -145,8 +156,10 @@ export default function QuickViewModal({ product, onClose }: Props) {
                   <button
                     key={i}
                     onClick={() => setActiveImg(i)}
-                    className={`h-1.5 w-1.5 rounded-full transition ${i === activeImg ? 'bg-gold-400' : 'bg-ivory/30'}`}
-                  />
+                    aria-label={`Show image ${i + 1} of ${Math.min(product.images.length, 4)}`}
+                    aria-current={i === activeImg ? 'true' : undefined}
+                    className="flex h-11 w-11 items-center justify-center rounded-full"
+                  ><span className={`h-2.5 w-2.5 rounded-full ${i === activeImg ? 'bg-gold-400' : 'bg-ivory/30'}`} /></button>
                 ))}
               </div>
             )}
@@ -157,7 +170,7 @@ export default function QuickViewModal({ product, onClose }: Props) {
             <div>
               <p className="text-[10px] font-medium uppercase tracking-[0.3em] text-gold-400">{product.category}</p>
               <div className="mt-1 flex items-start justify-between gap-3">
-                <h2 className="font-serif text-2xl font-light text-ivory">{product.title}</h2>
+                <h2 id="quick-view-title" className="font-serif text-2xl font-light text-ivory">{product.title}</h2>
                 <WishlistButton product={product} variant="icon" source="quick_view" className="flex-shrink-0" />
               </div>
               {product.reviewCount > 0 && (
@@ -170,11 +183,11 @@ export default function QuickViewModal({ product, onClose }: Props) {
               )}
               <div className="mt-2 flex items-baseline gap-2">
                 <span className={`font-serif text-xl ${product.compareAtPrice ? 'text-crimson-400' : 'text-gold-400'}`}>
-                  ${product.price.toFixed(2)}
+                  {formatMoney(price, currency)}
                 </span>
                 {product.compareAtPrice && (
                   <>
-                    <span className="text-sm text-ivory-dim line-through">${product.compareAtPrice.toFixed(2)}</span>
+                    <span className="text-sm text-ivory-dim line-through">{formatMoney(product.compareAtPrice, product.currency)}</span>
                     {discountPct && <span className="text-[10px] uppercase tracking-widest text-crimson-400">{discountPct}% off</span>}
                   </>
                 )}
@@ -191,9 +204,10 @@ export default function QuickViewModal({ product, onClose }: Props) {
                   <button
                     key={v.color}
                     onClick={() => handleColor(v.color)}
-                    title={v.color}
+                    aria-label={`Color: ${v.color}`}
+                    aria-pressed={selectedColor === v.color}
                     disabled={!isColorAvailable(v.color)}
-                    className={`h-6 w-6 rounded-full border-2 transition ${
+                    className={`h-11 w-11 rounded-full border-8 transition ${
                       selectedColor === v.color ? 'border-gold-400' : 'border-transparent opacity-70 hover:opacity-100'
                     } disabled:opacity-30`}
                     style={{ backgroundColor: v.colorHex }}
@@ -211,8 +225,10 @@ export default function QuickViewModal({ product, onClose }: Props) {
                   return (
                     <button
                       key={size}
+                      disabled={!avail}
                       onClick={() => handleSize(size)}
-                      className={`min-w-[2.5rem] border px-3 py-1.5 text-[10px] font-medium uppercase tracking-widest transition ${
+                      aria-pressed={selectedSize === size}
+                      className={`min-h-11 min-w-[3rem] border px-3 py-1.5 text-[10px] font-medium uppercase tracking-widest transition disabled:cursor-not-allowed ${
                         selectedSize === size
                           ? 'border-gold-400 bg-gold-400 text-wine-950'
                           : avail
@@ -240,7 +256,7 @@ export default function QuickViewModal({ product, onClose }: Props) {
               }`}
             >
               <ShoppingBag size={13} />
-              {added ? 'Added to Bag' : selectedVariant ? 'Add to Bag' : 'Select Size & Color'}
+              {added ? 'Added to bag' : selectedVariant ? `Add to bag — ${formatMoney(price, currency)}` : 'Choose options'}
             </button>
 
             {/* View full details */}

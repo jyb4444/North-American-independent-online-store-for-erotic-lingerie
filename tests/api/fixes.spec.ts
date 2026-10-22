@@ -411,12 +411,26 @@ test.describe('D32 AI preview input', () => {
     });
     expect(res.status()).toBe(503); // HF_TOKEN is not configured in tests
   });
+
+  test('refuses a safe body description when the product makes the final prompt unsafe', async ({ request }) => {
+    const res = await request.post('/api/ai-preview', {
+      headers: { 'x-forwarded-for': '198.51.100.51' },
+      data: {
+        productHandle: 'schoolgirl-costume-lace-role-play-lingerie-set-jsy',
+        bodyDescription: 'an adult woman, size M',
+      },
+    });
+    expect(res.status()).toBe(400);
+    await expect(res.json()).resolves.toMatchObject({
+      error: expect.stringContaining('unambiguously adult'),
+    });
+  });
 });
 
 test.describe('D27 search engines', () => {
   test('robots.txt keeps private pages out and points to the sitemap', async ({ request }) => {
     const robots = await (await request.get('/robots.txt')).text();
-    for (const path of ['/account', '/orders', '/returns', '/track', '/login', '/api/']) {
+    for (const path of ['/account', '/admin', '/orders', '/returns', '/track', '/login', '/api/']) {
       expect(robots).toContain(`Disallow: ${path}`);
     }
     expect(robots).toContain('Sitemap: http://localhost:3100/sitemap.xml');

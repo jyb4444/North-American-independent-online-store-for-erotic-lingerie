@@ -21,6 +21,7 @@ import LocalLookbookPanel from '@/components/ai/LocalLookbookPanel';
 import SaveLookCTA from '@/components/ai/SaveLookCTA';
 import { track } from '@/lib/analytics';
 import type { Product } from '@/types';
+import { isAiPreviewEligibleProduct } from '@/lib/ai-preview-safety';
 
 type Props = { open: boolean; onClose: () => void; product: Product; onSelectSize: (size: string) => void };
 
@@ -70,6 +71,7 @@ export default function FitAdvisor({ open, onClose, product, onSelectSize }: Pro
 
   const activeInput = !profileDirty && fitInput ? fitInput : input;
   const result = step === 2 ? calculateSize(activeInput) : null;
+  const aiPreviewEligible = isAiPreviewEligibleProduct(product);
 
   function set<K extends keyof FitInput>(key: K, val: FitInput[K]) {
     setInput((prev) => ({ ...(!profileDirty && fitInput ? fitInput : prev), [key]: val }));
@@ -363,7 +365,7 @@ export default function FitAdvisor({ open, onClose, product, onSelectSize }: Pro
                   )}
 
                   {/* AI style inspiration */}
-                  <div className="border border-gold-600/20 bg-wine-800">
+                  {aiPreviewEligible && <div className="border border-gold-600/20 bg-wine-800">
                     <div className="px-4 pt-4">
                       <p className="text-xs font-medium uppercase tracking-widest text-gold-400">AI Style Inspiration</p>
                       <p className="mt-1 text-xs text-ivory-dim">
@@ -411,7 +413,7 @@ export default function FitAdvisor({ open, onClose, product, onSelectSize }: Pro
                         />
                       </div>
                     )}
-                  </div>
+                  </div>}
 
                   <LocalLookbookPanel source="fit_advisor" compact />
 

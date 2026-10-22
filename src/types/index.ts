@@ -11,7 +11,6 @@ export type ProductVariant = {
   currency?: string;
   shopifyVariantId?: string;
 };
-
 export type ModelMeasurements = {
   height: string;
   size: string;
@@ -64,19 +63,9 @@ export type CartItem = {
   color: string;
   colorHex: string;
   quantity: number;
+  currency?: string;
+  stock?: number;
   // Shopify Global ID — set after products are synced to Shopify
   // Format: gid://shopify/ProductVariant/XXXXX
   shopifyVariantId?: string;
-};
-
-export type MembershipTier = 'none' | 'bronze' | 'silver' | 'gold';
-
-export type CustomerProfile = {
-  id: string;
-  email: string;
-  firstName: string;
-  lastName: string;
-  membershipTier: MembershipTier;
-  points: number;
-  totalSpent: number;
 };

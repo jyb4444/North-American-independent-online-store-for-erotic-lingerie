@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Product, ProductVariant } from '@/types';
 import { track } from '@/lib/analytics';
@@ -10,40 +10,70 @@ import RestockAlertForm from '@/components/product/RestockAlertForm';
 type Props = {
   product: Product;
   onVariantChange: (variant: ProductVariant | null) => void;
+  onSelectionChange?: (selection: { size: string | null; color: string | null }) => void;
   preferredSize?: string | null;
 };
 
-export default function VariantSelector({ product, onVariantChange, preferredSize }: Props) {
+export default function VariantSelector({ product, onVariantChange, onSelectionChange, preferredSize }: Props) {
   const sizes = [...new Set(product.variants.map((v) => v.size))];
   const colors = [...new Map(product.variants.map((v) => [v.color, v])).values()];
+  const onlyColor = colors.length === 1 ? colors[0].color : null;
+  const onlySize = sizes.length === 1 ? sizes[0] : null;
+  const showColorSelector = colors.length > 1 || onlyColor?.toLowerCase() !== 'default';
 
   const [selectedSize, setSelectedSize] = useState<string | null>(() => (
     preferredSize && product.variants.some((variant) => variant.size === preferredSize && variant.stock > 0)
       ? preferredSize
+      : onlySize && product.variants.some((variant) => variant.size === onlySize && variant.stock > 0)
+        ? onlySize
+        : null
+  ));
+  const [selectedColor, setSelectedColor] = useState<string | null>(() => (
+    onlyColor && product.variants.some((variant) => variant.color === onlyColor && variant.stock > 0)
+      ? onlyColor
       : null
   ));
-  const [selectedColor, setSelectedColor] = useState<string | null>(null);
   const [sizeGuideOpen, setSizeGuideOpen] = useState(false);
 
   function resolve(size: string | null, color: string | null) {
     if (!size || !color) return null;
-    return product.variants.find((v) => v.size === size && v.color === color) ?? null;
+    return product.variants.find((v) => v.size === size && v.color === color && v.stock > 0) ?? null;
   }
 
   const currentVariant = resolve(selectedSize, selectedColor);
   const stockCount = currentVariant?.stock ?? null;
 
+  useEffect(() => {
+    onVariantChange(currentVariant);
+    onSelectionChange?.({ size: selectedSize, color: selectedColor });
+  }, [currentVariant, onSelectionChange, onVariantChange, selectedColor, selectedSize]);
+
+  useEffect(() => {
+    if (!preferredSize || !hasAnyStock(preferredSize)) return;
+    // A Fit Advisor result is an explicit user action arriving through a prop.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setSelectedSize(preferredSize);
+    if (selectedColor && !isAvailable(preferredSize, selectedColor)) setSelectedColor(null);
+  // Availability helpers only depend on the current product variants.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [preferredSize, product.id]);
+
   function handleSize(size: string) {
+    if (!hasAnyStock(size)) return;
     setSelectedSize(size);
-    const variant = resolve(size, selectedColor);
-    onVariantChange(variant);
+    const color = selectedColor && isAvailable(size, selectedColor) ? selectedColor : null;
+    if (selectedColor && !color) setSelectedColor(null);
+    const variant = resolve(size, color);
     if (variant) track.variantSelected(product.id, variant);
   }
 
   function handleColor(color: string) {
+    const colorHasStock = product.variants.some((variant) => variant.color === color && variant.stock > 0);
+    if (!colorHasStock) return;
     setSelectedColor(color);
-    const variant = resolve(selectedSize, color);
-    onVariantChange(variant);
+    const size = selectedSize && isAvailable(selectedSize, color) ? selectedSize : null;
+    if (selectedSize && !size) setSelectedSize(null);
+    const variant = resolve(size, color);
     if (variant) track.variantSelected(product.id, variant);
   }
 
@@ -59,7 +89,7 @@ export default function VariantSelector({ product, onVariantChange, preferredSiz
   return (
     <div className="space-y-6">
       {/* Color */}
-      <div>
+      {showColorSelector && <div>
         <p className="mb-3 text-xs font-medium uppercase tracking-[0.2em] text-ivory-muted">
           Color{selectedColor ? ` — ${selectedColor}` : ''}
         </p>
@@ -70,6 +100,8 @@ export default function VariantSelector({ product, onVariantChange, preferredSiz
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => handleColor(v.color)}
+              disabled={!product.variants.some((variant) => variant.color === v.color && variant.stock > 0)}
+              aria-label={v.color}
               title={v.color}
               className={`h-7 w-7 rounded-full border-2 transition ${
                 selectedColor === v.color
@@ -80,7 +112,7 @@ export default function VariantSelector({ product, onVariantChange, preferredSiz
             />
           ))}
         </div>
-      </div>
+      </div>}
 
       {/* Size */}
       <div>
@@ -100,6 +132,7 @@ export default function VariantSelector({ product, onVariantChange, preferredSiz
               <button
                 key={size}
                 onClick={() => handleSize(size)}
+                disabled={!available}
                 aria-disabled={!available}
                 title={available ? `Select size ${size}` : `Size ${size} is out of stock`}
                 className={`min-w-[3rem] border px-4 py-2 text-xs font-medium uppercase tracking-widest transition ${

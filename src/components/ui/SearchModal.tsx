@@ -6,12 +6,14 @@ import { Search, X } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useCatalog } from '@/hooks/useCatalog';
+import { useAccessibleDialog } from '@/components/ui/useAccessibleDialog';
 
 type Props = { open: boolean; onClose: () => void };
 
 export default function SearchModal({ open, onClose }: Props) {
   const [query, setQuery] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
+  const dialogRef = useAccessibleDialog(open, onClose, inputRef);
 
   useEffect(() => {
     if (!open) return;
@@ -23,24 +25,17 @@ export default function SearchModal({ open, onClose }: Props) {
     };
   }, [open]);
 
-  useEffect(() => {
-    function handleKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') onClose();
-    }
-    document.addEventListener('keydown', handleKey);
-    return () => document.removeEventListener('keydown', handleKey);
-  }, [onClose]);
-
   // Loaded when the panel first opens; this is the live (Shopify) catalogue.
   const { products: catalog, loading } = useCatalog(open);
 
   const q = query.trim().toLowerCase();
-  const results = q.length < 2 ? [] : catalog.filter((p) =>
-    p.title.toLowerCase().includes(q) ||
-    p.description.toLowerCase().includes(q) ||
-    p.category.toLowerCase().includes(q) ||
-    p.tags.some((t) => t.includes(q))
-  ).slice(0, 8);
+  const queryTerms = q.split(/\s+/).filter(Boolean);
+  const results = q.length < 2 ? [] : catalog.filter((product) => {
+    const searchable = [product.title, product.description, product.category, ...product.tags]
+      .join(' ')
+      .toLowerCase();
+    return queryTerms.every((term) => searchable.includes(term));
+  }).slice(0, 8);
 
   const categoryLinks = [
     { href: '/collections/all', label: 'Shop ALL', description: 'Browse every current style', products: catalog.slice(0, 4) },
@@ -56,12 +51,14 @@ export default function SearchModal({ open, onClose }: Props) {
             onClick={onClose} className="fixed inset-0 z-50 bg-wine-950/70 backdrop-blur-sm" />
 
           <motion.div
+            ref={dialogRef}
             initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.2 }}
             className="fixed left-0 right-0 top-0 z-50 border-b border-gold-600/20 bg-wine-900 px-4 pb-6 pt-4 shadow-2xl"
             role="dialog"
             aria-modal="true"
             aria-label="Search"
+            tabIndex={-1}
           >
             {/* Input */}
             <div className="mx-auto flex max-w-2xl items-center gap-3">
@@ -75,7 +72,7 @@ export default function SearchModal({ open, onClose }: Props) {
                 aria-label="Search products"
                 className="flex-1 bg-transparent text-base text-ivory placeholder-ivory-dim focus:outline-none"
               />
-              <button onClick={onClose} className="text-ivory-dim hover:text-gold-400 transition">
+              <button onClick={onClose} aria-label="Close search" className="flex h-11 w-11 items-center justify-center text-ivory-dim hover:text-gold-400 transition">
                 <X size={18} />
               </button>
             </div>

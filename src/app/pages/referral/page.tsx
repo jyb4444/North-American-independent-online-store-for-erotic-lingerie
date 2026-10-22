@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Users, Copy, Check, Gift, LogIn } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import type { User } from '@supabase/supabase-js';
+import { publicReferralRewardSettings, referralMarketingEnabled } from '@/lib/referral-public';
 
 type Reward = { code: string; amount: number; minimum_subtotal: number; kind: 'welcome' | 'referrer'; status: 'pending' | 'processing' | 'issued' | 'failed' | 'manual_review'; created_at: string };
 type ReferralData = {
@@ -17,6 +18,8 @@ type ReferralData = {
 };
 
 export default function ReferralPage() {
+  const rewardsEnabled = referralMarketingEnabled();
+  const rewardSettings = publicReferralRewardSettings();
   const [user, setUser] = useState<User | null | 'loading'>('loading');
   const [referral, setReferral] = useState<ReferralData | null>(null);
   const [loading, setLoading] = useState(false);
@@ -24,9 +27,10 @@ export default function ReferralPage() {
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
+    if (!rewardsEnabled) return;
     const supabase = createClient();
     supabase.auth.getUser().then(({ data }) => setUser(data.user));
-  }, []);
+  }, [rewardsEnabled]);
 
   useEffect(() => {
     if (!user || user === 'loading') return;
@@ -52,6 +56,22 @@ export default function ReferralPage() {
     setTimeout(() => setCopied(false), 2500);
   }
 
+  if (!rewardsEnabled) {
+    return (
+      <div className="mx-auto max-w-2xl px-4 py-20 text-center sm:px-6">
+        <Gift size={30} className="mx-auto mb-4 text-ivory-dim" />
+        <p className="mb-2 text-xs font-medium uppercase tracking-[0.3em] text-ivory-dim">Referral Program</p>
+        <h1 className="font-serif text-4xl font-light text-ivory">Rewards are currently unavailable</h1>
+        <p className="mx-auto mt-4 max-w-md text-sm leading-6 text-ivory-muted">
+          We are preparing the referral program. No referral reward is promised while the program is paused.
+        </p>
+        <Link href="/collections/all" className="mt-7 inline-flex border border-wine-700 px-6 py-3 text-xs font-medium uppercase tracking-widest text-ivory transition hover:border-ivory">
+          Continue Shopping
+        </Link>
+      </div>
+    );
+  }
+
   if (user === 'loading') return null;
 
   return (
@@ -62,9 +82,10 @@ export default function ReferralPage() {
         <p className="mb-2 text-xs font-medium uppercase tracking-[0.3em] text-gold-400">Share Self Love</p>
         <h1 className="font-serif text-4xl font-light text-ivory">Refer a Friend</h1>
         <p className="mt-3 text-sm leading-relaxed text-ivory-muted">
-          Your friend gets <strong className="text-ivory">$10 off their first order</strong> of $30 or more
+          Your friend gets <strong className="text-ivory">${rewardSettings.amount.toFixed(0)} off their first order</strong>
+          {rewardSettings.minimumSubtotal > 0 ? ` of $${rewardSettings.minimumSubtotal.toFixed(0)} or more` : ''}
           when they join with your link. When they place that order, you get a{' '}
-          <strong className="text-ivory">$10 code</strong> too.
+          <strong className="text-ivory">${rewardSettings.amount.toFixed(0)} code</strong> too.
         </p>
       </div>
 
@@ -74,8 +95,8 @@ export default function ReferralPage() {
       <div className="mb-12 grid gap-px bg-gold-600/10 sm:grid-cols-3">
         {[
           { step: '01', title: 'Share', desc: 'Send your private referral link to a friend you trust.' },
-          { step: '02', title: 'They join', desc: 'After email and account verification, your friend can receive a personal $10 code.' },
-          { step: '03', title: 'You earn', desc: 'After their first payment is verified, you can receive your own personal $10 code.' },
+          { step: '02', title: 'They join', desc: `After email and account verification, your friend can receive a personal $${rewardSettings.amount.toFixed(0)} code.` },
+          { step: '03', title: 'You earn', desc: `After their first payment is verified, you can receive your own personal $${rewardSettings.amount.toFixed(0)} code.` },
         ].map((s) => (
           <div key={s.step} className="bg-wine-900 p-6 text-center">
             <p className="font-serif text-2xl font-light text-gold-400/40">{s.step}</p>

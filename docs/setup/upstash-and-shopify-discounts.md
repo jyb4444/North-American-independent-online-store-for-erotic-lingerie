@@ -175,6 +175,9 @@ Upstash 要验证实际运行时共享键，而非仅变量存在；故障时现
 |---|---|---|
 | `REFERRAL_REWARDS_ENABLED` | `false` | 经配置和调度验证后才开启发码/发信 |
 | `REFERRAL_REWARD_AMOUNT` | `10` | 每个折扣码减免的金额（美元） |
+| `NEXT_PUBLIC_REFERRAL_REWARDS_ENABLED` | `false` | 仅控制前端推荐入口和营销文案；必须与服务端开关同时启用 |
+| `NEXT_PUBLIC_REFERRAL_REWARD_AMOUNT` | `10` | 前端展示的奖励金额；必须与服务端金额一致 |
+| `NEXT_PUBLIC_REFERRAL_REWARD_MIN_SUBTOTAL` | `30` | 前端展示的最低消费；必须与服务端最低消费一致 |
 | `REFERRAL_REWARD_MIN_SUBTOTAL` | `30` | 使用折扣码的最低订单金额（设为 `0` 表示无门槛） |
 | `ORDER_ATTRIBUTION_SECRET` | 无 | 至少 32 个字符；独立签名 Shopify checkout 与本地账号的 7 天归属凭证，不得与 webhook secret 共用 |
 
