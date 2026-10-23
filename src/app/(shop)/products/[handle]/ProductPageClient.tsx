@@ -4,12 +4,10 @@ import { useCallback, useEffect, useState } from 'react';
 import ProductGallery from '@/components/product/ProductGallery';
 import VariantSelector from '@/components/product/VariantSelector';
 import WishlistButton from '@/components/product/WishlistButton';
-import FitAdvisor from '@/components/product/FitAdvisor';
-import FitConfidenceBadge from '@/components/product/FitConfidenceBadge';
 import { useCartStore } from '@/store/cart';
 import { track } from '@/lib/analytics';
 import type { Product, ProductVariant } from '@/types';
-import { ShoppingBag, Star, Sparkles, Share2, Check } from 'lucide-react';
+import { ShoppingBag, Star, Share2, Check } from 'lucide-react';
 import ReviewSection from '@/components/product/ReviewSection';
 import RelatedProducts from '@/components/product/RelatedProducts';
 import Breadcrumb from '@/components/ui/Breadcrumb';
@@ -30,13 +28,11 @@ export default function ProductPageClient({ product, relatedProducts }: Props) {
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [fitAdvisorOpen, setFitAdvisorOpen] = useState(false);
-  const [recommendedSize, setRecommendedSize] = useState<string | null>(null);
   const [selection, setSelection] = useState<{ size: string | null; color: string | null }>({ size: null, color: null });
   const { recordView } = useRecentlyViewed();
   const addItem = useCartStore((s) => s.addItem);
   const displayedPrice = selectedVariant?.price ?? product.price;
-  const selectedStock = selectedVariant?.stock ?? 0;
+  const quantityLimit = selectedVariant ? Math.min(99, selectedVariant.stock) : 99;
 
   const handleVariantChange = useCallback((variant: ProductVariant | null) => {
     setSelectedVariant(variant);
@@ -65,6 +61,7 @@ export default function ProductPageClient({ product, relatedProducts }: Props) {
     addItem({
       variantId: selectedVariant.id,
       productId: product.id,
+      productHandle: product.handle,
       title: product.title,
       image: product.images[0],
       price: displayedPrice,
@@ -113,7 +110,7 @@ export default function ProductPageClient({ product, relatedProducts }: Props) {
 
         <div className="flex flex-col gap-7">
           <div>
-            <p className="mb-2 text-xs font-medium uppercase tracking-[0.3em] text-gold-400">
+            <p className="mb-2 text-sm font-medium uppercase tracking-[0.14em] text-gold-400">
               {product.category}
             </p>
             <div className="flex items-start justify-between gap-4">
@@ -137,12 +134,12 @@ export default function ProductPageClient({ product, relatedProducts }: Props) {
                     />
                   ))}
                 </div>
-                <span className="text-xs text-ivory-dim">
+                <span className="text-sm text-ivory-dim">
                   {product.rating} ({product.reviewCount} {product.reviewCount === 1 ? 'review' : 'reviews'})
                 </span>
               </div>
             ) : (
-              <p className="mt-3 text-xs text-ivory-dim">No reviews yet</p>
+              <p className="mt-3 text-sm text-ivory-dim">No reviews yet</p>
             )}
 
             <div className="mt-5 flex items-baseline gap-3">
@@ -151,7 +148,7 @@ export default function ProductPageClient({ product, relatedProducts }: Props) {
                 <span className="text-lg text-ivory-dim line-through">${product.compareAtPrice.toFixed(2)}</span>
               )}
               {discountPct && (
-                <span className="border border-crimson-400/50 px-2 py-0.5 text-xs uppercase tracking-widest text-crimson-400">
+                <span className="border border-crimson-400/50 px-2.5 py-1 text-xs font-medium uppercase tracking-[0.08em] text-crimson-400">
                   {discountPct}% off
                 </span>
               )}
@@ -163,17 +160,17 @@ export default function ProductPageClient({ product, relatedProducts }: Props) {
           <section className="space-y-5">
             <div>
               <h2 className="text-base font-semibold text-ivory">About this item</h2>
-              <p className="mt-3 text-[15px] font-light leading-7 text-ivory-muted">{product.description}</p>
+              <p className="mt-3 text-base font-normal leading-7 text-ivory-muted">{product.description}</p>
             </div>
 
             <div className="grid gap-3 border-y border-gold-600/15 py-4 sm:grid-cols-2">
-              {product.material !== 'See product details for material information.' && <div>
-                <p className="text-xs font-medium uppercase tracking-widest text-ivory-muted">Material</p>
-                <p className="mt-1 text-sm leading-6 text-ivory-muted">{product.material}</p>
+              {product.material && <div>
+                <p className="text-sm font-medium uppercase tracking-[0.1em] text-ivory-muted">Material</p>
+                <p className="mt-1 text-base leading-7 text-ivory-muted">{product.material}</p>
               </div>}
               <div>
-                <p className="text-xs font-medium uppercase tracking-widest text-ivory-muted">Care</p>
-                <p className="mt-1 text-sm leading-6 text-ivory-muted">{product.careInstructions}</p>
+                <p className="text-sm font-medium uppercase tracking-[0.1em] text-ivory-muted">Care</p>
+                <p className="mt-1 text-base leading-7 text-ivory-muted">{product.careInstructions}</p>
               </div>
             </div>
           </section>
@@ -182,31 +179,21 @@ export default function ProductPageClient({ product, relatedProducts }: Props) {
             product={product}
             onVariantChange={handleVariantChange}
             onSelectionChange={setSelection}
-            preferredSize={recommendedSize}
           />
-          <FitConfidenceBadge product={product} variant="pdp" onOpenFitAdvisor={() => setFitAdvisorOpen(true)} />
 
           <div>
-            <p className="mb-3 text-xs font-medium uppercase tracking-[0.2em] text-ivory-muted">Quantity</p>
+            <p className="mb-3 text-sm font-medium uppercase tracking-[0.1em] text-ivory-muted">Quantity</p>
             <div className="flex w-fit items-center gap-4 border border-wine-700 px-5 py-2.5">
               <button aria-label="Decrease quantity" onClick={() => setQuantity((q) => Math.max(1, q - 1))} disabled={quantity <= 1} className="text-ivory-muted transition hover:text-gold-400 disabled:cursor-not-allowed disabled:opacity-40">-</button>
               <span className="w-5 text-center text-sm text-ivory">{quantity}</span>
-              <button aria-label="Increase quantity" onClick={() => setQuantity((q) => Math.min(selectedStock, q + 1))} disabled={!selectedVariant || quantity >= selectedStock} className="text-ivory-muted transition hover:text-gold-400 disabled:cursor-not-allowed disabled:opacity-40">+</button>
+              <button aria-label="Increase quantity" onClick={() => setQuantity((q) => Math.min(quantityLimit, q + 1))} disabled={quantity >= quantityLimit} className="text-ivory-muted transition hover:text-gold-400 disabled:cursor-not-allowed disabled:opacity-40">+</button>
             </div>
           </div>
 
           <button
-            onClick={() => setFitAdvisorOpen(true)}
-            className="flex w-full items-center justify-center gap-2 border border-dashed border-gold-600/40 py-3 text-xs uppercase tracking-widest text-ivory-muted transition hover:border-gold-400 hover:text-gold-400"
-          >
-            <Sparkles size={13} />
-            Not sure of your size? Try our Fit Advisor
-          </button>
-
-          <button
             onClick={handleAddToCart}
             disabled={!selectedVariant}
-            className={`flex items-center justify-center gap-2.5 py-4 text-xs font-medium uppercase tracking-[0.2em] transition ${
+            className={`flex items-center justify-center gap-2.5 py-4 text-sm font-medium uppercase tracking-[0.1em] transition ${
               added
                 ? 'border border-green-600/50 bg-green-900/30 text-green-400'
                 : selectedVariant
@@ -227,13 +214,13 @@ export default function ProductPageClient({ product, relatedProducts }: Props) {
       <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-gold-600/20 bg-wine-950/95 px-4 py-3 backdrop-blur-md md:hidden">
         <div className="flex items-center gap-3">
           <div className="min-w-0 flex-1">
-            <p className="truncate text-xs text-ivory">{product.title}</p>
+            <p className="truncate text-sm font-medium text-ivory">{product.title}</p>
             <p className="font-serif text-base text-gold-400">${displayedPrice.toFixed(2)}</p>
           </div>
           <button
             onClick={handleAddToCart}
             disabled={!selectedVariant}
-            className={`flex flex-shrink-0 items-center gap-2 px-5 py-3 text-xs font-medium uppercase tracking-widest transition ${
+            className={`flex flex-shrink-0 items-center gap-2 px-5 py-3 text-sm font-medium uppercase tracking-[0.08em] transition ${
               added
                 ? 'border border-green-600/50 bg-green-900/30 text-green-400'
                 : selectedVariant
@@ -247,14 +234,6 @@ export default function ProductPageClient({ product, relatedProducts }: Props) {
         </div>
       </div>
 
-      <FitAdvisor
-        open={fitAdvisorOpen}
-        onClose={() => setFitAdvisorOpen(false)}
-        product={product}
-        onSelectSize={(size) => {
-          setRecommendedSize(size);
-        }}
-      />
     </div>
   );
 }

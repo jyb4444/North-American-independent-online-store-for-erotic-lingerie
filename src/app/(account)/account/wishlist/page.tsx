@@ -50,7 +50,11 @@ export default function WishlistPage() {
     setMessage('');
 
     try {
-      await supabase.from('wishlists').delete().eq('id', id);
+      const { error } = await supabase.from('wishlists').delete().eq('id', id);
+      if (error) {
+        setMessage('This saved style could not be removed. Please try again.');
+        return;
+      }
       setItems((prev) => prev.filter((i) => i.id !== id));
       notifyWishlistChanged(-1);
       track.wishlistRemoved({
@@ -143,14 +147,14 @@ export default function WishlistPage() {
                   <div className="grid gap-2 pt-2">
                     <Link
                       href={`/products/${item.product_handle}`}
-                      className="flex items-center justify-center gap-1.5 border border-gold-400 px-3 py-2 text-[10px] font-medium uppercase tracking-widest text-gold-400 transition hover:bg-gold-400 hover:text-wine-950"
+                      className="flex items-center justify-center gap-1.5 border border-gold-400 px-3 py-2 text-xs font-medium uppercase tracking-widest text-gold-400 transition hover:bg-gold-400 hover:text-wine-950"
                     >
                       <ShoppingBag size={11} />
                       Choose options
                     </Link>
                     <Link
                       href={`/products/${item.product_handle}`}
-                      className="text-center text-[10px] uppercase tracking-widest text-ivory-dim transition hover:text-gold-400"
+                      className="text-center text-xs uppercase tracking-widest text-ivory-dim transition hover:text-gold-400"
                     >
                       Edit style
                     </Link>

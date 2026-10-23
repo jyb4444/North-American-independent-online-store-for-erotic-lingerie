@@ -17,6 +17,7 @@
     "test:unit": "node --import tsx --test tests/unit/*.test.ts",
     "test:migrations": "python3 tests/migrations/verify.py",
     "test:compatibility": "node scripts/test-legacy-compatibility.mjs",
+    "test:production-flags": "E2E_PRODUCTION_FLAGS=true playwright test",
     "verify:shopify-webhooks": "node scripts/verify-shopify-webhooks.mjs"
   },
   "dependencies": {

@@ -103,7 +103,7 @@ export default function ProductGallery({ images, video, productId, title, altTex
 
         {/* Model measurements badge */}
         {modelMeasurements && (
-          <div className="mt-2 flex items-center gap-1.5 text-[11px] text-ivory-dim">
+          <div className="mt-2 flex items-center gap-1.5 text-xs text-ivory-dim">
             <Ruler size={11} className="text-gold-400/60" />
             <span>
               Model wears {modelMeasurements.size}. {modelMeasurements.height}

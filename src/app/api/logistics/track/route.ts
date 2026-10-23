@@ -33,14 +33,29 @@ export async function POST(req: Request) {
   const { allowed } = await rateLimit(`track:${getClientIp(req)}`, { limit: 12, windowMs: 60 * 60_000 });
   if (!allowed) return NextResponse.json({ error: 'Too many requests.' }, { status: 429 });
 
-  let body: { token?: string; orderNumber?: string; email?: string; phone?: string };
+  let body: unknown;
   try {
-    body = await req.json() as typeof body;
+    body = await req.json();
   } catch {
     return NextResponse.json({ error: 'Invalid request.' }, { status: 400 });
   }
 
-  const order = await lookupOrder(body);
+  if (!body || typeof body !== 'object' || Array.isArray(body)) {
+    return NextResponse.json({ error: 'Invalid request.' }, { status: 400 });
+  }
+
+  const input = body as Record<string, unknown>;
+  const allowedKeys = ['token', 'orderNumber', 'email', 'phone'] as const;
+  if (allowedKeys.some((key) => input[key] !== undefined && typeof input[key] !== 'string')) {
+    return NextResponse.json({ error: 'Tracking details must be text.' }, { status: 400 });
+  }
+
+  const order = await lookupOrder({
+    token: input.token as string | undefined,
+    orderNumber: input.orderNumber as string | undefined,
+    email: input.email as string | undefined,
+    phone: input.phone as string | undefined,
+  });
   if (!order) return NextResponse.json({ error: 'No order found for those details.' }, { status: 404 });
 
   return NextResponse.json({ order: publicOrder(order) });

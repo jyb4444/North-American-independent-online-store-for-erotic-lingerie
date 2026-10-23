@@ -1,21 +1,18 @@
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowRight, Gift, Heart, ShoppingBag, Sparkles, Trash2, X, Check } from 'lucide-react';
+import { ArrowRight, Gift, Heart, ShoppingBag, Trash2, X, Check } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useCartStore } from '@/store/cart';
 import { track } from '@/lib/analytics';
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import FitConfidenceBadge from '@/components/product/FitConfidenceBadge';
 import PrivacyTrustBar from '@/components/ui/PrivacyTrustBar';
 import { useCatalog } from '@/hooks/useCatalog';
 import { createClient } from '@/lib/supabase/client';
 import { notifyWishlistChanged, useWishlistSummary } from '@/hooks/useWishlistSummary';
-import { useFitProfile } from '@/hooks/useFitProfile';
 import type { CartItem, Product } from '@/types';
-import { TRY_ON_PRODUCT_PATH } from '@/lib/featured';
 
 function isShopifyVariantGid(value?: string) {
   return !!value && value.startsWith('gid://shopify/ProductVariant/');
@@ -75,11 +72,11 @@ function CheckoutButton({
 
   return (
     <div className="space-y-2">
-      {error && <p className="text-xs leading-relaxed text-crimson-400">{error}</p>}
+      {error && <p className="text-sm leading-6 text-crimson-400">{error}</p>}
       <button
         onClick={handleCheckout}
         disabled={loading}
-        className="w-full border border-gold-400 py-3.5 text-xs font-medium uppercase tracking-[0.2em] text-gold-400 transition hover:bg-gold-400 hover:text-wine-950 disabled:opacity-60 disabled:cursor-wait"
+        className="w-full border border-gold-400 py-3.5 text-sm font-medium uppercase tracking-[0.1em] text-gold-400 transition hover:bg-gold-400 hover:text-wine-950 disabled:opacity-60 disabled:cursor-wait"
       >
         {loading ? 'Preparing checkout...' : 'Go to checkout'}
       </button>
@@ -95,9 +92,8 @@ type CartRecommendation = {
 
 export default function CartDrawer() {
   const { items, isOpen, closeCart, removeItem, updateQuantity, totalPrice, giftCard, applyGiftCard, removeGiftCard } = useCartStore();
-  // Live catalogue for recommendations and fit hints, loaded the first time the bag opens.
+  // Live catalogue for recommendations, loaded the first time the bag opens.
   const { products: catalog } = useCatalog(isOpen);
-  const { hasProfile, getFitResult } = useFitProfile();
   const wishlistSummary = useWishlistSummary(3);
   const router = useRouter();
   const [movingVariantId, setMovingVariantId] = useState<string | null>(null);
@@ -184,27 +180,6 @@ export default function CartDrawer() {
     }
   }, [isOpen, items, totalPrice]);
 
-  const fitSummarySignature = useMemo(() => (
-    items.map((item) => {
-      const product = catalog.find((p) => p.id === item.productId);
-      const result = product ? getFitResult(product) : null;
-      return `${item.productId}:${result?.recommendedSize ?? 'none'}`;
-    }).join('|')
-  ), [catalog, getFitResult, items]);
-
-  useEffect(() => {
-    if (!isOpen || items.length === 0) return;
-    const firstProduct = cartProducts[0];
-    const result = firstProduct ? getFitResult(firstProduct) : null;
-    track.cartFitSummaryViewed({
-      cart_item_count: items.length,
-      has_fit_profile: hasProfile,
-      product_id: firstProduct?.id,
-      product_handle: firstProduct?.handle,
-      recommended_size: result?.recommendedSize,
-    });
-  }, [cartProducts, fitSummarySignature, getFitResult, hasProfile, isOpen, items.length]);
-
   useEffect(() => {
     if (!isOpen || items.length === 0) return;
     recommendations.forEach(({ product, type }) => {
@@ -220,11 +195,10 @@ export default function CartDrawer() {
   useEffect(() => {
     if (!isOpen || items.length > 0 || wishlistSummary.loading) return;
     track.emptyCartGuidanceViewed({
-      has_fit_profile: hasProfile,
       saved_count: wishlistSummary.count,
       is_authenticated: wishlistSummary.isAuthenticated,
     });
-  }, [hasProfile, isOpen, items.length, wishlistSummary.count, wishlistSummary.isAuthenticated, wishlistSummary.loading]);
+  }, [isOpen, items.length, wishlistSummary.count, wishlistSummary.isAuthenticated, wishlistSummary.loading]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -244,18 +218,6 @@ export default function CartDrawer() {
     return catalog.find((product) => product.id === item.productId);
   }
 
-  function handleFitCtaClick(product?: Product) {
-    const result = product ? getFitResult(product) : null;
-    track.cartFitCtaClicked({
-      cart_item_count: items.length,
-      has_fit_profile: hasProfile,
-      product_id: product?.id,
-      product_handle: product?.handle,
-      recommended_size: result?.recommendedSize,
-    });
-    closeCart();
-  }
-
   async function handleMoveToWishlist(item: CartItem) {
     const product = findProduct(item);
     if (!product || movingVariantId) return;
@@ -268,7 +230,7 @@ export default function CartDrawer() {
 
     if (!wishlistSummary.isAuthenticated) {
       closeCart();
-      router.push('/login');
+      router.push(`/login?redirectTo=${encodeURIComponent(window.location.pathname + window.location.search)}`);
       return;
     }
 
@@ -281,7 +243,7 @@ export default function CartDrawer() {
 
       if (!user) {
         closeCart();
-        router.push('/login');
+        router.push(`/login?redirectTo=${encodeURIComponent(window.location.pathname + window.location.search)}`);
         return;
       }
 
@@ -335,10 +297,9 @@ export default function CartDrawer() {
     closeCart();
   }
 
-  function handleEmptyGuidanceClick(action: 'continue_shopping' | 'view_saved_styles' | 'try_fit_advisor') {
+  function handleEmptyGuidanceClick(action: 'continue_shopping' | 'view_saved_styles') {
     track.emptyCartGuidanceClicked({
       action,
-      has_fit_profile: hasProfile,
       saved_count: wishlistSummary.count,
       is_authenticated: wishlistSummary.isAuthenticated,
     });
@@ -374,7 +335,7 @@ export default function CartDrawer() {
                 <span className="font-serif text-lg font-light italic text-ivory">
                   Your Bag
                   {items.length > 0 && (
-                    <span className="ml-2 font-sans text-xs font-normal not-italic text-ivory-muted">
+                    <span className="ml-2 font-sans text-sm font-normal not-italic text-ivory-muted">
                       ({items.length})
                     </span>
                   )}
@@ -396,15 +357,15 @@ export default function CartDrawer() {
                     <p className="font-serif text-xl font-light italic text-ivory">
                       Your private bag is empty
                     </p>
-                    <p className="mx-auto mt-2 max-w-xs text-xs leading-relaxed text-ivory-dim">
-                      Start with fit-guided styles, or save favorites privately while you decide.
+                    <p className="mx-auto mt-2 max-w-xs text-sm leading-6 text-ivory-dim">
+                      Browse the collection, or save favorites privately while you decide.
                     </p>
                   </div>
                   <div className="space-y-2">
                     <Link
                       href="/"
                       onClick={() => handleEmptyGuidanceClick('continue_shopping')}
-                      className="flex w-full items-center justify-center gap-2 border border-gold-400 py-3 text-xs font-medium uppercase tracking-[0.2em] text-gold-400 transition hover:bg-gold-400 hover:text-wine-950"
+                      className="flex w-full items-center justify-center gap-2 border border-gold-400 py-3.5 text-sm font-medium uppercase tracking-[0.1em] text-gold-400 transition hover:bg-gold-400 hover:text-wine-950"
                     >
                       Continue shopping
                       <ArrowRight size={13} />
@@ -413,20 +374,10 @@ export default function CartDrawer() {
                       <Link
                         href="/account/wishlist"
                         onClick={() => handleEmptyGuidanceClick('view_saved_styles')}
-                        className="flex w-full items-center justify-center gap-2 border border-wine-700 py-3 text-xs uppercase tracking-widest text-ivory-muted transition hover:border-gold-400/50 hover:text-gold-400"
+                        className="flex w-full items-center justify-center gap-2 border border-wine-700 py-3.5 text-sm font-medium uppercase tracking-[0.1em] text-ivory-muted transition hover:border-gold-400/50 hover:text-gold-400"
                       >
                         <Heart size={13} />
                         View saved styles
-                      </Link>
-                    )}
-                    {!hasProfile && (
-                      <Link
-                        href={TRY_ON_PRODUCT_PATH}
-                        onClick={() => handleEmptyGuidanceClick('try_fit_advisor')}
-                        className="flex w-full items-center justify-center gap-2 border border-dashed border-gold-600/40 py-3 text-xs uppercase tracking-widest text-ivory-muted transition hover:border-gold-400 hover:text-gold-400"
-                      >
-                        <Sparkles size={13} />
-                        Try Fit Advisor
                       </Link>
                     )}
                   </div>
@@ -442,11 +393,6 @@ export default function CartDrawer() {
                           variant.id === item.variantId || variant.shopifyVariantId === item.shopifyVariantId
                         ) ?? product?.variants.find((variant) => variant.size === item.size && variant.color === item.color);
                         const maxQuantity = Math.max(1, Math.min(99, selectedVariant?.stock ?? 99));
-                        const fitResult = product ? getFitResult(product) : null;
-                        const showSizeNudge = !!fitResult
-                          && item.size !== 'Free Size'
-                          && item.size !== fitResult.recommendedSize;
-
                         return (
                           <li key={item.variantId} className="flex gap-4">
                           <div className="relative h-24 w-20 flex-shrink-0 overflow-hidden rounded-sm bg-wine-800">
@@ -455,31 +401,15 @@ export default function CartDrawer() {
                           <div className="flex flex-1 flex-col justify-between">
                             <div>
                               <Link
-                                href={product ? `/products/${product.handle}` : `/products/${item.productId}`}
+                                href={`/products/${product?.handle ?? item.productHandle ?? item.productId}`}
                                 onClick={closeCart}
-                                className="text-sm font-light text-ivory hover:text-gold-400 transition"
+                                className="text-base font-medium leading-snug text-ivory hover:text-gold-400 transition"
                               >
                                 {item.title}
                               </Link>
-                              <p className="mt-0.5 text-xs text-ivory-dim">
+                              <p className="mt-1 text-sm text-ivory-dim">
                                 {item.color} / {item.size}
                               </p>
-                              {product && <FitConfidenceBadge product={product} variant="cart" />}
-                              {showSizeNudge && (
-                                <p className="mt-1 text-[11px] leading-relaxed text-ivory-dim">
-                                  You selected {item.size}. Your profile may prefer {fitResult.recommendedSize} for comfort.
-                                </p>
-                              )}
-                              {!hasProfile && product && (
-                                <Link
-                                  href={`/products/${product.handle}`}
-                                  onClick={() => handleFitCtaClick(product)}
-                                  className="mt-1 inline-flex items-center gap-1.5 text-[11px] text-gold-400 transition hover:text-gold-300"
-                                >
-                                  Add private fit profile
-                                  <ArrowRight size={11} />
-                                </Link>
-                              )}
                             </div>
                             <div className="mt-3 flex items-center justify-between">
                               <div className="flex items-center gap-3 border border-wine-700 px-3 py-1">
@@ -507,7 +437,7 @@ export default function CartDrawer() {
                                 <button
                                   onClick={() => handleRemove(item.variantId)}
                                   aria-label="Remove item"
-                                  className="text-wine-600 hover:text-crimson-400 transition"
+                                  className="text-ivory-dim hover:text-crimson-400 transition"
                                 >
                                   <Trash2 size={13} />
                                 </button>
@@ -519,7 +449,7 @@ export default function CartDrawer() {
                                   type="button"
                                   onClick={() => handleMoveToWishlist(item)}
                                   disabled={movingVariantId === item.variantId}
-                                  className="inline-flex items-center gap-1.5 text-[11px] uppercase tracking-widest text-ivory-dim transition hover:text-gold-400 disabled:cursor-wait disabled:text-wine-600"
+                                  className="inline-flex items-center gap-1.5 text-xs font-medium uppercase tracking-[0.08em] text-ivory-dim transition hover:text-gold-400 disabled:cursor-wait disabled:text-wine-600"
                                 >
                                   <Heart size={11} />
                                   {movingVariantId === item.variantId
@@ -529,7 +459,7 @@ export default function CartDrawer() {
                                       : 'Sign in to save privately'}
                                 </button>
                                 {moveErrorVariantId === item.variantId && (
-                                  <p className="mt-1 text-[11px] leading-relaxed text-crimson-400">
+                                  <p className="mt-1 text-xs leading-5 text-crimson-400">
                                     Could not save this style. It is still in your bag.
                                   </p>
                                 )}
@@ -544,10 +474,10 @@ export default function CartDrawer() {
 
                   {recommendations.length > 0 && (
                     <div className="border-t border-gold-600/20 pt-5">
-                      <p className="text-xs font-medium uppercase tracking-[0.24em] text-gold-400">
+                      <p className="text-sm font-medium uppercase tracking-[0.12em] text-gold-400">
                         Private style picks
                       </p>
-                      <p className="mt-1 text-xs leading-relaxed text-ivory-dim">
+                      <p className="mt-1 text-sm leading-6 text-ivory-dim">
                         Explore matching styles while you compare your bag.
                       </p>
                       <div className="mt-4 space-y-3">
@@ -566,7 +496,7 @@ export default function CartDrawer() {
                                 <Link
                                   href={`/products/${product.handle}`}
                                   onClick={() => handleRecommendationClick(recommendation)}
-                                  className="line-clamp-2 text-xs text-ivory transition hover:text-gold-400"
+                                  className="line-clamp-2 text-sm font-medium leading-snug text-ivory transition hover:text-gold-400"
                                 >
                                   {product.title}
                                 </Link>
@@ -575,14 +505,14 @@ export default function CartDrawer() {
                                   <Link
                                     href={`/products/${product.handle}`}
                                     onClick={() => handleRecommendationClick(recommendation)}
-                                    className="text-[10px] uppercase tracking-widest text-ivory-dim transition hover:text-gold-400"
+                                    className="text-xs font-medium uppercase tracking-[0.08em] text-ivory-dim transition hover:text-gold-400"
                                   >
                                     View item
                                   </Link>
                                   <Link
                                     href={`/products/${product.handle}`}
                                     onClick={() => handleRecommendationClick(recommendation)}
-                                    className="text-[10px] uppercase tracking-widest text-gold-400 transition hover:text-gold-300"
+                                    className="text-xs font-medium uppercase tracking-[0.08em] text-gold-400 transition hover:text-gold-300"
                                   >
                                     Choose options
                                   </Link>
@@ -603,7 +533,7 @@ export default function CartDrawer() {
               <div className="border-t border-gold-600/20 px-6 py-6 space-y-4">
                 {/* Subtotal row */}
                 <div className="flex justify-between">
-                  <span className="text-xs uppercase tracking-widest text-ivory-muted">Subtotal</span>
+                  <span className="text-sm font-medium uppercase tracking-[0.1em] text-ivory-muted">Subtotal</span>
                   <span className="font-serif text-lg font-light text-gold-400">${totalPrice().toFixed(2)}</span>
                 </div>
 
@@ -612,9 +542,9 @@ export default function CartDrawer() {
                   <div className="flex items-center justify-between border border-gold-600/20 bg-wine-950/40 px-3 py-2">
                     <div className="flex items-center gap-2">
                       <Check size={12} className="text-green-400" />
-                      <span className="text-xs text-ivory-muted">
+                      <span className="text-sm text-ivory-muted">
                         Gift card <span className="font-mono text-ivory">••••{giftCard.lastCharacters}</span>
-                        <span className="block text-[11px] text-ivory-dim">
+                        <span className="block text-xs text-ivory-dim">
                           Balance {new Intl.NumberFormat('en-US', { style: 'currency', currency: giftCard.currencyCode }).format(giftCard.balance)} · deducted at checkout
                         </span>
                       </span>
@@ -622,7 +552,7 @@ export default function CartDrawer() {
                     <div className="flex items-center gap-3">
                       <button
                         onClick={removeGiftCard}
-                        className="text-wine-600 transition hover:text-crimson-400"
+                        className="text-ivory-dim transition hover:text-crimson-400"
                         title="Remove gift card"
                         aria-label="Remove gift card"
                       >
@@ -646,27 +576,27 @@ export default function CartDrawer() {
                           placeholder="Gift card code"
                           aria-label="Gift card code"
                           maxLength={64}
-                          className="w-full border border-wine-700 bg-wine-800 py-2 pl-8 pr-3 text-xs font-mono text-ivory placeholder-ivory-dim/50 focus:border-gold-400 focus:outline-none transition"
+                          className="w-full border border-wine-700 bg-wine-800 py-2.5 pl-8 pr-3 text-base font-mono text-ivory placeholder:text-ivory-dim focus:border-gold-400 focus:outline-none transition"
                         />
                       </div>
                       <button
                         onClick={handleApplyGiftCard}
                         disabled={gcState === 'checking' || !gcInput.trim()}
-                        className="flex-shrink-0 border border-gold-400/50 px-3 py-2 text-[10px] font-medium uppercase tracking-widest text-gold-400 transition hover:bg-gold-400/10 disabled:cursor-not-allowed disabled:opacity-40"
+                        className="flex-shrink-0 border border-gold-400/50 px-3 py-2 text-sm font-medium uppercase tracking-[0.08em] text-gold-400 transition hover:bg-gold-400/10 disabled:cursor-not-allowed disabled:opacity-40"
                       >
                         {gcState === 'checking' ? '…' : 'Apply'}
                       </button>
                     </div>
                     {gcState === 'error' && gcError && (
-                      <p className="mt-1.5 text-[11px] text-crimson-400">{gcError}</p>
+                      <p className="mt-1.5 text-sm text-crimson-400">{gcError}</p>
                     )}
                   </div>
                 )}
 
-                <p className="text-xs text-ivory-dim">
+                <p className="text-sm text-ivory-dim">
                   Review your bag before continuing to secure checkout.
                 </p>
-                <p className="text-[11px] text-ivory-dim">
+                <p className="text-xs text-ivory-dim">
                   Final shipping and taxes are shown at checkout.
                 </p>
                 <PrivacyTrustBar context="cart" compact />
@@ -677,7 +607,7 @@ export default function CartDrawer() {
                 />
                 <button
                   onClick={closeCart}
-                  className="w-full py-2 text-xs uppercase tracking-widest text-ivory-dim transition hover:text-ivory-muted"
+                  className="w-full py-2.5 text-sm font-medium uppercase tracking-[0.1em] text-ivory-dim transition hover:text-ivory-muted"
                 >
                   Continue Exploring
                 </button>

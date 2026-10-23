@@ -3,7 +3,6 @@
 import { useEffect } from 'react';
 import Link from 'next/link';
 import { Heart, ChevronRight } from 'lucide-react';
-import { useFitProfile } from '@/hooks/useFitProfile';
 import { useWishlistSummary } from '@/hooks/useWishlistSummary';
 
 type Props = {
@@ -14,7 +13,6 @@ type Props = {
 
 export default function WishlistReminderBanner({ source, className = '', showWhenEmpty = false }: Props) {
   const { count, loading, isAuthenticated, trackReminderViewed, trackReminderClicked } = useWishlistSummary(3);
-  const { hasProfile } = useFitProfile();
 
   const shouldShow = !loading && isAuthenticated && (count > 0 || showWhenEmpty);
 
@@ -26,9 +24,7 @@ export default function WishlistReminderBanner({ source, className = '', showWhe
 
   const title = count > 0 ? 'Your saved styles are waiting' : 'Your private wishlist is ready';
   const body = count > 0
-    ? hasProfile
-      ? 'Saved styles with your private fit guidance are ready when you are.'
-      : 'Continue exploring styles you saved for later.'
+    ? 'Continue exploring styles you saved for later.'
     : 'Save styles privately so you can find them again later.';
 
   return (
@@ -45,7 +41,7 @@ export default function WishlistReminderBanner({ source, className = '', showWhe
         <Link
           href="/account/wishlist"
           onClick={() => trackReminderClicked(source)}
-          className="hidden items-center gap-1.5 border border-gold-400 px-4 py-2 text-[10px] font-medium uppercase tracking-widest text-gold-400 transition hover:bg-gold-400 hover:text-wine-950 sm:flex"
+          className="hidden items-center gap-1.5 border border-gold-400 px-4 py-2 text-xs font-medium uppercase tracking-widest text-gold-400 transition hover:bg-gold-400 hover:text-wine-950 sm:flex"
         >
           View saved <ChevronRight size={12} />
         </Link>
@@ -53,7 +49,7 @@ export default function WishlistReminderBanner({ source, className = '', showWhe
       <Link
         href="/account/wishlist"
         onClick={() => trackReminderClicked(source)}
-        className="mt-3 inline-flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-widest text-gold-400 sm:hidden"
+        className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium uppercase tracking-widest text-gold-400 sm:hidden"
       >
         View saved <ChevronRight size={12} />
       </Link>

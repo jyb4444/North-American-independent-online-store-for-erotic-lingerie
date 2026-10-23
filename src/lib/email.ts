@@ -165,10 +165,10 @@ function productRow(image: unknown, title: unknown, price: number | null, href: 
 function welcomeHtml(firstName: string) {
   return emailWrapper(`
     ${heading(`Welcome, ${escapeHtml(firstName) || 'there'}.`)}
-    ${para('Your private wardrobe is ready. Everything here — your fit profile, saved looks, and wishlist — stays private to this account.')}
+    ${para('Your account is ready. Your saved styles and order history are available only after you sign in.')}
     ${divider()}
     ${para('<strong style="color:' + IVORY + ';">What you can do now:</strong>')}
-    ${para('✦ &nbsp;<a href="' + BASE_URL + '/pages/size-guide" style="color:' + GOLD + ';">Create your private fit profile</a> for guided sizing<br/>✦ &nbsp;<a href="' + BASE_URL + '/collections/new-arrivals" style="color:' + GOLD + ';">Browse new arrivals</a> and save your favorites<br/>✦ &nbsp;<a href="' + BASE_URL + '/products/bow-corset-garter-set" style="color:' + GOLD + ';">Try an AI preview</a> — private to your browser')}
+    ${para('✦ &nbsp;<a href="' + BASE_URL + '/pages/size-guide" style="color:' + GOLD + ';">Read the size guide</a><br/>✦ &nbsp;<a href="' + BASE_URL + '/collections/new-arrivals" style="color:' + GOLD + ';">Browse new arrivals</a> and save your favorites<br/>✦ &nbsp;<a href="' + BASE_URL + '/orders" style="color:' + GOLD + ';">View orders</a> associated with your account')}
     ${button('Browse the Collection', BASE_URL)}
     ${para('If you have any questions, reply to this email or visit our <a href="' + BASE_URL + '/pages/contact" style="color:' + GOLD + ';">contact page</a>.')}
   `);
@@ -191,7 +191,7 @@ function wishlistReminderHtml(firstName: string, productTitle: string, productIm
 
 function abandonedCartHtml(firstName: string, items: CartItem[], unsubscribeUrl: string) {
   const rows = items.slice(0, 3).map((item) =>
-    productRow(item.image, `${item.title} — ${item.color} / ${item.size}`, item.price, productUrl(item.productId))
+    productRow(item.image, `${item.title} — ${item.color} / ${item.size}`, item.price, productUrl(item.productHandle ?? item.productId))
   ).join('');
   const extra = items.length - 3;
   const more = extra > 0 ? para(`<em>+ ${extra} more item${extra > 1 ? 's' : ''} in your bag</em>`) : '';
@@ -264,7 +264,7 @@ function newsletterWelcomeHtml() {
   return emailWrapper(`
     ${heading('Welcome to Self Love')}
     ${para('You now have early access to new arrivals, product updates, and styling guides sent to this address.')}
-    ${para('If you did not sign up, you can ignore this email. To unsubscribe, reply with "unsubscribe".')}
+    ${para('If you did not sign up, you can ignore this email. Use the unsubscribe link included below to stop marketing messages.')}
   `);
 }
 
@@ -352,7 +352,7 @@ export async function sendRestockAlertEmail(
 ) {
   return deliver({
     to,
-    subject: headerText(`Back in stock: ${productTitle} — ${color} / ${size}`),
+    subject: headerText('A requested style is back in stock'),
     html: restockAlertHtml(productTitle, size, color, productHandle),
   });
 }

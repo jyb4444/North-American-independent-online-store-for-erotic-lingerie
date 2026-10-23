@@ -198,7 +198,7 @@ export default function ReturnRequestForm({
                         {item.variant_title ?? 'Default'} · Qty {item.quantity}
                       </p>
                     </div>
-                    <span className="w-fit border border-gold-600/30 px-2 py-1 text-[10px] uppercase tracking-widest text-gold-400">
+                    <span className="w-fit border border-gold-600/30 px-2 py-1 text-xs uppercase tracking-widest text-gold-400">
                       {categoryLabel(item.return_category)}
                     </span>
                   </div>

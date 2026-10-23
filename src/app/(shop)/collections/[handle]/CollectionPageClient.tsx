@@ -71,14 +71,14 @@ export default function CollectionPageClient({ handle, collection, baseProducts 
           ]} />
 
           <div className="mt-8 max-w-2xl sm:mt-10">
-            <p className="text-[11px] font-medium uppercase tracking-[0.3em] text-ivory-dim">
+            <p className="text-xs font-medium uppercase tracking-[0.16em] text-ivory-dim">
               The Self Love collection
             </p>
             <h1 className="mt-3 font-serif text-4xl font-light leading-none text-ivory sm:text-5xl lg:text-6xl">
               {collection.title}
             </h1>
             {collection.description && (
-              <p className="mt-4 max-w-xl text-sm leading-6 text-ivory-muted sm:text-base">
+              <p className="mt-4 max-w-xl text-base leading-7 text-ivory-muted">
                 {collection.description}
               </p>
             )}
@@ -88,7 +88,7 @@ export default function CollectionPageClient({ handle, collection, baseProducts 
 
       <div className="mx-auto max-w-7xl px-4 pb-16 sm:px-6 lg:px-8 lg:pb-24">
         <div className="mb-7 flex min-h-20 items-center justify-between gap-4 border-b border-wine-700/70 sm:mb-9">
-          <p aria-live="polite" className="text-xs uppercase tracking-[0.18em] text-ivory-dim">
+          <p aria-live="polite" className="text-sm uppercase tracking-[0.1em] text-ivory-dim">
             <span className="font-medium text-ivory">{products.length}</span>{' '}
             {products.length === 1 ? 'style' : 'styles'}
           </p>
@@ -109,7 +109,7 @@ export default function CollectionPageClient({ handle, collection, baseProducts 
             >
               <span className="flex min-w-0 items-center gap-2.5">
                 <ArrowDownUp aria-hidden="true" className="h-3.5 w-3.5 shrink-0" strokeWidth={1.5} />
-                <span className="truncate text-[11px] font-medium uppercase tracking-[0.18em]">
+                <span className="truncate text-sm font-medium uppercase tracking-[0.1em]">
                   <span className="hidden text-ivory-dim sm:inline">Sort by&nbsp;&nbsp;</span>
                   {selectedSortLabel}
                 </span>
@@ -142,7 +142,7 @@ export default function CollectionPageClient({ handle, collection, baseProducts 
                         setSort(option.value);
                         setSortOpen(false);
                       }}
-                      className={`flex w-full items-center justify-between px-3.5 py-3 text-left text-[11px] uppercase tracking-[0.14em] transition ${
+                      className={`flex w-full items-center justify-between px-3.5 py-3 text-left text-sm font-medium uppercase tracking-[0.08em] transition ${
                         selected
                           ? 'bg-wine-800 font-medium text-ivory'
                           : 'text-ivory-muted hover:bg-wine-900 hover:text-ivory'

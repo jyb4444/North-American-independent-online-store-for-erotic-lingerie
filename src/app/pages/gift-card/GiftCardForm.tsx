@@ -129,7 +129,7 @@ export default function GiftCardForm({ denominations }: { denominations: GiftCar
               placeholder="Add a personal note — sign it so they know who it's from"
               className={`${inputClass} resize-none`}
             />
-            <p className="mt-1 text-right text-[11px] text-ivory-dim">{message.length}/{MESSAGE_MAX}</p>
+            <p className="mt-1 text-right text-xs text-ivory-dim">{message.length}/{MESSAGE_MAX}</p>
           </div>
         </>
       )}

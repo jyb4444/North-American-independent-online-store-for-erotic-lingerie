@@ -14,6 +14,9 @@ test('the contact form sends a message and confirms it', async ({ page }) => {
   const main = page.locator('main');
   await main.getByPlaceholder('Your name').fill('Contact Tester');
   await main.getByPlaceholder('your@email.com').fill('contact-e2e@test.local');
+  await main.getByRole('button', { name: 'Subject Size Guidance', exact: true }).click();
+  await main.getByRole('option', { name: 'Order Issue' }).click();
+  await expect(main.getByRole('button', { name: 'Subject Order Issue', exact: true })).toBeVisible();
   await page.getByPlaceholder('How can we help?').fill('Do you ship to Canada?');
   await page.getByRole('button', { name: 'Send Message' }).click();
   await expect(page.getByText('We received your message and will reply to')).toBeVisible();
@@ -40,11 +43,10 @@ test('buying a gift card for someone goes to Shopify checkout', async ({ page })
   expect(input.lines[0].attributes).toContainEqual({ key: 'Recipient email', value: 'friend@test.local' });
 });
 
-test('AI preview explains when the service is unavailable instead of failing silently', async ({ page }) => {
-  // HF_TOKEN is empty in the test environment, so the API answers 503 with an explanation.
+test('retired AI preview cannot consume the inference provider', async ({ page }) => {
   const res = await page.request.post('/api/ai-preview', {
     data: { productHandle: MOCK_PRODUCTS[0].handle, bodyDescription: 'a woman, size M' },
   });
-  expect(res.status()).toBe(503);
-  expect((await res.json()).error).toMatch(/HF_TOKEN/);
+  expect(res.status()).toBe(410);
+  expect((await res.json()).error).toMatch(/no longer available/i);
 });

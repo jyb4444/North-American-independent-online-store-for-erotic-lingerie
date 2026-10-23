@@ -57,7 +57,7 @@ export default function MobileBottomNav() {
                       </span>
                     )}
                   </div>
-                  <span className="text-[9px] uppercase tracking-widest">{tab.label}</span>
+                  <span className="text-xs uppercase tracking-widest">{tab.label}</span>
                 </button>
               );
             }
@@ -70,7 +70,7 @@ export default function MobileBottomNav() {
                   className="flex flex-1 flex-col items-center justify-center gap-0.5 text-ivory-dim transition hover:text-gold-400"
                 >
                   <Icon size={19} />
-                  <span className="text-[9px] uppercase tracking-widest">{tab.label}</span>
+                  <span className="text-xs uppercase tracking-widest">{tab.label}</span>
                 </button>
               );
             }
@@ -84,7 +84,7 @@ export default function MobileBottomNav() {
                 }`}
               >
                 <Icon size={19} />
-                <span className="text-[9px] uppercase tracking-widest">{tab.label}</span>
+                <span className="text-xs uppercase tracking-widest">{tab.label}</span>
               </Link>
             );
           })}

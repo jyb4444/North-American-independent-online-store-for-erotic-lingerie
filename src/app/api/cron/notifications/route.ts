@@ -3,7 +3,7 @@ import { isAuthorizedCronRequest } from '@/lib/cron-auth';
 import { createAdminClient } from '@/lib/supabase/server';
 import { retryAt } from '@/lib/notification-jobs';
 import { getProductByHandle } from '@/lib/products';
-import { sendNewsletterConfirmationEmail, sendNewsletterWelcomeEmail, sendRestockAlertEmail, sendReturnRequestConfirmation, sendReturnRequestNotification, sendReturnStatusEmail, sendShipmentCreatedEmail } from '@/lib/email';
+import { sendRestockAlertEmail, sendReturnRequestConfirmation, sendReturnRequestNotification, sendReturnStatusEmail, sendShipmentCreatedEmail } from '@/lib/email';
 import { replayPendingFulfillments } from '@/lib/shopify/webhook-inbox';
 
 export const runtime = 'nodejs';
@@ -13,14 +13,6 @@ const text = (value: unknown) => typeof value === 'string' ? value : '';
 async function deliverJob(job: Job) {
   const p = job.payload;
   switch (job.kind) {
-    case 'newsletter_confirmation': {
-      const base = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3100';
-      const url = new URL('/api/newsletter/confirm', base);
-      url.searchParams.set('token', text(p.confirmationToken));
-      url.searchParams.set('unsubscribe', text(p.unsubscribeToken));
-      return sendNewsletterConfirmationEmail(text(p.email), url.toString());
-    }
-    case 'newsletter_welcome': return sendNewsletterWelcomeEmail(text(p.email), text(p.unsubscribeToken));
     case 'return_customer': return sendReturnRequestConfirmation({ to: text(p.to), requestNumber: text(p.requestNumber), orderNumber: text(p.orderNumber) });
     case 'return_merchant': return sendReturnRequestNotification({
       requestNumber: text(p.requestNumber), orderNumber: text(p.orderNumber), customerEmail: text(p.customerEmail),
@@ -70,6 +62,14 @@ export async function GET(req: Request) {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   let sent = 0; let failed = 0;
   for (const job of data ?? []) {
+    if (job.kind === 'newsletter_confirmation' || job.kind === 'newsletter_welcome') {
+      await db.from('notification_jobs' as never).update({
+        status: 'manual_review', lease_token: null, lease_until: null,
+        last_error: 'Newsletter delivery retired; message not sent',
+        payload: {},
+      } as never).eq('id', job.id).eq('lease_token', job.lease_token);
+      continue;
+    }
     try {
       const result = await deliverJob(job);
       await db.from('notification_jobs' as never).update({ status: 'sent', provider_message_id: result.id, sent_at: new Date().toISOString(), lease_token: null, lease_until: null, last_error: null } as never).eq('id', job.id).eq('lease_token', job.lease_token);

@@ -32,19 +32,29 @@ export default function QuickViewModal({ product, onClose }: Props) {
   // Reset state whenever product changes
   useEffect(() => {
     const id = window.setTimeout(() => {
-      setSelectedVariant(null);
-      setSelectedColor(null);
-      setSelectedSize(null);
+      const available = product?.variants.filter((variant) => variant.stock > 0) ?? [];
+      const colors = [...new Set(available.map((variant) => variant.color))];
+      const sizes = [...new Set(available.map((variant) => variant.size))];
+      const initialColor = colors.length === 1 ? colors[0] : null;
+      const initialSize = sizes.length === 1 ? sizes[0] : null;
+      setSelectedColor(initialColor);
+      setSelectedSize(initialSize);
+      setSelectedVariant(
+        initialColor && initialSize
+          ? available.find((variant) => variant.color === initialColor && variant.size === initialSize) ?? null
+          : null,
+      );
       setActiveImg(0);
       setAdded(false);
     }, 0);
     return () => window.clearTimeout(id);
-  }, [product?.id]);
+  }, [product]);
 
   if (!product) return null;
 
   const uniqueColors = [...new Map(product.variants.map((v) => [v.color, v])).values()];
   const uniqueSizes = [...new Set(product.variants.map((v) => v.size))];
+  const showColorSelector = uniqueColors.length > 1 || uniqueColors[0]?.color.toLowerCase() !== 'default';
   const discountPct = product.compareAtPrice
     ? Math.round(((product.compareAtPrice - product.price) / product.compareAtPrice) * 100)
     : null;
@@ -88,6 +98,7 @@ export default function QuickViewModal({ product, onClose }: Props) {
     addItem({
       variantId: selectedVariant.id,
       productId: product!.id,
+      productHandle: product!.handle,
       title: product!.title,
       image: productImage(product!),
       price: selectedVariant.price ?? product!.price,
@@ -167,8 +178,8 @@ export default function QuickViewModal({ product, onClose }: Props) {
 
           {/* Info */}
           <div className="flex flex-1 flex-col gap-4 overflow-y-auto p-6">
-            <div>
-              <p className="text-[10px] font-medium uppercase tracking-[0.3em] text-gold-400">{product.category}</p>
+            {showColorSelector && <div>
+              <p className="text-xs font-medium uppercase tracking-[0.14em] text-gold-400">{product.category}</p>
               <div className="mt-1 flex items-start justify-between gap-3">
                 <h2 id="quick-view-title" className="font-serif text-2xl font-light text-ivory">{product.title}</h2>
                 <WishlistButton product={product} variant="icon" source="quick_view" className="flex-shrink-0" />
@@ -178,7 +189,7 @@ export default function QuickViewModal({ product, onClose }: Props) {
                   {Array.from({ length: 5 }).map((_, i) => (
                     <Star key={i} size={11} className={i < Math.round(product.rating) ? 'fill-gold-400 text-gold-400' : 'text-wine-700'} />
                   ))}
-                  <span className="text-[11px] text-ivory-dim">({product.reviewCount})</span>
+                  <span className="text-xs text-ivory-dim">({product.reviewCount})</span>
                 </div>
               )}
               <div className="mt-2 flex items-baseline gap-2">
@@ -188,15 +199,15 @@ export default function QuickViewModal({ product, onClose }: Props) {
                 {product.compareAtPrice && (
                   <>
                     <span className="text-sm text-ivory-dim line-through">{formatMoney(product.compareAtPrice, product.currency)}</span>
-                    {discountPct && <span className="text-[10px] uppercase tracking-widest text-crimson-400">{discountPct}% off</span>}
+                    {discountPct && <span className="text-xs font-medium uppercase tracking-[0.08em] text-crimson-400">{discountPct}% off</span>}
                   </>
                 )}
               </div>
-            </div>
+            </div>}
 
             {/* Color */}
             <div>
-              <p className="mb-2 text-[10px] font-medium uppercase tracking-widest text-ivory-muted">
+              <p className="mb-2 text-sm font-medium uppercase tracking-[0.1em] text-ivory-muted">
                 Color{selectedColor ? ` — ${selectedColor}` : ''}
               </p>
               <div className="flex gap-2">
@@ -218,7 +229,7 @@ export default function QuickViewModal({ product, onClose }: Props) {
 
             {/* Size */}
             <div>
-              <p className="mb-2 text-[10px] font-medium uppercase tracking-widest text-ivory-muted">Size</p>
+              <p className="mb-2 text-sm font-medium uppercase tracking-[0.1em] text-ivory-muted">Size</p>
               <div className="flex flex-wrap gap-1.5">
                 {uniqueSizes.map((size) => {
                   const avail = isSizeAvailable(size);
@@ -228,7 +239,7 @@ export default function QuickViewModal({ product, onClose }: Props) {
                       disabled={!avail}
                       onClick={() => handleSize(size)}
                       aria-pressed={selectedSize === size}
-                      className={`min-h-11 min-w-[3rem] border px-3 py-1.5 text-[10px] font-medium uppercase tracking-widest transition disabled:cursor-not-allowed ${
+                      className={`min-h-11 min-w-[3rem] border px-3 py-1.5 text-sm font-medium uppercase tracking-[0.08em] transition disabled:cursor-not-allowed ${
                         selectedSize === size
                           ? 'border-gold-400 bg-gold-400 text-wine-950'
                           : avail
@@ -247,7 +258,7 @@ export default function QuickViewModal({ product, onClose }: Props) {
             <button
               onClick={handleAddToCart}
               disabled={!selectedVariant}
-              className={`flex items-center justify-center gap-2 py-3 text-xs font-medium uppercase tracking-widest transition ${
+              className={`flex items-center justify-center gap-2 py-3.5 text-sm font-medium uppercase tracking-[0.1em] transition ${
                 added
                   ? 'border border-green-600/50 bg-green-900/30 text-green-400'
                   : selectedVariant
@@ -263,7 +274,7 @@ export default function QuickViewModal({ product, onClose }: Props) {
             <Link
               href={`/products/${product.handle}`}
               onClick={onClose}
-              className="flex items-center justify-center gap-1.5 text-[11px] uppercase tracking-widest text-ivory-dim transition hover:text-gold-400"
+              className="flex items-center justify-center gap-1.5 text-sm font-medium uppercase tracking-[0.1em] text-ivory-dim transition hover:text-gold-400"
             >
               View full details <ArrowRight size={11} />
             </Link>

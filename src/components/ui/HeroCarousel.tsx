@@ -6,7 +6,6 @@ import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { TRY_ON_PRODUCT_PATH } from '@/lib/featured';
 
 type Slide = {
   id: string;
@@ -22,11 +21,11 @@ const SLIDES: Slide[] = [
   {
     id: 's1',
     image: 'https://images.unsplash.com/photo-1574539602047-548bf9557352?auto=format&fit=crop&w=1600&h=900&q=80',
-    tag: 'AI Style Inspiration',
-    headline: 'Explore A\nStyle Direction',
-    sub: 'Create a private, AI-generated style illustration for inspiration. It is not a virtual try-on.',
-    cta: 'Create Inspiration',
-    href: TRY_ON_PRODUCT_PATH,
+    tag: 'New Arrivals',
+    headline: 'Explore The\nLatest Edit',
+    sub: 'Discover the newest styles selected for the Self Love collection.',
+    cta: 'Shop New Arrivals',
+    href: '/collections/all?sort=newest',
   },
   {
     id: 's2',

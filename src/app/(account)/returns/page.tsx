@@ -88,7 +88,7 @@ export default async function ReturnsPage() {
                   )}
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  <span className={`border px-2.5 py-1.5 text-[10px] uppercase tracking-widest ${statusTone(request.status)}`}>
+                  <span className={`border px-2.5 py-1.5 text-xs uppercase tracking-widest ${statusTone(request.status)}`}>
                     {label(request.status)}
                   </span>
                 </div>

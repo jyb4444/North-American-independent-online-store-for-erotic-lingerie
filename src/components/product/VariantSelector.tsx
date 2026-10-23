@@ -11,10 +11,9 @@ type Props = {
   product: Product;
   onVariantChange: (variant: ProductVariant | null) => void;
   onSelectionChange?: (selection: { size: string | null; color: string | null }) => void;
-  preferredSize?: string | null;
 };
 
-export default function VariantSelector({ product, onVariantChange, onSelectionChange, preferredSize }: Props) {
+export default function VariantSelector({ product, onVariantChange, onSelectionChange }: Props) {
   const sizes = [...new Set(product.variants.map((v) => v.size))];
   const colors = [...new Map(product.variants.map((v) => [v.color, v])).values()];
   const onlyColor = colors.length === 1 ? colors[0].color : null;
@@ -22,11 +21,9 @@ export default function VariantSelector({ product, onVariantChange, onSelectionC
   const showColorSelector = colors.length > 1 || onlyColor?.toLowerCase() !== 'default';
 
   const [selectedSize, setSelectedSize] = useState<string | null>(() => (
-    preferredSize && product.variants.some((variant) => variant.size === preferredSize && variant.stock > 0)
-      ? preferredSize
-      : onlySize && product.variants.some((variant) => variant.size === onlySize && variant.stock > 0)
-        ? onlySize
-        : null
+    onlySize && product.variants.some((variant) => variant.size === onlySize && variant.stock > 0)
+      ? onlySize
+      : null
   ));
   const [selectedColor, setSelectedColor] = useState<string | null>(() => (
     onlyColor && product.variants.some((variant) => variant.color === onlyColor && variant.stock > 0)
@@ -34,6 +31,8 @@ export default function VariantSelector({ product, onVariantChange, onSelectionC
       : null
   ));
   const [sizeGuideOpen, setSizeGuideOpen] = useState(false);
+  const [restockVariant, setRestockVariant] = useState<ProductVariant | null>(null);
+  const [selectionMessage, setSelectionMessage] = useState('');
 
   function resolve(size: string | null, color: string | null) {
     if (!size || !color) return null;
@@ -48,18 +47,21 @@ export default function VariantSelector({ product, onVariantChange, onSelectionC
     onSelectionChange?.({ size: selectedSize, color: selectedColor });
   }, [currentVariant, onSelectionChange, onVariantChange, selectedColor, selectedSize]);
 
-  useEffect(() => {
-    if (!preferredSize || !hasAnyStock(preferredSize)) return;
-    // A Fit Advisor result is an explicit user action arriving through a prop.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setSelectedSize(preferredSize);
-    if (selectedColor && !isAvailable(preferredSize, selectedColor)) setSelectedColor(null);
-  // Availability helpers only depend on the current product variants.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [preferredSize, product.id]);
-
   function handleSize(size: string) {
-    if (!hasAnyStock(size)) return;
+    if (!selectedColor && colors.length > 1) {
+      setRestockVariant(null);
+      setSelectionMessage('Choose a colour before selecting a size or requesting a restock alert.');
+      return;
+    }
+    setSelectionMessage('');
+    const availableForSelection = selectedColor ? isAvailable(size, selectedColor) : hasAnyStock(size);
+    if (!availableForSelection) {
+      const unavailable = product.variants.find((variant) =>
+        variant.size === size && (!selectedColor || variant.color === selectedColor));
+      setRestockVariant(unavailable ?? null);
+      return;
+    }
+    setRestockVariant(null);
     setSelectedSize(size);
     const color = selectedColor && isAvailable(size, selectedColor) ? selectedColor : null;
     if (selectedColor && !color) setSelectedColor(null);
@@ -68,8 +70,15 @@ export default function VariantSelector({ product, onVariantChange, onSelectionC
   }
 
   function handleColor(color: string) {
+    setSelectionMessage('');
     const colorHasStock = product.variants.some((variant) => variant.color === color && variant.stock > 0);
-    if (!colorHasStock) return;
+    if (!colorHasStock) {
+      setSelectedColor(color);
+      setSelectedSize(null);
+      setRestockVariant(null);
+      return;
+    }
+    setRestockVariant(null);
     setSelectedColor(color);
     const size = selectedSize && isAvailable(selectedSize, color) ? selectedSize : null;
     if (selectedSize && !size) setSelectedSize(null);
@@ -90,7 +99,7 @@ export default function VariantSelector({ product, onVariantChange, onSelectionC
     <div className="space-y-6">
       {/* Color */}
       {showColorSelector && <div>
-        <p className="mb-3 text-xs font-medium uppercase tracking-[0.2em] text-ivory-muted">
+        <p className="mb-3 text-sm font-medium uppercase tracking-[0.1em] text-ivory-muted">
           Color{selectedColor ? ` — ${selectedColor}` : ''}
         </p>
         <div className="flex gap-3">
@@ -100,7 +109,7 @@ export default function VariantSelector({ product, onVariantChange, onSelectionC
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => handleColor(v.color)}
-              disabled={!product.variants.some((variant) => variant.color === v.color && variant.stock > 0)}
+              aria-disabled={!product.variants.some((variant) => variant.color === v.color && variant.stock > 0)}
               aria-label={v.color}
               title={v.color}
               className={`h-7 w-7 rounded-full border-2 transition ${
@@ -117,9 +126,9 @@ export default function VariantSelector({ product, onVariantChange, onSelectionC
       {/* Size */}
       <div>
         <div className="mb-3 flex items-center justify-between">
-          <p className="text-xs font-medium uppercase tracking-[0.2em] text-ivory-muted">Size</p>
+          <p className="text-sm font-medium uppercase tracking-[0.1em] text-ivory-muted">Size</p>
           <button onClick={() => setSizeGuideOpen(true)}
-            className="text-xs text-gold-400/70 underline underline-offset-2 hover:text-gold-400 transition">
+            className="text-sm font-medium text-gold-400 underline underline-offset-2 hover:text-gold-500 transition">
             Size Guide
           </button>
           <SizeGuideModal open={sizeGuideOpen} onClose={() => setSizeGuideOpen(false)} />
@@ -132,15 +141,15 @@ export default function VariantSelector({ product, onVariantChange, onSelectionC
               <button
                 key={size}
                 onClick={() => handleSize(size)}
-                disabled={!available}
                 aria-disabled={!available}
-                title={available ? `Select size ${size}` : `Size ${size} is out of stock`}
-                className={`min-w-[3rem] border px-4 py-2 text-xs font-medium uppercase tracking-widest transition ${
+                aria-label={available ? `Select size ${size}` : `Request a restock alert for size ${size}`}
+                title={available ? `Select size ${size}` : `Size ${size} is out of stock — select to request an alert`}
+                className={`min-h-11 min-w-[3rem] border px-4 py-2 text-sm font-medium uppercase tracking-[0.08em] transition ${
                   active
                     ? 'border-gold-400 bg-gold-400 text-wine-950'
                     : available
                     ? 'border-wine-700 text-ivory-muted hover:border-gold-400 hover:text-gold-400'
-                    : 'cursor-not-allowed border-wine-800 text-wine-700 line-through'
+                    : 'border-wine-800 text-wine-700 line-through hover:border-gold-600 hover:text-ivory-muted'
                 }`}
               >
                 {size}
@@ -148,6 +157,7 @@ export default function VariantSelector({ product, onVariantChange, onSelectionC
             );
           })}
         </div>
+        {selectionMessage && <p className="mt-3 text-sm text-gold-400" role="status">{selectionMessage}</p>}
 
         {/* Low-stock indicator */}
         <AnimatePresence>
@@ -156,7 +166,7 @@ export default function VariantSelector({ product, onVariantChange, onSelectionC
               initial={{ opacity: 0, y: -4 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -4 }}
-              className={`mt-3 text-xs font-medium ${
+              className={`mt-3 text-sm font-medium ${
                 stockCount <= 3
                   ? 'text-crimson-400'
                   : 'text-ivory-muted'
@@ -169,8 +179,8 @@ export default function VariantSelector({ product, onVariantChange, onSelectionC
           )}
         </AnimatePresence>
 
-        {process.env.NEXT_PUBLIC_RESTOCK_ALERTS_ENABLED === 'true' && currentVariant && currentVariant.stock <= 0 && (
-          <RestockAlertForm productId={product.id} productHandle={product.handle} size={currentVariant.size} color={currentVariant.color} />
+        {process.env.NEXT_PUBLIC_RESTOCK_ALERTS_ENABLED === 'true' && restockVariant && (
+          <RestockAlertForm productId={product.id} productHandle={product.handle} size={restockVariant.size} color={restockVariant.color} />
         )}
 
       </div>

@@ -106,26 +106,13 @@ export default function AddressManager({ standalone = false }: { standalone?: bo
     setFormError('');
     setSaving(true);
 
-    // If setting as default, unset all others first
-    if (form.is_default) {
-      await supabase
-        .from('addresses')
-        .update({ is_default: false })
-        .eq('user_id', userId);
-    }
-
-    if (editingId) {
-      const { error } = await supabase
-        .from('addresses')
-        .update({ ...form })
-        .eq('id', editingId);
-      if (error) { setFormError(error.message); setSaving(false); return; }
-    } else {
-      const { error } = await supabase
-        .from('addresses')
-        .insert({ ...form, user_id: userId });
-      if (error) { setFormError(error.message); setSaving(false); return; }
-    }
+    const { error } = await supabase.rpc('save_user_address' as never, {
+      p_id: editingId, p_full_name: form.full_name, p_phone: form.phone || null,
+      p_address_line1: form.address_line1, p_address_line2: form.address_line2 || null,
+      p_city: form.city, p_state: form.state, p_zip: form.zip,
+      p_country: form.country, p_is_default: form.is_default,
+    } as never);
+    if (error) { setFormError(error.message); setSaving(false); return; }
 
     setSaving(false);
     setShowForm(false);
@@ -133,16 +120,17 @@ export default function AddressManager({ standalone = false }: { standalone?: bo
   }
 
   async function handleDelete(id: string) {
-    await supabase.from('addresses').delete().eq('id', id);
-    setAddresses((prev) => prev.filter((a) => a.id !== id));
+    setFormError('');
+    const { error } = await supabase.rpc('delete_user_address' as never, { p_id: id } as never);
+    if (error) { setFormError(error.message); return; }
+    await fetchAddresses(userId);
   }
 
   async function handleSetDefault(address: Address) {
-    await supabase.from('addresses').update({ is_default: false }).eq('user_id', userId);
-    await supabase.from('addresses').update({ is_default: true }).eq('id', address.id);
-    setAddresses((prev) =>
-      prev.map((a) => ({ ...a, is_default: a.id === address.id }))
-    );
+    setFormError('');
+    const { error } = await supabase.rpc('set_default_user_address' as never, { p_id: address.id } as never);
+    if (error) { setFormError(error.message); return; }
+    await fetchAddresses(userId);
   }
 
   if (loading) {
@@ -185,7 +173,7 @@ export default function AddressManager({ standalone = false }: { standalone?: bo
                   <div className="flex items-center gap-2">
                     <p className="font-medium text-ivory">{address.full_name}</p>
                     {address.is_default && (
-                      <span className="border border-gold-400/40 px-2 py-0.5 text-[10px] uppercase tracking-widest text-gold-400">
+                      <span className="border border-gold-400/40 px-2 py-0.5 text-xs uppercase tracking-widest text-gold-400">
                         Default
                       </span>
                     )}

@@ -22,7 +22,7 @@ test('the product page sticky bar adds to bag', async ({ page }) => {
   await page.goto(`/products/${product.handle}`);
   const main = page.locator('main');
   await main.getByRole('button', { name: 'Black', exact: true }).click();
-  await main.getByRole('button', { name: 'M', exact: true }).click();
+  await main.getByRole('button', { name: 'Select size M', exact: true }).click();
   await main.getByRole('button', { name: 'Add to Bag' }).last().click();
   await expect(page.getByRole('button', { name: 'Go to checkout' })).toBeVisible();
 });

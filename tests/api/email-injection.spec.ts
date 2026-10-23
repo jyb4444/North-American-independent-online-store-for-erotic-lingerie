@@ -73,29 +73,24 @@ test.describe('SEC-09 contact form', () => {
   });
 });
 
-test.describe('SEC-09 / D22 newsletter', () => {
-  test('rejects invalid addresses', async ({ request }) => {
+test.describe('SEC-09 / D22 retired newsletter signup', () => {
+  test('returns a stable retired response for every address', async ({ request }) => {
     const res = await request.post('/api/newsletter', { data: { email: 'not-an-email@' } });
-    expect(res.status()).toBe(400);
+    expect(res.status()).toBe(410);
     expect(await readOutbox()).toEqual([]);
   });
 
-  test('queues one confirmation per address, however often it is submitted', async ({ request }) => {
+  test('does not create subscribers or confirmation jobs', async ({ request }) => {
     const email = 'subscriber@test.local';
     const db = admin();
     await db.from('notification_jobs' as never).delete().like('identity', `newsletter-confirm:${email}:%`);
     await db.from('newsletter_subscribers' as never).delete().eq('email', email);
     try {
-      for (let i = 0; i < 2; i++) {
-        const res = await request.post('/api/newsletter', { data: { email } });
-        expect(res.status()).toBe(200);
-      }
+      const res = await request.post('/api/newsletter', { data: { email } });
+      expect(res.status()).toBe(410);
       expect(await readOutbox()).toEqual([]);
-      const cron = await request.get('/api/cron/notifications', {
-        headers: { authorization: `Bearer ${process.env.CRON_SECRET}` },
-      });
-      expect(cron.status(), await cron.text()).toBe(200);
-      expect(onlyEmailTo(await readOutbox(), email).subject).toContain('Confirm');
+      expect((await db.from('newsletter_subscribers' as never).select('id').eq('email', email)).data).toEqual([]);
+      expect((await db.from('notification_jobs' as never).select('id').like('identity', `newsletter-confirm:${email}:%`)).data).toEqual([]);
     } finally {
       await db.from('notification_jobs' as never).delete().like('identity', `newsletter-confirm:${email}:%`);
       await db.from('newsletter_subscribers' as never).delete().eq('email', email);
@@ -134,8 +129,8 @@ test.describe('SEC-09 wishlist reminder', () => {
   });
 });
 
-test.describe('SEC-09 abandoned-cart email', () => {
-  test('cart snapshot contents (user-writable) are escaped', async ({ request }) => {
+test.describe('SEC-09 retired abandoned-cart email', () => {
+  test('does not send from a legacy consent record', async ({ request }) => {
     const aliceId = await userIdFor(USERS.mallory);
     const db = admin();
     await db.from('cart_snapshots').delete().eq('user_id', aliceId);
@@ -175,12 +170,8 @@ test.describe('SEC-09 abandoned-cart email', () => {
       const res = await request.get('/api/cron/abandoned-cart', {
         headers: { 'x-cron-secret': process.env.CRON_SECRET! },
       });
-      expect(res.status(), await res.text()).toBe(200);
-
-      const email = onlyEmailTo(await readOutbox(), USERS.mallory);
-      expectNoInjectedMarkup(email.html);
-      expect(email.html).toContain('$19.50');
-      expect(email.html).toContain('/products/%22%3E%3Cscript%3Ealert(1)%3C%2Fscript%3E');
+      expect(res.status(), await res.text()).toBe(410);
+      expect((await readOutbox()).filter((mail) => mail.to === USERS.mallory)).toHaveLength(0);
     } finally {
       await db.from('cart_snapshots').delete().eq('user_id', aliceId);
       await db.from('notification_jobs' as never).delete().like('identity', `newsletter-confirm:${USERS.mallory}:%`);

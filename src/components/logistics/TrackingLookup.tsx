@@ -145,7 +145,7 @@ export default function TrackingLookup({
                 <p className="text-xs uppercase tracking-widest text-ivory-dim">Order</p>
                 <p className="mt-1 font-serif text-2xl font-light text-ivory">#{order.orderNumber}</p>
               </div>
-              <span className="w-fit border border-gold-600/40 px-3 py-1 text-[10px] font-medium uppercase tracking-widest text-gold-400">
+              <span className="w-fit border border-gold-600/40 px-3 py-1 text-xs font-medium uppercase tracking-widest text-gold-400">
                 {statusLabel(order.fulfillmentStatus)}
               </span>
             </div>
@@ -174,7 +174,7 @@ export default function TrackingLookup({
                     href={shipment.trackingUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="w-fit border border-gold-400 px-4 py-2 text-[10px] uppercase tracking-widest text-gold-400 transition hover:bg-gold-400 hover:text-wine-950"
+                    className="w-fit border border-gold-400 px-4 py-2 text-xs uppercase tracking-widest text-gold-400 transition hover:bg-gold-400 hover:text-wine-950"
                   >
                     Carrier Page
                   </a>
@@ -203,7 +203,7 @@ export default function TrackingLookup({
                     <div>
                       <p className="text-sm font-medium text-ivory">{event.title}</p>
                       {event.description && <p className="mt-1 text-xs text-ivory-dim">{event.description}</p>}
-                      <p className="mt-1 text-[11px] uppercase tracking-widest text-ivory-dim">{formatDate(event.occurredAt)}</p>
+                      <p className="mt-1 text-xs uppercase tracking-widest text-ivory-dim">{formatDate(event.occurredAt)}</p>
                     </div>
                   </div>
                 ))}

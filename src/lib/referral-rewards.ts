@@ -1,16 +1,12 @@
 import { createAdminClient } from '@/lib/supabase/server';
 import { sendReferralRewardEmail } from '@/lib/email';
 import { RewardBlocked, requireRewardScopes, verifiedCustomer, firstPaidOrder, ensureRewardDiscount } from '@/lib/referral-shopify';
+export { referralRewardSettings, referralRewardsEnabled } from '@/lib/referral-config';
+import { referralRewardSettings, referralRewardsEnabled } from '@/lib/referral-config';
 
 export type ReferralRewardKind = 'welcome' | 'referrer';
-export const referralRewardsEnabled = () => process.env.REFERRAL_REWARDS_ENABLED === 'true';
 export function missingRewardSchema(error: { code?: string; message?: string } | null) {
   return !!error && ['PGRST202','PGRST205','42P01','42883'].includes(error.code ?? '');
-}
-export function referralRewardSettings() {
-  const amount = Number(process.env.REFERRAL_REWARD_AMOUNT ?? 10);
-  const minimumSubtotal = Number(process.env.REFERRAL_REWARD_MIN_SUBTOTAL ?? 30);
-  return { amount: Number.isFinite(amount) && amount>0 ? amount : 10, minimumSubtotal: Number.isFinite(minimumSubtotal) && minimumSubtotal>=0 ? minimumSubtotal : 30 };
 }
 export async function issueReferralReward(input: { userId: string; email: string; kind: ReferralRewardKind; referredUserId: string }) {
   if (!referralRewardsEnabled()) return;

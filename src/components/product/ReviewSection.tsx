@@ -7,9 +7,9 @@ import { Star, LogIn, Upload, X as XIcon, ShieldCheck, CheckCircle2 } from 'luci
 import { createClient } from '@/lib/supabase/client';
 
 const MAX_PHOTOS = 3;
-const MAX_PHOTO_MB = 5;
+const MAX_PHOTO_MB = 8;
 const MAX_VIDEOS = 1;
-const MAX_VIDEO_MB = 50;
+const MAX_VIDEO_MB = 40;
 const MAX_VIDEO_SECONDS = 20;
 const MAX_REVIEW_CHARS = 300;
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
@@ -113,6 +113,9 @@ export default function ReviewSection({ productId, productHandle, seedRating = 0
   const [reviews, setReviews] = useState<Review[]>([]);
   const [pendingReviews, setPendingReviews] = useState<Review[]>([]);
   const [reviewsLoading, setReviewsLoading] = useState(true);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [loadMoreError, setLoadMoreError] = useState('');
   const [refetchKey, setRefetchKey] = useState(0);
   const [authUser, setAuthUser] = useState<AuthUser | null | 'loading'>('loading');
 
@@ -164,13 +167,31 @@ export default function ReviewSection({ productId, productHandle, seedRating = 0
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setReviewsLoading(true);
     fetch(`/api/reviews?product_id=${encodeURIComponent(productId)}`, { signal: ac.signal })
-      .then((res) => res.json() as Promise<{ reviews?: Review[] }>)
-      .then((data) => { if (!ac.signal.aborted) setReviews(data.reviews ?? []); })
+      .then((res) => res.json() as Promise<{ reviews?: Review[]; nextCursor?: string | null }>)
+      .then((data) => { if (!ac.signal.aborted) { setReviews(data.reviews ?? []); setNextCursor(data.nextCursor ?? null); } })
       .catch(() => {})
       .finally(() => { if (!ac.signal.aborted) setReviewsLoading(false); });
 
     return () => ac.abort();
   }, [productId, refetchKey]);
+
+  async function loadMoreReviews() {
+    if (!nextCursor || loadingMore) return;
+    setLoadMoreError('');
+    setLoadingMore(true);
+    try {
+      const params = new URLSearchParams({ product_id: productId, before: nextCursor });
+      const res = await fetch(`/api/reviews?${params}`);
+      const data = await res.json() as { reviews?: Review[]; nextCursor?: string | null };
+      if (!res.ok) throw new Error('Could not load more reviews.');
+      setReviews((current) => [...current, ...(data.reviews ?? []).filter((review) => !current.some((item) => item.id === review.id))]);
+      setNextCursor(data.nextCursor ?? null);
+    } catch (error) {
+      setLoadMoreError(error instanceof Error ? error.message : 'Could not load more reviews.');
+    } finally {
+      setLoadingMore(false);
+    }
+  }
 
   const totalCount = reviews.length > 0 ? reviews.length : seedCount;
   const pendingIds = new Set(pendingReviews.map((review) => review.id));
@@ -264,13 +285,27 @@ export default function ReviewSection({ productId, productHandle, seedRating = 0
     const paths: string[] = [];
     try {
       for (const file of files) {
-        const formData = new FormData();
-        formData.set('file', file);
-        formData.set('kind', folder === 'photos' ? 'photo' : 'video');
-        const response = await fetch('/api/reviews/media', { method: 'POST', body: formData });
-        const result = await response.json() as { path?: string; error?: string };
-        if (!response.ok || !result.path) throw new Error(result.error ?? 'Could not upload review media.');
-        paths.push(result.path);
+        const kind = folder === 'photos' ? 'photo' : 'video';
+        const metadata = { kind, contentType: file.type, size: file.size };
+        const prepare = await fetch('/api/reviews/media', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'prepare', ...metadata }),
+        });
+        const prepared = await prepare.json() as { path?: string; token?: string; error?: string };
+        if (!prepare.ok || !prepared.path || !prepared.token) throw new Error(prepared.error ?? 'Could not prepare review media.');
+
+        const uploaded = await supabase.storage.from('ugc').uploadToSignedUrl(prepared.path, prepared.token, file, {
+          contentType: file.type,
+        });
+        if (uploaded.error) throw new Error('Could not upload review media.');
+        paths.push(prepared.path);
+
+        const complete = await fetch('/api/reviews/media', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'complete', path: prepared.path, ...metadata }),
+        });
+        const result = await complete.json() as { path?: string; error?: string };
+        if (!complete.ok || !result.path) throw new Error(result.error ?? 'Could not verify review media.');
       }
     } catch (error) {
       if (paths.length > 0) {
@@ -381,7 +416,7 @@ export default function ReviewSection({ productId, productHandle, seedRating = 0
             <p className="mt-2 max-w-xl text-sm leading-6 text-ivory-muted">
               Share fit, feel, quality, sizing, and delivery notes. Other shoppers rely on details more than perfect photos.
             </p>
-            <div className="mt-4 flex flex-wrap gap-2 text-[11px] uppercase tracking-widest text-ivory-dim">
+            <div className="mt-4 flex flex-wrap gap-2 text-xs uppercase tracking-widest text-ivory-dim">
               <span className="border border-wine-700 px-2.5 py-1">3 photos max</span>
               <span className="border border-wine-700 px-2.5 py-1">20s video max</span>
               <span className="border border-wine-700 px-2.5 py-1">Anonymous allowed</span>
@@ -398,7 +433,7 @@ export default function ReviewSection({ productId, productHandle, seedRating = 0
               </button>
             ) : (
               <Link
-                href="/login"
+                href={`/login?redirectTo=${encodeURIComponent(`/products/${productHandle}`)}`}
                 className="flex flex-shrink-0 items-center justify-center gap-1.5 border border-wine-700 px-5 py-3 text-xs font-medium uppercase tracking-widest text-ivory-muted transition hover:border-gold-400/50 hover:text-gold-400"
               >
                 <LogIn size={12} />
@@ -500,7 +535,7 @@ export default function ReviewSection({ productId, productHandle, seedRating = 0
                 {(formPhotos.length < MAX_PHOTOS || formVideos.length < MAX_VIDEOS) && (
                   <label className="flex h-24 w-36 cursor-pointer flex-col items-center justify-center gap-1 border border-dashed border-wine-700 text-ivory-dim transition hover:border-gold-400 hover:text-gold-400">
                     <Upload size={19} />
-                    <span className="text-[10px] uppercase tracking-wider">Upload file</span>
+                    <span className="text-xs uppercase tracking-wider">Upload file</span>
                     <input
                       type="file"
                       accept={MEDIA_ACCEPT}
@@ -553,7 +588,7 @@ export default function ReviewSection({ productId, productHandle, seedRating = 0
           <p className="font-serif text-2xl font-light text-ivory">No customer reviews yet</p>
           <p className="mt-2 text-sm text-ivory-muted">Be the first to share fit, quality, and comfort notes for this item.</p>
           {!isLoggedIn && !isLoadingAuth && (
-            <Link href="/login" className="mt-3 inline-block text-xs text-gold-400 hover:underline">
+            <Link href={`/login?redirectTo=${encodeURIComponent(`/products/${productHandle}`)}`} className="mt-3 inline-block text-xs text-gold-400 hover:underline">
               Sign in to write the first review →
             </Link>
           )}
@@ -568,12 +603,12 @@ export default function ReviewSection({ productId, productHandle, seedRating = 0
                   {review.is_anonymous ? 'Anonymous shopper' : review.nickname}
                 </span>
                 {review.pending && (
-                  <span className="border border-wine-700 px-2 py-0.5 text-[10px] font-medium uppercase tracking-widest text-ivory-dim">
+                  <span className="border border-wine-700 px-2 py-0.5 text-xs font-medium uppercase tracking-widest text-ivory-dim">
                     Pending approval
                   </span>
                 )}
                 {review.verified_purchase && (
-                  <span className="inline-flex items-center gap-1 border border-gold-600/30 px-2 py-0.5 text-[10px] font-medium uppercase tracking-widest text-gold-400">
+                  <span className="inline-flex items-center gap-1 border border-gold-600/30 px-2 py-0.5 text-xs font-medium uppercase tracking-widest text-gold-400">
                     <CheckCircle2 size={11} />
                     Verified purchase
                   </span>
@@ -621,6 +656,16 @@ export default function ReviewSection({ productId, productHandle, seedRating = 0
             </article>
           ))}
         </div>
+
+        {loadMoreError && <p role="alert" className="mt-4 text-center text-sm text-crimson-400">{loadMoreError}</p>}
+        {nextCursor && (
+          <div className="mt-6 text-center">
+            <button type="button" onClick={loadMoreReviews} disabled={loadingMore}
+              className="border border-wine-700 px-6 py-3 text-xs font-medium uppercase tracking-widest text-ivory transition hover:border-gold-400 disabled:opacity-50">
+              {loadingMore ? 'Loading…' : 'Load More Reviews'}
+            </button>
+          </div>
+        )}
 
         {/* Photo lightbox */}
         {lightboxSrc && (
