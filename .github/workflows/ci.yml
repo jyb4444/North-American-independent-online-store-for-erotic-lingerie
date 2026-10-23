@@ -88,6 +88,28 @@ jobs:
       - name: Start isolated Supabase
         run: supabase start
 
+      - name: Start Upstash-compatible rate-limit fixture
+        run: |
+          docker network create e2e-rate-limit
+          docker run --detach --name e2e-redis --network e2e-rate-limit redis:7.4-alpine
+          docker run --detach --name e2e-upstash --network e2e-rate-limit --publish 55479:80 \
+            --env SRH_MODE=env \
+            --env SRH_TOKEN=e2e-upstash-token \
+            --env SRH_CONNECTION_STRING=redis://e2e-redis:6379 \
+            hiett/serverless-redis-http
+          for attempt in {1..30}; do
+            if curl --silent --fail http://127.0.0.1:55479/ \
+              --request POST \
+              --header 'Authorization: Bearer e2e-upstash-token' \
+              --header 'Content-Type: application/json' \
+              --data '["PING"]' >/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          docker logs e2e-upstash
+          exit 1
+
       - name: Run API and browser E2E
         run: npm run test:e2e
 
