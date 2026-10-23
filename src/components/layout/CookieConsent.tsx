@@ -80,7 +80,7 @@ export default function CookieConsent() {
               )}
               <button
                 onClick={() => setExpanded((v) => !v)}
-                className="mt-1 text-[11px] text-ivory-dim underline underline-offset-2 hover:text-gold-400 transition"
+                className="mt-1 text-xs text-ivory-dim underline underline-offset-2 hover:text-gold-400 transition"
               >
                 {expanded ? 'Hide details' : 'Manage preferences'}
               </button>
@@ -90,13 +90,13 @@ export default function CookieConsent() {
           <div className="flex flex-shrink-0 items-center gap-2">
             <button
               onClick={decline}
-              className="border border-wine-700 px-4 py-2 text-[11px] uppercase tracking-widest text-ivory-dim transition hover:border-gold-400/40 hover:text-ivory-muted"
+              className="border border-wine-700 px-4 py-2 text-xs uppercase tracking-widest text-ivory-dim transition hover:border-gold-400/40 hover:text-ivory-muted"
             >
               Decline
             </button>
             <button
               onClick={accept}
-              className="border border-gold-400 px-4 py-2 text-[11px] uppercase tracking-widest text-gold-400 transition hover:bg-gold-400 hover:text-wine-950"
+              className="border border-gold-400 px-4 py-2 text-xs uppercase tracking-widest text-gold-400 transition hover:bg-gold-400 hover:text-wine-950"
             >
               Accept
             </button>

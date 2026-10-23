@@ -29,7 +29,9 @@ def catalog_sql():
     names={c['name'] for c in CAT['constraints']}
     for i in CAT['indexes']:
         if i['name'] not in names:out.append(i['definition']+';')
-    out += [f['definition']+';' for f in CAT['functions']]
+    for f in CAT['functions']:
+        out.append(f['definition']+';')
+        out.append('ALTER FUNCTION public.'+ident(f['name'])+'('+f['args']+') OWNER TO '+ident(f['owner'])+';')
     for p in CAT['policies']:
         cmd={'r':'SELECT','a':'INSERT','w':'UPDATE','d':'DELETE','*':'ALL'}[p['command']]
         out.append('DROP POLICY IF EXISTS '+ident(p['name'])+' ON '+ident(p['schema'])+'.'+ident(p['table'])+';')
@@ -77,6 +79,8 @@ if __name__=='__main__':
         assert_sql(db,"NOT has_function_privilege('service_role','public.claim_referrer_reward(uuid,numeric)','EXECUTE')",'unsafe old claim revoked')
         assert_sql(db,"has_function_privilege('service_role','public.create_return_request_atomic(uuid,uuid,text,text,text,text[],text,text[],jsonb)','EXECUTE') AND NOT has_function_privilege('authenticated','public.create_return_request_atomic(uuid,uuid,text,text,text,text[],text,text[],jsonb)','EXECUTE')",'atomic return RPC service-only')
         assert_sql(db,"EXISTS(SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.proname='create_return_request_atomic' AND p.prosecdef AND array_to_string(p.proconfig,',')='search_path=\"\"')",'atomic return RPC hardened search_path')
+        assert_sql(db,"(SELECT count(*)=2 AND bool_and(array_to_string(p.proconfig,',')='search_path=\"\"') FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.proname IN ('handle_new_user','handle_new_membership'))",'auth trigger functions hardened search_path')
+        assert_sql(db,"NOT has_function_privilege('authenticated','public.handle_new_user()','EXECUTE') AND NOT has_function_privilege('anon','public.handle_new_membership()','EXECUTE')",'auth trigger functions not directly executable')
     assert_sql('phase4_drift',"(SELECT count(*)=8 AND bool_and(approved) FROM public.reviews)",'eight approved reviews preserved')
     assert_sql('phase4_drift',"to_regclass('public.notification_jobs') IS NOT NULL AND to_regclass('public.newsletter_subscribers') IS NOT NULL",'durable communication tables created')
     assert_sql('phase4_drift',"NOT has_table_privilege('authenticated','public.notification_jobs','SELECT') AND NOT has_table_privilege('anon','public.newsletter_subscribers','INSERT')",'communication tables service-only')
@@ -91,6 +95,12 @@ if __name__=='__main__':
     assert_sql('phase4_drift',"has_function_privilege('service_role','public.retry_notification_job_admin(uuid,uuid)','EXECUTE') AND has_function_privilege('service_role','public.retry_shopify_webhook_admin(text,uuid)','EXECUTE') AND NOT has_function_privilege('authenticated','public.retry_notification_job_admin(uuid,uuid)','EXECUTE')",'manual retries are atomic and service-only')
     assert_sql('phase4_drift',"EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='orders' AND column_name='shopify_updated_at') AND has_function_privilege('service_role','public.upsert_shopify_order_if_fresh(uuid,text,text,text,text,text,text,numeric,text,timestamptz,timestamptz)','EXECUTE')",'stale Shopify orders are guarded service-side')
     assert_sql('phase4_drift',"NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid='public.account_deletion_requests'::regclass AND contype='f' AND conkey=ARRAY[(SELECT attnum FROM pg_attribute WHERE attrelid='public.account_deletion_requests'::regclass AND attname='user_id')])",'deletion audit survives auth user deletion')
+    assert_sql('phase4_drift',"(SELECT count(*)=3 AND bool_and(p.prosecdef) AND bool_and(array_to_string(p.proconfig,',')='search_path=\"\"') FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.proname IN ('save_user_address','set_default_user_address','delete_user_address'))",'address mutations are atomic hardened RPCs')
+    assert_sql('phase4_drift',"has_function_privilege('authenticated','public.save_user_address(uuid,text,text,text,text,text,text,text,text,boolean)','EXECUTE') AND NOT has_function_privilege('anon','public.save_user_address(uuid,text,text,text,text,text,text,text,text,boolean)','EXECUTE')",'address mutations require authentication')
+    assert_sql('phase4_drift',"EXISTS(SELECT 1 FROM pg_indexes WHERE schemaname='public' AND indexname='addresses_one_default_per_user_idx')",'one default address enforced')
+    assert_sql('phase4_drift',"EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='order_items' AND column_name='shopify_product_id') AND has_function_privilege('authenticated','public.user_has_paid_product(text)','EXECUTE') AND NOT has_function_privilege('anon','public.user_has_paid_product(text)','EXECUTE')",'verified purchase uses paid product identity')
+    assert_sql('phase4_drift',"to_regclass('public.review_media_validations') IS NOT NULL AND NOT has_table_privilege('authenticated','public.review_media_validations','SELECT') AND has_table_privilege('service_role','public.review_media_validations','INSERT')",'review media validation is service-only')
+    assert_sql('phase4_drift',"NOT EXISTS(SELECT 1 FROM public.notification_jobs WHERE kind IN ('newsletter_confirmation','newsletter_welcome') AND ((payload ? 'confirmationToken' OR payload ? 'unsubscribeToken') OR status IN ('pending','processing','failed')))",'retired newsletter jobs quarantined and raw tokens removed')
     assert_sql('phase4_drift',"(SELECT count(*)=5 AND bool_and(confdeltype='a') FROM pg_constraint WHERE conname IN ('profiles_id_fkey','memberships_user_id_fkey','wishlists_user_id_fkey','cart_snapshots_user_id_fkey','referrals_referrer_id_fkey'))",'five NO ACTION FKs unchanged')
     # A bad existing row must abort before the default or constraints are altered.
     run('phase4_conflict',"INSERT INTO public.reviews(product_id,product_handle,rating,body,nickname,email) VALUES ('conflict','conflict',5,'tiny','Fixture','fixture@example.invalid');")

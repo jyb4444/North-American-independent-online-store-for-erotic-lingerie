@@ -119,26 +119,6 @@ export const track = {
     capture('checkout_started', { item_count: items.length, total });
   },
 
-  cartFitSummaryViewed: (payload: {
-    cart_item_count: number;
-    has_fit_profile: boolean;
-    product_id?: string;
-    product_handle?: string;
-    recommended_size?: string;
-  }) => {
-    capture('cart_fit_summary_viewed', payload);
-  },
-
-  cartFitCtaClicked: (payload: {
-    cart_item_count: number;
-    has_fit_profile: boolean;
-    product_id?: string;
-    product_handle?: string;
-    recommended_size?: string;
-  }) => {
-    capture('cart_fit_cta_clicked', payload);
-  },
-
   cartSaveForLaterClicked: (payload: { product_id: string; product_handle: string; source: 'cart_drawer' }) => {
     capture('cart_save_for_later_clicked', payload);
   },
@@ -182,13 +162,12 @@ export const track = {
     capture('cart_privacy_reminder_viewed', payload);
   },
 
-  emptyCartGuidanceViewed: (payload: { has_fit_profile: boolean; saved_count: number; is_authenticated: boolean }) => {
+  emptyCartGuidanceViewed: (payload: { saved_count: number; is_authenticated: boolean }) => {
     capture('empty_cart_guidance_viewed', payload);
   },
 
   emptyCartGuidanceClicked: (payload: {
-    action: 'continue_shopping' | 'view_saved_styles' | 'try_fit_advisor';
-    has_fit_profile: boolean;
+    action: 'continue_shopping' | 'view_saved_styles';
     saved_count: number;
     is_authenticated: boolean;
   }) => {
@@ -221,26 +200,6 @@ export const track = {
 
   fitProfileCleared: (payload: { source: string; has_profile: boolean; profile_fields_count: number }) => {
     capture('fit_profile_cleared', payload);
-  },
-
-  fitConfidenceBadgeViewed: (payload: {
-    product_id: string;
-    product_handle: string;
-    confidence_level: string;
-    recommended_size: string;
-    placement: string;
-  }) => {
-    capture('fit_confidence_badge_viewed', payload);
-  },
-
-  fitConfidenceBadgeClicked: (payload: {
-    product_id: string;
-    product_handle: string;
-    confidence_level: string;
-    recommended_size: string | null;
-    placement: string;
-  }) => {
-    capture('fit_confidence_badge_clicked', payload);
   },
 
   privacyTrustBadgeViewed: (payload: { context: string; item_count: number }) => {

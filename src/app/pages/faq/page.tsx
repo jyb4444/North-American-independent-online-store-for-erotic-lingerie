@@ -11,11 +11,11 @@ export const FAQS = [
   },
   {
     q: 'Is my browsing private?',
-    a: 'Your wishlist, fit guidance, and saved AI looks are designed as private shopping tools. AI looks stay on this browser unless you choose otherwise.',
+    a: 'Your wishlist and account activity are available only after you sign in. On a shared device, sign out when you finish and avoid saving passwords in the browser.',
   },
   {
-    q: 'When will ordering be available?',
-    a: 'Checkout is connected through our secure commerce flow. Order, shipping, and return activity can be managed from your private account.',
+    q: 'How do I place an order?',
+    a: 'Choose the available size and colour on a product page, add it to your bag, and continue to Shopify Checkout. Signed-in customers can view linked orders, shipping, and return activity from their account.',
   },
   {
     q: 'Can I return or exchange an item?',

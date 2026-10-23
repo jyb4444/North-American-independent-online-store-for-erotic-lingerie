@@ -35,7 +35,6 @@ export default function PrivacyPage() {
         <p><strong className="text-ivory">Address information:</strong> If you provide a shipping address, it is stored in our database.</p>
         <p><strong className="text-ivory">Bag contents:</strong> If you are signed in, the items in your bag are saved to your account so you can continue on another device, and we may send you a reminder email about items left in your bag. Signing out removes the bag from that browser.</p>
         <p><strong className="text-ivory">Orders, returns and reviews:</strong> We keep your order and shipping status, return requests (including any photos you upload, which are private to you and our team), and reviews you write. Reviews are shown publicly under a masked name or &ldquo;Anonymous shopper&rdquo;; your email and phone are never shown.</p>
-        <p><strong className="text-ivory">Browser-only data:</strong> Your exact fit profile measurements, AI-generated illustrations and saved AI looks are stored in your browser&rsquo;s local storage and are not uploaded to our servers. See section 5 for what an AI request sends.</p>
         <p><strong className="text-ivory">Usage analytics:</strong> With your consent, we use PostHog to collect page paths and general feature usage. We do not send account identifiers, product or variant identifiers, selected sizes or colours, bag contents, fit recommendations, measurements, or AI images to analytics.</p>
         <p><strong className="text-ivory">Payment data:</strong> Payments are processed by our payment provider. We do not store card numbers or full payment details on our servers.</p>
       </Section>
@@ -49,28 +48,23 @@ export default function PrivacyPage() {
         <p>Charges appear discreetly and never include &ldquo;intimate apparel&rdquo; or any description that reveals the nature of your purchase. Packaging is similarly discreet.</p>
       </Section>
 
-      <Section title="5. AI Style Inspiration Privacy">
-        <p>When you request an AI illustration, we send a short, general description derived from your fit profile &mdash; a height range, body shape and skin tone, never your exact measurements &mdash; together with the product name, through our server to our image-generation provider, Hugging Face. The result is general inspiration and does not depict the exact product or predict fit. Please see Hugging Face&rsquo;s privacy policy for how it processes these requests.</p>
-        <p>The generated image is returned to your browser and is not stored on our servers. It stays in your browser&rsquo;s local storage until you clear it. AI illustrations only depict adult models.</p>
-      </Section>
-
-      <Section title="6. Cookies and Tracking">
+      <Section title="5. Cookies and Tracking">
         <p>We use essential cookies to maintain your session. We use analytics cookies (PostHog) only with your consent. You can manage your preferences at any time via the cookie settings at the bottom of any page. Declining analytics cookies does not affect your ability to use the website.</p>
       </Section>
 
-      <Section title="7. Data Retention">
-        <p>Account data is retained for as long as your account is active. You may request deletion of your account and all associated data by contacting us. Browser-local data (fit profile, AI looks) can be deleted directly in your browser settings at any time.</p>
+      <Section title="6. Data Retention">
+        <p>Account data is retained for as long as your account is active or as required for legal, tax, fraud-prevention, and transaction-record obligations. You may request deletion of eligible account data by contacting us.</p>
       </Section>
 
-      <Section title="8. Your Rights">
+      <Section title="7. Your Rights">
         <p>Depending on your location, you may have the right to: access the personal data we hold about you; correct inaccurate data; request deletion of your data; object to processing; data portability. To exercise any of these rights, please <Link href="/pages/contact" className="text-gold-400 hover:underline">contact us</Link>.</p>
       </Section>
 
-      <Section title="9. Security">
+      <Section title="8. Security">
         <p>We use industry-standard measures to protect your data, including encrypted connections (HTTPS), secure authentication, and access controls. No method of transmission over the internet is 100% secure, but we take reasonable steps to protect your information.</p>
       </Section>
 
-      <Section title="10. Changes to This Policy">
+      <Section title="9. Changes to This Policy">
         <p>We may update this policy from time to time. Material changes will be communicated via email or a notice on the website. Continued use of the website after changes constitutes acceptance of the updated policy.</p>
       </Section>
 

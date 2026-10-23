@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { track } from '@/lib/analytics';
 import { notifyWishlistChanged } from '@/hooks/useWishlistSummary';
-import { useOnboardingTasks } from '@/hooks/useOnboardingTasks';
 import type { Product } from '@/types';
 
 type Props = {
@@ -33,7 +32,6 @@ export default function WishlistButton({
 
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
-  const { markTaskCompleted } = useOnboardingTasks();
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -69,7 +67,8 @@ export default function WishlistButton({
   async function toggle() {
     if (!userId || updating) {
       if (updating) return;
-      router.push('/login');
+      const returnTo = `${window.location.pathname}${window.location.search}`;
+      router.push(`/login?redirectTo=${encodeURIComponent(returnTo)}`);
       return;
     }
 
@@ -115,7 +114,6 @@ export default function WishlistButton({
       }
       notifyWishlistChanged();
       track.wishlistAdded({ product_id: product.id, product_handle: product.handle, source });
-      markTaskCompleted('first_item_saved', source);
       void fetch('/api/email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -187,7 +185,7 @@ export default function WishlistButton({
         {saveLabel}
       </button>
       {insertError && (
-        <p className="mt-1 text-[11px] text-crimson-400">{insertError}</p>
+        <p className="mt-1 text-xs text-crimson-400">{insertError}</p>
       )}
     </div>
   );

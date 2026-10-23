@@ -21,10 +21,32 @@ function getMetadataPhone(metadata: Record<string, unknown> | null | undefined):
   return typeof value === 'string' ? value : '';
 }
 
+type ReviewCursor = { createdAt: string; id: string };
+
+function decodeCursor(value: string | null): ReviewCursor | null {
+  if (!value) return null;
+  try {
+    const parsed = JSON.parse(Buffer.from(value, 'base64url').toString('utf8')) as Partial<ReviewCursor>;
+    if (typeof parsed.createdAt !== 'string' || !Number.isFinite(Date.parse(parsed.createdAt)) || typeof parsed.id !== 'string') return null;
+    return { createdAt: new Date(parsed.createdAt).toISOString(), id: parsed.id };
+  } catch {
+    return null;
+  }
+}
+
+function encodeCursor(row: Record<string, unknown> | undefined): string | null {
+  if (!row || typeof row.created_at !== 'string' || typeof row.id !== 'string') return null;
+  return Buffer.from(JSON.stringify({ createdAt: row.created_at, id: row.id }), 'utf8').toString('base64url');
+}
+
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const productId = searchParams.get('product_id');
   if (!productId) return NextResponse.json({ error: 'product_id required' }, { status: 400 });
+  const requestedBefore = searchParams.get('before');
+  const cursor = decodeCursor(requestedBefore);
+  if (requestedBefore && !cursor) return NextResponse.json({ error: 'Invalid review cursor.' }, { status: 400 });
+  const pageSize = 20;
 
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -38,54 +60,66 @@ export async function GET(req: Request) {
     photo_urls: await signReviewMedia(reader.storage, row.photo_urls),
     video_urls: await signReviewMedia(reader.storage, row.video_urls),
   })));
+  const responseFor = async (rows: Record<string, unknown>[]) => {
+    const page = rows.slice(0, pageSize);
+    return NextResponse.json({
+      reviews: await presentReviews(page),
+      nextCursor: rows.length > pageSize ? encodeCursor(page.at(-1)) : null,
+    });
+  };
 
-  const approvedBaseQuery = () => reader
+  const approvedBaseQuery = () => {
+    let base = reader
     .from('reviews')
     .select(selectBase)
     .eq('product_id', productId)
     .eq('approved', true)
     .order('created_at', { ascending: false })
-    .limit(50);
+    .order('id', { ascending: false })
+    .limit(pageSize + 1);
+    if (cursor) base = base.or(`created_at.lt.${cursor.createdAt},and(created_at.eq.${cursor.createdAt},id.lt.${cursor.id})`);
+    return base;
+  };
 
-  const query = reader
+  let query = reader
     .from('reviews')
     .select(selectWithUser)
     .eq('product_id', productId)
     .order('created_at', { ascending: false })
-    .limit(50);
+    .order('id', { ascending: false })
+    .limit(pageSize + 1);
+  if (cursor) query = query.or(`created_at.lt.${cursor.createdAt},and(created_at.eq.${cursor.createdAt},id.lt.${cursor.id})`);
 
   const { data, error } = user
     ? await query.or(`approved.eq.true,user_id.eq.${user.id}`)
     : await query.eq('approved', true);
 
   if (error?.message.includes('user_id')) {
-    const fallbackQuery = reader
+    let fallbackQuery = reader
       .from('reviews')
       .select(selectWithoutUser)
       .eq('product_id', productId)
       .order('created_at', { ascending: false })
-      .limit(50);
+      .order('id', { ascending: false })
+      .limit(pageSize + 1);
+    if (cursor) fallbackQuery = fallbackQuery.or(`created_at.lt.${cursor.createdAt},and(created_at.eq.${cursor.createdAt},id.lt.${cursor.id})`);
     const fallback = user?.email
       ? await fallbackQuery.or(`approved.eq.true,email.eq.${user.email.toLowerCase()}`)
       : await fallbackQuery.eq('approved', true);
     if (!fallback.error) {
-      return NextResponse.json({
-        reviews: await presentReviews((fallback.data ?? []) as Record<string, unknown>[]),
-      });
+      return responseFor((fallback.data ?? []) as Record<string, unknown>[]);
     }
   }
 
   if (error) {
     if (error.message.includes('photo_urls') || error.message.includes('video_urls') || error.message.includes('is_anonymous')) {
       const fallback = await approvedBaseQuery();
-      if (!fallback.error) return NextResponse.json({ reviews: await presentReviews((fallback.data ?? []) as Record<string, unknown>[]) });
+      if (!fallback.error) return responseFor((fallback.data ?? []) as Record<string, unknown>[]);
     }
     console.warn('Reviews fetch failed:', error.message);
     return NextResponse.json({ reviews: [] });
   }
-  return NextResponse.json({
-    reviews: await presentReviews((data ?? []) as Record<string, unknown>[]),
-  });
+  return responseFor((data ?? []) as Record<string, unknown>[]);
 }
 
 export async function POST(req: Request) {
@@ -161,6 +195,11 @@ export async function POST(req: Request) {
     video_urls: Array.isArray(video_urls) ? video_urls.slice(0, 1) : [],
     is_anonymous: !!is_anonymous,
   };
+  // This value is derived from synchronized, paid orders owned by the session user.
+  // Missing compatibility schema fails closed and never trusts the request body.
+  const normalizedProductId = product_id.replace(/^gid:\/\/shopify\/Product\//, '');
+  const purchase = await supabase.rpc('user_has_paid_product' as never, { p_product_id: normalizedProductId } as never);
+  if (!purchase.error && purchase.data === true) review.verified_purchase = true;
   const writer = createAdminClient();
   const buildSubmittedReview = async (inserted?: { id?: string; created_at?: string }) => ({
     id: inserted?.id ?? `pending-${crypto.randomUUID()}`,
@@ -168,7 +207,7 @@ export async function POST(req: Request) {
     rating: review.rating,
     body: review.body,
     nickname: review.nickname,
-    verified_purchase: false,
+    verified_purchase: review.verified_purchase,
     photo_urls: await signReviewMedia(writer.storage, review.photo_urls),
     video_urls: await signReviewMedia(writer.storage, review.video_urls),
     is_anonymous: review.is_anonymous,
@@ -179,6 +218,23 @@ export async function POST(req: Request) {
   // Users cannot insert reviews directly (RLS); the validated row is written with the
   // service role so `approved` / `verified_purchase` keep their database defaults.
   const uploadedPaths = [...review.photo_urls, ...review.video_urls];
+  if (uploadedPaths.length > 0) {
+    const { data: validations, error: validationError } = await writer
+      .from('review_media_validations' as never)
+      .select('path')
+      .eq('user_id', user.id)
+      .is('claimed_at', null)
+      .in('path', uploadedPaths) as { data: { path: string }[] | null; error: { message: string } | null };
+    const validatedPaths = new Set((validations ?? []).map((item) => item.path));
+    if (validationError || uploadedPaths.some((path) => !validatedPaths.has(path))) {
+      return NextResponse.json({ error: 'Every media file must finish verification before review submission.' }, { status: 400 });
+    }
+  }
+  const claimUploadedMedia = async () => {
+    if (uploadedPaths.length > 0) {
+      await writer.from('review_media_validations' as never).update({ claimed_at: new Date().toISOString() } as never).eq('user_id', user.id).in('path', uploadedPaths);
+    }
+  };
   const removeUploadedMedia = async () => {
     if (uploadedPaths.length > 0) await writer.storage.from(REVIEW_MEDIA_BUCKET).remove(uploadedPaths);
   };
@@ -199,6 +255,7 @@ export async function POST(req: Request) {
   if (error?.message.includes('user_id') || error?.message.includes('video_urls') || error?.message.includes('is_anonymous')) {
     const reviewWithoutNewColumns = {
       ...pendingReviewFields(),
+      verified_purchase: review.verified_purchase,
       product_id: review.product_id,
       product_handle: review.product_handle,
       rating: review.rating,
@@ -212,7 +269,10 @@ export async function POST(req: Request) {
       .insert(reviewWithoutNewColumns)
       .select('id,created_at')
       .single();
-    if (!retry.error) return NextResponse.json({ ok: true, review: await buildSubmittedReview(retry.data) });
+    if (!retry.error) {
+      await claimUploadedMedia();
+      return NextResponse.json({ ok: true, review: await buildSubmittedReview(retry.data) });
+    }
 
     if (!retry.error?.message.includes('photo_urls')) {
       await removeUploadedMedia();
@@ -224,5 +284,6 @@ export async function POST(req: Request) {
     await removeUploadedMedia();
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
+  await claimUploadedMedia();
   return NextResponse.json({ ok: true, review: await buildSubmittedReview(insertedReview) });
 }

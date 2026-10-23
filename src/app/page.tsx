@@ -6,6 +6,7 @@ import RecentlyViewedSection from '@/components/ui/RecentlyViewedSection';
 import { getAllProducts, getBestsellers, getNewArrivals } from '@/lib/products';
 import JsonLd from '@/components/seo/JsonLd';
 import { absoluteUrl, publicPageMetadata } from '@/lib/seo';
+import SuccessNotice from '@/components/ui/SuccessNotice';
 
 export const metadata = publicPageMetadata({
   title: 'Self Love — Intimate Apparel, Lingerie & Hosiery',
@@ -15,7 +16,8 @@ export const metadata = publicPageMetadata({
 
 export const dynamic = 'force-dynamic';
 
-export default async function HomePage() {
+export default async function HomePage({ searchParams }: { searchParams: Promise<{ newsletter?: string }> }) {
+  const newsletterStatus = (await searchParams).newsletter;
   const [newArrivals, bestsellers, allProducts] = await Promise.all([
     getNewArrivals(),
     getBestsellers(),
@@ -44,6 +46,13 @@ export default async function HomePage() {
         })),
       }} />}
       <div className="space-y-20 pb-24">
+        {newsletterStatus && (
+          <div className="mx-auto w-full max-w-7xl px-4 pt-5 sm:px-6">
+            {newsletterStatus === 'confirmed' && <SuccessNotice title="Email confirmed">Your existing email subscription is confirmed.</SuccessNotice>}
+            {newsletterStatus === 'unsubscribed' && <SuccessNotice title="Unsubscribed">You will no longer receive marketing email.</SuccessNotice>}
+            {newsletterStatus === 'invalid' && <p role="alert" className="border border-crimson-400/30 bg-crimson-700/10 px-4 py-3 text-sm text-crimson-400">This email link is invalid or has already been used.</p>}
+          </div>
+        )}
         {/* ── Hero Carousel ── */}
         <HeroCarousel />
 

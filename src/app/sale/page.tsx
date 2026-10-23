@@ -55,7 +55,7 @@ export default async function SalePage() {
       <div>
         <div className="relative overflow-hidden border-b border-gold-600/20 bg-wine-900 px-4 py-16 text-center sm:py-24">
           <div className="pointer-events-none absolute inset-0 opacity-5" style={{ background: 'radial-gradient(ellipse at center, #c9a84c 0%, transparent 70%)' }} />
-          <p className="mb-4 inline-block border border-crimson-400/50 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.3em] text-crimson-400">
+          <p className="mb-4 inline-block border border-crimson-400/50 px-3 py-1 text-xs font-medium uppercase tracking-[0.3em] text-crimson-400">
             Current Markdowns
           </p>
           <h1 className="font-serif text-5xl font-light text-ivory sm:text-6xl">SALES</h1>

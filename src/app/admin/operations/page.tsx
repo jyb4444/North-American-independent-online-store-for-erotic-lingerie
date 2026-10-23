@@ -9,7 +9,12 @@ export default async function AdminOperationsPage() {
   if (!await currentAdmin()) redirect('/account');
   const db = createAdminClient();
   const [notifications, webhooks, returns, reviews, deletions] = await Promise.all([
-    db.from('notification_jobs' as never).select('id,kind,identity,attempts,last_error,created_at').eq('status', 'manual_review').order('created_at', { ascending: false }).limit(100),
+    db.from('notification_jobs' as never)
+      .select('id,kind,identity,attempts,last_error,created_at')
+      .eq('status', 'manual_review')
+      .not('kind', 'in', '(newsletter_confirmation,newsletter_welcome)')
+      .order('created_at', { ascending: false })
+      .limit(100),
     db.from('shopify_webhook_inbox' as never).select('event_id,topic,shopify_order_id,attempts,last_error,created_at').eq('status', 'manual_review').order('created_at', { ascending: false }).limit(100),
     db.from('return_requests').select('id', { count: 'exact', head: true }).in('status', ['submitted', 'needs_more_info']),
     db.from('reviews').select('id', { count: 'exact', head: true }).eq('approved', false),

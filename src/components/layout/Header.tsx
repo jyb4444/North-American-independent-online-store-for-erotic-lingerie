@@ -11,6 +11,8 @@ import type { User as SupabaseUser } from '@supabase/supabase-js';
 import SearchModal from '@/components/ui/SearchModal';
 import HeaderWishlistLink from '@/components/wishlist/HeaderWishlistLink';
 
+const RETIRED_PRIVATE_STORAGE_KEYS = ['velour_fit_profile_v1', 'velour_ai_lookbook_v1', 'velour_ai_preview_tried_v1'];
+
 export default function Header() {
   const pathname = usePathname();
   const router = useRouter();
@@ -23,6 +25,7 @@ export default function Header() {
 
   // Prevent Zustand localStorage hydration mismatch
   useEffect(() => {
+    RETIRED_PRIVATE_STORAGE_KEYS.forEach((key) => window.localStorage.removeItem(key));
     const id = window.setTimeout(() => setMounted(true), 0);
     return () => window.clearTimeout(id);
   }, []);
@@ -67,6 +70,7 @@ export default function Header() {
       console.error('Sign out failed:', error.message);
       return;
     }
+    RETIRED_PRIVATE_STORAGE_KEYS.forEach((key) => window.localStorage.removeItem(key));
     setUser(null);
     setUserMenuOpen(false);
     setMobileOpen(false);
@@ -95,7 +99,7 @@ export default function Header() {
             priority
             className="h-9 w-9 rounded-full object-cover"
           />
-          <span className="text-sm font-semibold uppercase tracking-[0.22em] text-ivory">
+          <span className="text-base font-semibold uppercase tracking-[0.16em] text-ivory">
             Self Love
           </span>
         </Link>
@@ -107,7 +111,7 @@ export default function Header() {
               key={item.href}
               href={item.href}
               aria-current={pathname === item.href ? 'page' : undefined}
-              className={`relative py-2 text-xs font-medium uppercase tracking-widest transition after:absolute after:inset-x-0 after:-bottom-1 after:h-px after:origin-center after:transition-transform ${
+              className={`relative py-2 text-sm font-medium uppercase tracking-[0.1em] transition after:absolute after:inset-x-0 after:-bottom-1 after:h-px after:origin-center after:transition-transform ${
                 pathname === item.href
                   ? item.highlight
                     ? 'text-crimson-400 after:scale-x-100 after:bg-crimson-400'
@@ -132,7 +136,7 @@ export default function Header() {
           {/* Not signed in */}
           {!user && (
             <Link href="/login"
-              className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-widest text-ivory-muted transition hover:text-gold-400">
+              className="flex items-center gap-1.5 text-sm font-medium uppercase tracking-[0.1em] text-ivory-muted transition hover:text-gold-400">
               <LogIn size={15} />
               <span className="hidden sm:inline">Sign In</span>
             </Link>
@@ -152,15 +156,15 @@ export default function Header() {
                     {displayName[0].toUpperCase()}
                   </div>
                 )}
-                <span className="hidden text-xs tracking-widest sm:inline">{displayName}</span>
+                <span className="hidden text-sm tracking-[0.08em] sm:inline">{displayName}</span>
               </button>
 
               {userMenuOpen && (
                 <div id="account-menu" className="absolute right-0 top-full mt-3 w-52 border border-gold-600/25 bg-wine-900 shadow-2xl">
                   {/* User info */}
                   <div className="border-b border-gold-600/15 px-4 py-3">
-                    <p className="truncate text-xs font-medium text-ivory">{displayName}</p>
-                    <p className="mt-0.5 truncate text-xs text-ivory-dim">{user.email}</p>
+                    <p className="truncate text-sm font-medium text-ivory">{displayName}</p>
+                    <p className="mt-0.5 truncate text-sm text-ivory-dim">{user.email}</p>
                   </div>
 
                   <nav className="py-1">
@@ -170,7 +174,7 @@ export default function Header() {
                       { href: '/track', icon: PackageSearch, label: 'Track Package' },
                     ].map(({ href, icon: Icon, label }) => (
                       <Link key={href} href={href} onClick={() => setUserMenuOpen(false)}
-                        className="flex items-center gap-3 px-4 py-2.5 text-xs text-ivory-muted transition hover:bg-wine-800 hover:text-gold-400">
+                        className="flex items-center gap-3 px-4 py-3 text-sm text-ivory-muted transition hover:bg-wine-800 hover:text-gold-400">
                         <Icon size={13} />
                         <span className="uppercase tracking-widest">{label}</span>
                       </Link>
@@ -179,7 +183,7 @@ export default function Header() {
 
                   <div className="border-t border-gold-600/15 py-1">
                     <button onClick={handleSignOut}
-                      className="flex w-full items-center gap-3 px-4 py-2.5 text-xs text-ivory-dim transition hover:bg-wine-800 hover:text-crimson-400">
+                      className="flex w-full items-center gap-3 px-4 py-3 text-sm text-ivory-dim transition hover:bg-wine-800 hover:text-crimson-400">
                       <LogOut size={13} />
                       <span className="uppercase tracking-widest">Sign Out</span>
                     </button>
@@ -193,7 +197,7 @@ export default function Header() {
           <button onClick={openCart} aria-label="Open bag" className="relative text-ivory-muted transition hover:text-gold-400">
             <ShoppingBag size={17} />
             {mounted && itemCount > 0 && (
-              <span className="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-gold-400 text-[10px] font-bold text-wine-950">
+              <span className="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-gold-400 text-[10px] font-bold leading-none text-wine-950">
                 {itemCount}
               </span>
             )}
@@ -214,7 +218,7 @@ export default function Header() {
           {navItems.map((item) => (
             <Link key={item.href} href={item.href}
               aria-current={pathname === item.href ? 'page' : undefined}
-              className={`block py-2.5 text-xs font-medium uppercase tracking-widest transition hover:text-gold-400 ${
+              className={`block py-3 text-sm font-medium uppercase tracking-[0.1em] transition hover:text-gold-400 ${
                 pathname === item.href
                   ? item.highlight ? 'text-crimson-400 underline underline-offset-8' : 'text-gold-400 underline underline-offset-8'
                   : item.highlight ? 'text-crimson-400' : 'text-ivory-muted'
@@ -225,25 +229,25 @@ export default function Header() {
           ))}
           <div className="mt-3 border-t border-gold-600/15 pt-3">
             {!user ? (
-              <Link href="/login" className="block py-2.5 text-xs uppercase tracking-widest text-gold-400">
+              <Link href="/login" className="block py-3 text-sm uppercase tracking-[0.1em] text-gold-400">
                 Sign In
               </Link>
             ) : (
               <>
                 <Link href="/account" onClick={() => setMobileOpen(false)}
-                  className="block py-2.5 text-xs uppercase tracking-widest text-ivory-muted hover:text-gold-400">
+                  className="block py-3 text-sm uppercase tracking-[0.1em] text-ivory-muted hover:text-gold-400">
                   My Account
                 </Link>
                 <Link href="/account/orders" onClick={() => setMobileOpen(false)}
-                  className="block py-2.5 text-xs uppercase tracking-widest text-ivory-muted hover:text-gold-400">
+                  className="block py-3 text-sm uppercase tracking-[0.1em] text-ivory-muted hover:text-gold-400">
                   Order History
                 </Link>
                 <Link href="/track" onClick={() => setMobileOpen(false)}
-                  className="block py-2.5 text-xs uppercase tracking-widest text-ivory-muted hover:text-gold-400">
+                  className="block py-3 text-sm uppercase tracking-[0.1em] text-ivory-muted hover:text-gold-400">
                   Track Package
                 </Link>
                 <button onClick={handleSignOut}
-                  className="block py-2.5 text-xs uppercase tracking-widest text-ivory-dim hover:text-crimson-400">
+                  className="block py-3 text-sm uppercase tracking-[0.1em] text-ivory-dim hover:text-crimson-400">
                   Sign Out
                 </button>
               </>

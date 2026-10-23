@@ -175,10 +175,7 @@ Upstash 要验证实际运行时共享键，而非仅变量存在；故障时现
 |---|---|---|
 | `REFERRAL_REWARDS_ENABLED` | `false` | 经配置和调度验证后才开启发码/发信 |
 | `REFERRAL_REWARD_AMOUNT` | `10` | 每个折扣码减免的金额（美元） |
-| `NEXT_PUBLIC_REFERRAL_REWARDS_ENABLED` | `false` | 仅控制前端推荐入口和营销文案；必须与服务端开关同时启用 |
-| `NEXT_PUBLIC_REFERRAL_REWARD_AMOUNT` | `10` | 前端展示的奖励金额；必须与服务端金额一致 |
-| `NEXT_PUBLIC_REFERRAL_REWARD_MIN_SUBTOTAL` | `30` | 前端展示的最低消费；必须与服务端最低消费一致 |
 | `REFERRAL_REWARD_MIN_SUBTOTAL` | `30` | 使用折扣码的最低订单金额（设为 `0` 表示无门槛） |
 | `ORDER_ATTRIBUTION_SECRET` | 无 | 至少 32 个字符；独立签名 Shopify checkout 与本地账号的 7 天归属凭证，不得与 webhook secret 共用 |
 
-注意：推荐页和注册页上的宣传文案里写的是 "$10" 和 "$30+"。如果修改了这两个变量，记得同步修改 `src/app/pages/referral/page.tsx` 和 `src/app/(account)/login/page.tsx` 里的文案。
+推荐入口、营销文案和服务端发放逻辑统一读取服务端变量。不要再配置已废弃的 `NEXT_PUBLIC_REFERRAL_REWARD_*` 变量。

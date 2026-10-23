@@ -37,6 +37,7 @@ type ShopifyProduct = {
   vendor: string;
   createdAt: string;
   updatedAt: string;
+  isGiftCard: boolean;
   seo?: { title?: string | null; description?: string | null } | null;
   priceRange: { minVariantPrice: ShopifyMoney };
   compareAtPriceRange: { minVariantPrice: ShopifyMoney };
@@ -86,7 +87,7 @@ function allowMockFallback() {
 }
 
 function publicProducts(products: Product[]) {
-  return products.filter((product) => isPublicProductHandle(product.handle) && hasPublicCatalogTags(product.tags));
+  return products.filter((product) => !product.isGiftCard && isPublicProductHandle(product.handle) && hasPublicCatalogTags(product.tags));
 }
 
 function publicCollections(collections: Collection[]) {
@@ -200,7 +201,7 @@ export function mapShopifyProduct(product: ShopifyProduct): Product {
     reviewCount: 0,
     isNew: tags.includes('new-arrival') || tags.includes('new') || isRecent,
     isBestseller: tags.includes('bestseller') || tags.includes('best-seller'),
-    material: 'See product details for material information.',
+    material: undefined,
     careInstructions: 'Hand wash cold, lay flat to dry.',
     vendor: product.vendor || 'Self Love',
     currency: product.priceRange.minVariantPrice.currencyCode || 'USD',
@@ -208,6 +209,7 @@ export function mapShopifyProduct(product: ShopifyProduct): Product {
     seoTitle: product.seo?.title || undefined,
     seoDescription: product.seo?.description || undefined,
     imageAltTexts,
+    isGiftCard: product.isGiftCard,
   };
 }
 
@@ -275,7 +277,7 @@ export async function getProductByHandle(handle: string): Promise<Product | unde
       variables: { handle },
       cache: 'no-store',
     });
-    if (!data.product || !hasPublicCatalogTags(data.product.tags)) return undefined;
+    if (!data.product || data.product.isGiftCard || !hasPublicCatalogTags(data.product.tags)) return undefined;
     return mapShopifyProduct(data.product);
   } catch (error) {
     if (!allowMockFallback()) throw error;

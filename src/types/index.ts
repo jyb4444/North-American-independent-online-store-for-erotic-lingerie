@@ -34,7 +34,7 @@ export type Product = {
   reviewCount: number;
   isNew: boolean;
   isBestseller: boolean;
-  material: string;
+  material?: string;
   careInstructions: string;
   vendor?: string;
   currency?: string;
@@ -42,6 +42,8 @@ export type Product = {
   seoTitle?: string;
   seoDescription?: string;
   imageAltTexts?: (string | null)[];
+  /** Gift cards use their dedicated purchase flow and never appear in apparel listings. */
+  isGiftCard?: boolean;
 };
 
 export type Collection = {
@@ -56,6 +58,8 @@ export type Collection = {
 export type CartItem = {
   variantId: string;
   productId: string;
+  /** Stable storefront URL identity. Optional only for carts saved by older releases. */
+  productHandle?: string;
   title: string;
   image: string;
   price: number;

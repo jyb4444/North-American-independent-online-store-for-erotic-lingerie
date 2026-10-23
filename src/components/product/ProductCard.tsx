@@ -6,7 +6,6 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import type { Product } from '@/types';
 import { track } from '@/lib/analytics';
-import FitConfidenceBadge from '@/components/product/FitConfidenceBadge';
 import WishlistButton from '@/components/product/WishlistButton';
 import { formatMoney, productImage, productImageAlt } from '@/lib/product-display';
 
@@ -49,7 +48,7 @@ export default function ProductCard({ product, onQuickView }: Props & { onQuickV
         {/* Badges */}
         <div className="absolute left-3 top-3 flex flex-col gap-1.5">
           {product.isNew && (
-            <span className="bg-gold-400 px-2 py-0.5 text-[10px] font-medium uppercase tracking-widest text-wine-950">
+            <span className="bg-gold-400 px-2.5 py-1 text-xs font-medium uppercase tracking-[0.1em] text-wine-950">
               New
             </span>
           )}
@@ -66,7 +65,7 @@ export default function ProductCard({ product, onQuickView }: Props & { onQuickV
               return (
                 <span
                   key={size}
-                  className={`px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wider ${
+                  className={`px-2 py-1 text-xs font-medium uppercase tracking-[0.08em] ${
                     inStock
                       ? 'border border-ivory/30 text-ivory'
                       : 'border border-wine-700/50 text-wine-600 line-through'
@@ -80,7 +79,7 @@ export default function ProductCard({ product, onQuickView }: Props & { onQuickV
           {onQuickView && (
             <button
               onClick={(e) => { e.preventDefault(); onQuickView(product); }}
-              className="flex-shrink-0 border border-gold-400/60 px-2 py-1 text-[9px] font-medium uppercase tracking-widest text-gold-400 transition hover:bg-gold-400 hover:text-wine-950"
+              className="flex-shrink-0 border border-gold-400/60 px-2.5 py-1.5 text-xs font-medium uppercase tracking-[0.08em] text-gold-400 transition hover:bg-gold-400 hover:text-wine-950"
             >
               Quick View
             </button>
@@ -93,13 +92,13 @@ export default function ProductCard({ product, onQuickView }: Props & { onQuickV
         <Link
           href={`/products/${product.handle}`}
           onClick={() => track.productViewed(product)}
-          className="block text-sm font-light tracking-wide text-ivory transition hover:text-gold-400"
+          className="block text-base font-medium leading-snug tracking-normal text-ivory transition hover:text-gold-400"
         >
           {product.title}
         </Link>
 
         <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-          <span className={product.compareAtPrice ? 'text-sm text-crimson-400' : 'text-sm text-gold-400'}>
+          <span className={product.compareAtPrice ? 'text-base font-medium text-crimson-400' : 'text-base font-medium text-gold-400'}>
             {formatMoney(product.price, product.currency)}
           </span>
           {product.compareAtPrice && (
@@ -108,7 +107,7 @@ export default function ProductCard({ product, onQuickView }: Props & { onQuickV
                 {formatMoney(product.compareAtPrice, product.currency)}
               </span>
               {discountPct && (
-                <span className="text-[10px] uppercase tracking-widest text-crimson-400">
+                <span className="text-xs font-medium uppercase tracking-[0.08em] text-crimson-400">
                   {discountPct}% off
                 </span>
               )}
@@ -116,11 +115,9 @@ export default function ProductCard({ product, onQuickView }: Props & { onQuickV
           )}
         </div>
 
-        <p className="text-xs text-ivory-dim" aria-label={`Available colors: ${uniqueColors.map((variant) => variant.color).join(', ') || 'none'}`}>
+        <p className="text-sm text-ivory-dim" aria-label={`Available colors: ${uniqueColors.map((variant) => variant.color).join(', ') || 'none'}`}>
           {uniqueSizes.length === 1 && uniqueSizes[0] === 'Free Size' ? 'One size' : `Sizes ${uniqueSizes.join(', ') || 'unavailable'}`} · {uniqueColors.length} {uniqueColors.length === 1 ? 'color' : 'colors'}
         </p>
-
-        <FitConfidenceBadge product={product} variant="card" />
 
         {/* Color swatches */}
         <div className="flex gap-1.5 pt-0.5">
@@ -128,7 +125,7 @@ export default function ProductCard({ product, onQuickView }: Props & { onQuickV
             <motion.span
               key={v.color}
               whileHover={{ scale: 1.25 }}
-              className="h-2.5 w-2.5 rounded-full border border-gold-600/30"
+              className="h-3.5 w-3.5 rounded-full border border-gold-600/50"
               style={{ backgroundColor: v.colorHex }}
               title={v.color}
             />

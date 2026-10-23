@@ -11,7 +11,7 @@ async function addProductToBag(page: Page, { size = 'M', color = 'Black' } = {})
   await expect(page.getByRole('heading', { level: 1, name: PRODUCT.title })).toBeVisible();
   const main = page.locator('main');
   await main.getByRole('button', { name: color, exact: true }).click();
-  await main.getByRole('button', { name: size, exact: true }).click();
+  await main.getByRole('button', { name: `Select size ${size}`, exact: true }).click();
   await main.getByRole('button', { name: 'Add to Bag' }).first().click();
 }
 
@@ -88,8 +88,13 @@ test('product page requires a size and colour before adding to bag', async ({ pa
   await expect(page.locator('main').getByRole('button', { name: 'Select Size', exact: true })).toBeDisabled();
 
   await page.reload();
-  await page.locator('main').getByRole('button', { name: 'M', exact: true }).click();
-  await expect(page.locator('main').getByRole('button', { name: 'Select Color', exact: true })).toBeDisabled();
+  await page.locator('main').getByRole('button', { name: 'Select size M', exact: true }).click();
+  await expect(page.getByText('Choose a colour before selecting a size or requesting a restock alert.')).toBeVisible();
+  await expect(page.locator('main').getByRole('button', { name: 'Select Size & Color', exact: true })).toBeDisabled();
+
+  await page.locator('main').getByRole('button', { name: 'Black', exact: true }).click();
+  await page.locator('main').getByRole('button', { name: 'Select size M', exact: true }).click();
+  await expect(page.locator('main').getByRole('button', { name: 'Add to Bag', exact: true })).toBeEnabled();
 });
 
 test('size guide opens and closes', async ({ page }) => {

@@ -10,6 +10,7 @@ const PRODUCT_FRAGMENT = `
     vendor
     createdAt
     updatedAt
+    isGiftCard
     seo { title description }
     priceRange {
       minVariantPrice { amount currencyCode }

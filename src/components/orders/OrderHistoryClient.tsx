@@ -55,7 +55,7 @@ function OrderCard({ order }: { order: OrderWithShipments }) {
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-3">
             <h3 className="font-serif text-2xl font-light text-ivory">#{order.shopify_order_number}</h3>
-            <span className={`border px-2.5 py-1 text-[10px] font-medium uppercase tracking-widest ${
+            <span className={`border px-2.5 py-1 text-xs font-medium uppercase tracking-widest ${
               complete ? 'border-gold-600/30 text-ivory-dim' : 'border-gold-400/60 text-gold-400'
             }`}>
               {label(order.fulfillment_status)}
@@ -86,7 +86,7 @@ function OrderCard({ order }: { order: OrderWithShipments }) {
         <div className="flex flex-wrap gap-3">
           <Link
             href={`/orders/${order.id}`}
-            className="inline-flex items-center gap-2 border border-gold-400 px-4 py-2 text-[10px] uppercase tracking-widest text-gold-400 transition hover:bg-gold-400 hover:text-wine-950"
+            className="inline-flex items-center gap-2 border border-gold-400 px-4 py-2 text-xs uppercase tracking-widest text-gold-400 transition hover:bg-gold-400 hover:text-wine-950"
           >
             <RotateCcw size={14} />
             Manage / Return
@@ -94,7 +94,7 @@ function OrderCard({ order }: { order: OrderWithShipments }) {
           {latestShipment && (
             <Link
               href={`/track/${latestShipment.public_lookup_token}`}
-              className="inline-flex items-center gap-2 border border-gold-600/35 px-4 py-2 text-[10px] uppercase tracking-widest text-ivory-muted transition hover:border-gold-400 hover:text-gold-400"
+              className="inline-flex items-center gap-2 border border-gold-600/35 px-4 py-2 text-xs uppercase tracking-widest text-ivory-muted transition hover:border-gold-400 hover:text-gold-400"
             >
               <Truck size={14} />
               Track
@@ -159,15 +159,15 @@ export default function OrderHistoryClient({ orders }: { orders: OrderWithShipme
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="grid gap-4 sm:grid-cols-3">
             <div>
-              <p className="text-[10px] uppercase tracking-widest text-ivory-dim">Total Orders</p>
+              <p className="text-xs uppercase tracking-widest text-ivory-dim">Total Orders</p>
               <p className="mt-1 font-serif text-2xl text-ivory">{orders.length}</p>
             </div>
             <div>
-              <p className="text-[10px] uppercase tracking-widest text-ivory-dim">In Progress</p>
+              <p className="text-xs uppercase tracking-widest text-ivory-dim">In Progress</p>
               <p className="mt-1 font-serif text-2xl text-gold-400">{activeOrders.length}</p>
             </div>
             <div>
-              <p className="text-[10px] uppercase tracking-widest text-ivory-dim">Completed</p>
+              <p className="text-xs uppercase tracking-widest text-ivory-dim">Completed</p>
               <p className="mt-1 font-serif text-2xl text-ivory">{completedOrders.length}</p>
             </div>
           </div>

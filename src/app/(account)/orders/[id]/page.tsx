@@ -66,7 +66,7 @@ export default async function OrderDetailPage({
           <h1 className="font-serif text-3xl font-light text-ivory">Order #{order.shopify_order_number}</h1>
           <p className="mt-1 text-sm text-ivory-dim">{formatDate(order.processed_at ?? order.created_at)}</p>
         </div>
-        <span className="border border-gold-600/40 px-3 py-1 text-[10px] font-medium uppercase tracking-widest text-gold-400">
+        <span className="border border-gold-600/40 px-3 py-1 text-xs font-medium uppercase tracking-widest text-gold-400">
           {label(order.fulfillment_status)}
         </span>
       </div>
@@ -169,7 +169,7 @@ export default async function OrderDetailPage({
                     </p>
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    <span className={`border px-2 py-1 text-[10px] uppercase tracking-widest ${requestStatusTone(request.status)}`}>
+                    <span className={`border px-2 py-1 text-xs uppercase tracking-widest ${requestStatusTone(request.status)}`}>
                       {label(request.status)}
                     </span>
                   </div>

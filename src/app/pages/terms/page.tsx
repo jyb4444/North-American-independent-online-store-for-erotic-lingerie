@@ -59,23 +59,19 @@ export default function TermsPage() {
         <p>You are responsible for maintaining the confidentiality of your account credentials and for all activities that occur under your account. Please notify us immediately of any unauthorised use. We reserve the right to suspend or terminate accounts that violate these Terms.</p>
       </Section>
 
-      <Section title="9. AI Style Inspiration">
-        <p>Our AI feature creates a general style illustration from text descriptions. It is not a virtual try-on, an image of the selected product, or a guarantee of fit, colour, material, or appearance. Generated images are not stored on our servers and remain in your browser unless you remove them.</p>
-      </Section>
-
-      <Section title="10. Disclaimer of Warranties">
+      <Section title="9. Disclaimer of Warranties">
         <p>The Site and its contents are provided &ldquo;as is&rdquo; without warranty of any kind, either express or implied, including but not limited to warranties of merchantability, fitness for a particular purpose, or non-infringement.</p>
       </Section>
 
-      <Section title="11. Limitation of Liability">
+      <Section title="10. Limitation of Liability">
         <p>To the maximum extent permitted by law, Self Love shall not be liable for any indirect, incidental, special, consequential, or punitive damages arising from your use of the Site or products purchased through it.</p>
       </Section>
 
-      <Section title="12. Governing Law">
+      <Section title="11. Governing Law">
         <p>These Terms are governed by and construed in accordance with applicable law. Any disputes shall be resolved through good-faith negotiation first, then binding arbitration if necessary.</p>
       </Section>
 
-      <Section title="13. Changes to These Terms">
+      <Section title="12. Changes to These Terms">
         <p>We reserve the right to modify these Terms at any time. Changes will be posted on this page with an updated date. Continued use of the Site after changes constitutes acceptance of the new Terms.</p>
       </Section>
 

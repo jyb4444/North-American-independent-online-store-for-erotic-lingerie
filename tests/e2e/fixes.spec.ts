@@ -142,10 +142,10 @@ test.describe('D25 / D30 age gate and pop-ups', () => {
   });
 });
 
-test('D26 the privacy policy discloses the AI preview provider', async ({ page }) => {
+test('D26 the privacy policy does not advertise retired AI or fit-profile processing', async ({ page }) => {
   await page.goto('/pages/privacy');
-  await expect(page.getByText(/Hugging Face/).first()).toBeVisible();
-  await expect(page.getByText(/not shared with third parties/)).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: 'Privacy Policy' })).toBeVisible();
+  await expect(page.getByText(/Hugging Face|AI Style Inspiration|fit profile/i)).toHaveCount(0);
 });
 
 test('D40 the referral page shares a working sign-up link and lists reward codes', async ({ page, context }) => {

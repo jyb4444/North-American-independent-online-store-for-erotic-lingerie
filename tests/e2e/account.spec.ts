@@ -43,7 +43,7 @@ test.describe('authentication', () => {
     await page.goto(`/products/${PRODUCT.handle}`);
     const main = page.locator('main');
     await main.getByRole('button', { name: PRODUCT.variants[0].color, exact: true }).click();
-    await main.getByRole('button', { name: PRODUCT.variants[0].size, exact: true }).click();
+    await main.getByRole('button', { name: `Select size ${PRODUCT.variants[0].size}`, exact: true }).click();
     await main.getByRole('button', { name: 'Add to Bag' }).first().click();
     await expect(page.getByRole('button', { name: 'Open bag' })).toContainText('1');
     await page.keyboard.press('Escape');

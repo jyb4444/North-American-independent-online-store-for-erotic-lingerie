@@ -11,32 +11,9 @@ import { admin, pkceCallbackCode, sessionCookieHeader, signShopifyWebhook, TEST_
 import { SEED, USERS, userIdFor } from '../helpers/seed';
 import { clearOutbox, readOutbox } from '../helpers/outbox';
 
-test.describe('D10 abandoned-cart cron authorization', () => {
-  test('accepts the Bearer header Vercel Cron sends', async ({ request }) => {
-    const res = await request.get('/api/cron/abandoned-cart', {
-      headers: { authorization: `Bearer ${process.env.CRON_SECRET}` },
-    });
-    expect(res.status()).toBe(200);
-  });
-
-  test('empty carts and carts followed by a paid order are closed without email', async ({ request }) => {
-    const userId = await userIdFor(USERS.alice);
-    await clearOutbox();
-    await admin().from('cart_snapshots').delete().eq('user_id', userId);
-    await admin().from('cart_snapshots').insert({
-      user_id: userId, email: USERS.alice, items: [], reminder_sent: false, updated_at: '2000-01-01T00:00:00Z',
-    });
-    const res = await request.get('/api/cron/abandoned-cart', { headers: { authorization: `Bearer ${process.env.CRON_SECRET}` } });
-    expect(res.status()).toBe(200);
-    const snapshot = await admin().from('cart_snapshots').select('reminder_sent').eq('user_id', userId).single();
-    expect(snapshot.data?.reminder_sent).toBe(true);
-    expect((await readOutbox()).filter((mail) => mail.to === USERS.alice)).toHaveLength(0);
-    await admin().from('cart_snapshots').delete().eq('user_id', userId);
-  });
-
-  test('rejects a missing or wrong secret', async ({ request }) => {
-    expect((await request.get('/api/cron/abandoned-cart')).status()).toBe(401);
-    expect((await request.get('/api/cron/abandoned-cart', { headers: { authorization: 'Bearer nope' } })).status()).toBe(401);
+test.describe('D10 retired abandoned-cart marketing', () => {
+  test('cannot be scheduled or invoked', async ({ request }) => {
+    expect((await request.get('/api/cron/abandoned-cart')).status()).toBe(410);
   });
 });
 
@@ -52,24 +29,46 @@ test.describe('durable newsletter delivery', () => {
     await admin().from('newsletter_subscribers' as never).delete().eq('email', email);
   });
 
-  test('requires confirmation, persists both deliveries, and supports unsubscribe', async ({ request }) => {
+  test('keeps GET read-only and requires POST for legacy confirmation and unsubscribe', async ({ request }) => {
+    const confirmationToken = crypto.randomBytes(24).toString('hex');
+    const unsubscribeToken = crypto.randomBytes(24).toString('hex');
     const signup = await request.post('/api/newsletter', { data: { email } });
-    expect(signup.status(), await signup.text()).toBe(200);
+    expect(signup.status(), await signup.text()).toBe(410);
+    await admin().from('newsletter_subscribers' as never).insert({
+      email,
+      status: 'pending',
+      confirmation_token_hash: crypto.createHash('sha256').update(confirmationToken).digest('hex'),
+      unsubscribe_token_hash: crypto.createHash('sha256').update(unsubscribeToken).digest('hex'),
+    } as never);
     let subscriber = (await admin().from('newsletter_subscribers' as never).select('status').eq('email', email).single()).data as unknown as { status: string };
     expect(subscriber.status).toBe('pending');
-    expect((await request.get('/api/cron/notifications', { headers: { authorization: `Bearer ${process.env.CRON_SECRET}` } })).status()).toBe(200);
-    expect((await readOutbox()).some((mail) => mail.to === email && mail.subject.includes('Confirm'))).toBe(true);
 
-    const job = (await admin().from('notification_jobs' as never).select('payload').like('identity', `newsletter-confirm:${email}:%`).single()).data as unknown as { payload: { confirmationToken: string; unsubscribeToken: string } };
-    const confirm = await request.get(`/api/newsletter/confirm?token=${encodeURIComponent(job.payload.confirmationToken)}&unsubscribe=${encodeURIComponent(job.payload.unsubscribeToken)}`, { maxRedirects: 0 });
-    expect(confirm.status()).toBe(307);
+    const confirmUrl = `/api/newsletter/confirm?token=${encodeURIComponent(confirmationToken)}&unsubscribe=${encodeURIComponent(unsubscribeToken)}`;
+    const preview = await request.get(confirmUrl);
+    expect(preview.status()).toBe(200);
+    subscriber = (await admin().from('newsletter_subscribers' as never).select('status').eq('email', email).single()).data as unknown as { status: string };
+    expect(subscriber.status).toBe('pending');
+
+    const confirm = await request.post(confirmUrl, { maxRedirects: 0 });
+    expect(confirm.status()).toBe(303);
     subscriber = (await admin().from('newsletter_subscribers' as never).select('status').eq('email', email).single()).data as unknown as { status: string };
     expect(subscriber.status).toBe('active');
     expect((await request.get('/api/cron/notifications', { headers: { authorization: `Bearer ${process.env.CRON_SECRET}` } })).status()).toBe(200);
-    expect((await readOutbox()).some((mail) => mail.to === email && mail.subject.includes('Welcome'))).toBe(true);
+    expect((await readOutbox()).some((mail) => mail.to === email && mail.subject.includes('Welcome'))).toBe(false);
+    const retiredJob = await admin().from('notification_jobs' as never)
+      .select('status,payload,last_error').like('identity', `newsletter-welcome:${email}%`).single();
+    expect(retiredJob.data).toMatchObject({
+      status: 'manual_review', payload: {}, last_error: 'Newsletter delivery retired; message not sent',
+    });
 
-    const unsubscribe = await request.get(`/api/newsletter/unsubscribe?token=${encodeURIComponent(job.payload.unsubscribeToken)}`, { maxRedirects: 0 });
-    expect(unsubscribe.status()).toBe(307);
+    const unsubscribeUrl = `/api/newsletter/unsubscribe?token=${encodeURIComponent(unsubscribeToken)}`;
+    const unsubscribePreview = await request.get(unsubscribeUrl);
+    expect(unsubscribePreview.status()).toBe(200);
+    subscriber = (await admin().from('newsletter_subscribers' as never).select('status').eq('email', email).single()).data as unknown as { status: string };
+    expect(subscriber.status).toBe('active');
+
+    const unsubscribe = await request.post(unsubscribeUrl, { maxRedirects: 0 });
+    expect(unsubscribe.status()).toBe(303);
     subscriber = (await admin().from('newsletter_subscribers' as never).select('status').eq('email', email).single()).data as unknown as { status: string };
     expect(subscriber.status).toBe('unsubscribed');
   });
@@ -387,43 +386,13 @@ test('an out-of-order fulfillment is persisted and replayed when its order arriv
   }
 });
 
-test.describe('D32 AI preview input', () => {
-  const refused = [
-    'a 16 year old girl, petite',
-    'a teen with an hourglass figure',
-    'a schoolgirl, slim',
-    'a naked woman, tall',
-  ];
-  for (const bodyDescription of refused) {
-    test(`refuses "${bodyDescription}"`, async ({ request }) => {
-      const res = await request.post('/api/ai-preview', {
-        headers: { 'x-forwarded-for': `198.51.100.${refused.indexOf(bodyDescription) + 1}` },
-        data: { productHandle: 'bow-corset-garter-set', bodyDescription },
-      });
-      expect(res.status()).toBe(400);
-    });
-  }
-
-  test('a normal description passes validation (then needs the AI provider)', async ({ request }) => {
+test.describe('D32 retired AI preview', () => {
+  test('cannot invoke paid inference', async ({ request }) => {
     const res = await request.post('/api/ai-preview', {
       headers: { 'x-forwarded-for': '198.51.100.50' },
       data: { productHandle: 'bow-corset-garter-set', bodyDescription: 'a tall woman with an hourglass figure, warm medium skin tone' },
     });
-    expect(res.status()).toBe(503); // HF_TOKEN is not configured in tests
-  });
-
-  test('refuses a safe body description when the product makes the final prompt unsafe', async ({ request }) => {
-    const res = await request.post('/api/ai-preview', {
-      headers: { 'x-forwarded-for': '198.51.100.51' },
-      data: {
-        productHandle: 'schoolgirl-costume-lace-role-play-lingerie-set-jsy',
-        bodyDescription: 'an adult woman, size M',
-      },
-    });
-    expect(res.status()).toBe(400);
-    await expect(res.json()).resolves.toMatchObject({
-      error: expect.stringContaining('unambiguously adult'),
-    });
+    expect(res.status()).toBe(410);
   });
 });
 

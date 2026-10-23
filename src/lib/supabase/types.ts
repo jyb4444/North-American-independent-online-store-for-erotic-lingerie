@@ -221,6 +221,7 @@ export type Database = {
           order_id: string;
           shopify_line_item_id: string;
           shopify_variant_id: string | null;
+          shopify_product_id: string | null;
           title: string;
           variant_title: string | null;
           sku: string | null;
@@ -236,6 +237,7 @@ export type Database = {
           order_id: string;
           shopify_line_item_id: string;
           shopify_variant_id?: string | null;
+          shopify_product_id?: string | null;
           title: string;
           variant_title?: string | null;
           sku?: string | null;
@@ -247,6 +249,7 @@ export type Database = {
         };
         Update: {
           shopify_variant_id?: string | null;
+          shopify_product_id?: string | null;
           title?: string;
           variant_title?: string | null;
           sku?: string | null;

@@ -86,7 +86,7 @@ export default function SearchModal({ open, onClose }: Props) {
                   <p className="text-sm text-ivory-muted">No results for &quot;{query}&quot;</p>
                 ) : (
                   <>
-                    <p className="mb-3 text-xs font-medium uppercase tracking-widest text-ivory-dim">
+                    <p className="mb-3 text-sm font-medium uppercase tracking-[0.1em] text-ivory-dim">
                       {results.length} result{results.length !== 1 ? 's' : ''}
                     </p>
                     <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -97,8 +97,8 @@ export default function SearchModal({ open, onClose }: Props) {
                             <Image src={p.images[0]} alt={p.title} fill sizes="120px" className="object-cover" />
                           </div>
                           <div className="min-w-0">
-                            <p className="truncate text-xs text-ivory group-hover:text-gold-400 transition">{p.title}</p>
-                            <p className="text-xs text-gold-400">${p.price.toFixed(2)}</p>
+                            <p className="truncate text-sm font-medium text-ivory group-hover:text-gold-400 transition">{p.title}</p>
+                            <p className="text-sm text-gold-400">${p.price.toFixed(2)}</p>
                           </div>
                         </Link>
                       ))}
@@ -107,13 +107,13 @@ export default function SearchModal({ open, onClose }: Props) {
                 )
               ) : (
                 <>
-                  <p className="mb-3 text-xs font-medium uppercase tracking-widest text-ivory-dim">Shop by category</p>
+                  <p className="mb-3 text-sm font-medium uppercase tracking-[0.1em] text-ivory-dim">Shop by category</p>
                   <div className="grid gap-3 sm:grid-cols-2">
                     {categoryLinks.map((category) => (
                       <div key={category.href} className="border border-wine-700 bg-wine-950 p-3">
                         <Link href={category.href} onClick={onClose} className="block transition hover:text-gold-400">
-                          <p className="text-xs font-medium uppercase tracking-widest text-ivory">{category.label}</p>
-                          <p className="mt-1 text-xs text-ivory-dim">{category.description}</p>
+                          <p className="text-sm font-medium uppercase tracking-[0.1em] text-ivory">{category.label}</p>
+                          <p className="mt-1 text-sm text-ivory-dim">{category.description}</p>
                         </Link>
                         {category.products.length > 0 && (
                           <div className="mt-3 grid grid-cols-4 gap-2">

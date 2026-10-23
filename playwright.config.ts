@@ -4,6 +4,7 @@ import { parseEnv } from 'node:util';
 import { defineConfig, devices } from '@playwright/test';
 
 const legacy = process.env.E2E_SCHEMA_MODE === 'legacy';
+const productionFlags = process.env.E2E_PRODUCTION_FLAGS === 'true';
 const PORT = 3100;
 const BASE_URL = `http://localhost:${PORT}`;
 
@@ -20,6 +21,13 @@ if (fs.existsSync(localEnvPath)) {
 }
 
 if (legacy) testEnv.REFERRAL_REWARDS_ENABLED = 'false';
+if (productionFlags) {
+  testEnv.REFERRAL_REWARDS_ENABLED = 'false';
+  testEnv.NEWSLETTER_ENABLED = 'false';
+  testEnv.NEXT_PUBLIC_NEWSLETTER_ENABLED = 'false';
+  testEnv.RESTOCK_ALERTS_ENABLED = 'false';
+  testEnv.NEXT_PUBLIC_RESTOCK_ALERTS_ENABLED = 'false';
+}
 Object.assign(process.env, testEnv);
 
 if (!/^http:\/\/(127\.0\.0\.1|localhost):/.test(testEnv.NEXT_PUBLIC_SUPABASE_URL ?? '')) {
@@ -28,7 +36,7 @@ if (!/^http:\/\/(127\.0\.0\.1|localhost):/.test(testEnv.NEXT_PUBLIC_SUPABASE_URL
 
 export default defineConfig({
   testDir: 'tests',
-  testMatch: legacy ? ['api/compatibility.spec.ts'] : ['api/**/*.spec.ts', 'e2e/**/*.spec.ts'],
+  testMatch: legacy ? ['api/compatibility.spec.ts'] : productionFlags ? ['production-flags/**/*.spec.ts'] : ['api/**/*.spec.ts', 'e2e/**/*.spec.ts'],
   globalSetup: './tests/global-setup.ts',
   // All specs share one local database; run serially until specs get their own data sets.
   fullyParallel: false,
@@ -45,7 +53,9 @@ export default defineConfig({
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
   },
-  projects: legacy ? [{ name: 'legacy', testMatch: 'api/compatibility.spec.ts' }] : [
+  projects: legacy ? [{ name: 'legacy', testMatch: 'api/compatibility.spec.ts' }] : productionFlags ? [
+    { name: 'production-flags', testMatch: 'production-flags/**/*.spec.ts', use: { ...devices['Desktop Chrome'] } },
+  ] : [
     { name: 'api', testMatch: 'api/**/*.spec.ts' },
     { name: 'e2e-chrome', testMatch: 'e2e/**/*.spec.ts', testIgnore: 'e2e/mobile.spec.ts', use: { ...devices['Desktop Chrome'] } },
     { name: 'e2e-mobile', testMatch: 'e2e/mobile.spec.ts', use: { ...devices['Pixel 7'] } },

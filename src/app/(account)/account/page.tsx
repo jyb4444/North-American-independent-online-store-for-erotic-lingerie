@@ -1,9 +1,8 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Package, Heart, ChevronRight, UserCog, PackageSearch, Ruler, ShieldAlert } from 'lucide-react';
+import { Package, Heart, ChevronRight, UserCog, PackageSearch, ShieldAlert } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
-import LocalLookbookPanel from '@/components/ai/LocalLookbookPanel';
 import WishlistReminderBanner from '@/components/wishlist/WishlistReminderBanner';
 
 export default async function AccountPage() {
@@ -18,7 +17,6 @@ export default async function AccountPage() {
     { href: '/account/orders', icon: Package, label: 'Order History', sub: 'Purchases and returns' },
     { href: '/track', icon: PackageSearch, label: 'Track Package', sub: 'Order status lookup' },
     { href: '/account/wishlist', icon: Heart, label: 'Wishlist', sub: 'Saved styles' },
-    { href: '/account/fit-profile', icon: Ruler, label: 'Fit Profile', sub: 'Save measurements for size estimates' },
     { href: '/account/profile', icon: UserCog, label: 'Edit Profile', sub: 'Name, password and addresses' },
   ];
   if (user.app_metadata?.role === 'admin') {
@@ -50,7 +48,6 @@ export default async function AccountPage() {
 
       <div className="mb-6 space-y-4">
         <WishlistReminderBanner source="account" />
-        <LocalLookbookPanel source="account" />
       </div>
 
       <div>

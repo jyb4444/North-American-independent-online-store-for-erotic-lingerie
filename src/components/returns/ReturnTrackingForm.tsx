@@ -69,7 +69,7 @@ export default function ReturnTrackingForm({ requestId }: { requestId: string })
         <button
           type="submit"
           disabled={submitting}
-          className="inline-flex w-fit items-center gap-2 border border-gold-400 px-4 py-2 text-[10px] uppercase tracking-widest text-gold-400 transition hover:bg-gold-400 hover:text-wine-950 disabled:opacity-50"
+          className="inline-flex w-fit items-center gap-2 border border-gold-400 px-4 py-2 text-xs uppercase tracking-widest text-gold-400 transition hover:bg-gold-400 hover:text-wine-950 disabled:opacity-50"
         >
           <Truck size={14} />
           {submitting ? 'Saving...' : 'Save Tracking'}

@@ -33,6 +33,7 @@ export type OrderItem = {
   id: string;
   shopify_line_item_id: string;
   shopify_variant_id: string | null;
+  shopify_product_id: string | null;
   title: string;
   variant_title: string | null;
   sku: string | null;
@@ -102,6 +103,8 @@ type ShopifyLineItemPayload = {
   admin_graphql_api_id?: string;
   variant_id?: number | string | null;
   variant_admin_graphql_api_id?: string | null;
+  product_id?: number | string | null;
+  product_admin_graphql_api_id?: string | null;
   title?: string | null;
   name?: string | null;
   variant_title?: string | null;
@@ -135,6 +138,7 @@ type ShopifyAdminOrderNode = {
       variantTitle: string | null;
       sku: string | null;
       vendor: string | null;
+      product: { id: string } | null;
       originalUnitPriceSet: {
         shopMoney: {
           amount: string;
@@ -358,6 +362,7 @@ async function upsertAdminOrderForUser(node: ShopifyAdminOrderNode, userId: stri
       quantity: lineItem.quantity,
       price: lineItem.originalUnitPriceSet.shopMoney.amount,
       vendor: lineItem.vendor,
+      product_admin_graphql_api_id: lineItem.product?.id,
     });
   }
 
@@ -404,6 +409,7 @@ export async function syncShopifyOrdersForUser(input: {
                 variantTitle
                 sku
                 vendor
+                product { id }
                 originalUnitPriceSet {
                   shopMoney {
                     amount
@@ -448,6 +454,7 @@ async function upsertOrderItem(orderId: string, lineItem: ShopifyLineItemPayload
       order_id: orderId,
       shopify_line_item_id: lineItemId,
       shopify_variant_id: canonicalShopifyId(lineItem.variant_admin_graphql_api_id ?? lineItem.variant_id, 'ProductVariant') || null,
+      shopify_product_id: canonicalShopifyId(lineItem.product_admin_graphql_api_id ?? lineItem.product_id, 'Product') || null,
       title,
       variant_title: lineItem.variant_title ?? null,
       sku: lineItem.sku ?? null,
