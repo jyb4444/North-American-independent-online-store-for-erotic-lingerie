@@ -3,7 +3,7 @@ import { cookies } from 'next/headers';
 import { NextResponse, type NextRequest } from 'next/server';
 
 // write_discounts: referral reward codes (discountCodeBasicCreate).
-const SCOPES = 'read_orders,write_orders,read_products,write_products,read_discounts,write_discounts';
+const SCOPES = 'read_orders,write_orders,read_products,write_products,read_discounts,write_discounts,read_fulfillments';
 
 function getShopDomain(value: string | null) {
   const fallback = process.env.NEXT_PUBLIC_SHOPIFY_DOMAIN;

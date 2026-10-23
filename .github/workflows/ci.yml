@@ -58,3 +58,68 @@ jobs:
 
       - name: Build
         run: npm run build
+
+  e2e:
+    name: Local Supabase API and browser E2E
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Start isolated Supabase
+        run: supabase start
+
+      - name: Start Upstash-compatible rate-limit fixture
+        run: |
+          docker network create e2e-rate-limit
+          docker run --detach --name e2e-redis --network e2e-rate-limit redis:7.4-alpine
+          docker run --detach --name e2e-upstash --network e2e-rate-limit --publish 55479:80 \
+            --env SRH_MODE=env \
+            --env SRH_TOKEN=e2e-upstash-token \
+            --env SRH_CONNECTION_STRING=redis://e2e-redis:6379 \
+            hiett/serverless-redis-http
+          for attempt in {1..30}; do
+            if curl --silent --fail http://127.0.0.1:55479/ \
+              --request POST \
+              --header 'Authorization: Bearer e2e-upstash-token' \
+              --header 'Content-Type: application/json' \
+              --data '["PING"]' >/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          docker logs e2e-upstash
+          exit 1
+
+      - name: Run API and browser E2E
+        run: npm run test:e2e
+
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: ignore
+          retention-days: 7
