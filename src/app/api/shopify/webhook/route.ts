@@ -3,15 +3,7 @@ import crypto from 'crypto';
 import { upsertOrderFromShopify } from '@/lib/logistics';
 import { recordReferralPayment, knownReferralPayment } from '@/lib/referral-rewards';
 import { acceptFulfillmentWebhook, replayPendingFulfillments } from '@/lib/shopify/webhook-inbox';
-
-function verifyWebhook(body: Buffer, signature: string): boolean {
-  const secret = process.env.SHOPIFY_WEBHOOK_SECRET;
-  if (!secret || !signature) return false;
-  const hash = crypto.createHmac('sha256', secret).update(body).digest('base64');
-  const hashBuffer = Buffer.from(hash);
-  const signatureBuffer = Buffer.from(signature);
-  return hashBuffer.length === signatureBuffer.length && crypto.timingSafeEqual(hashBuffer, signatureBuffer);
-}
+import { verifyShopifyWebhook } from '@/lib/shopify/webhook-signature';
 
 export async function POST(req: Request) {
   const raw = Buffer.from(await req.arrayBuffer());
@@ -19,7 +11,7 @@ export async function POST(req: Request) {
   const signature = req.headers.get('x-shopify-hmac-sha256') ?? '';
   const topic = req.headers.get('x-shopify-topic') ?? '';
 
-  if (!verifyWebhook(raw, signature)) {
+  if (!verifyShopifyWebhook(raw, signature)) {
     return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
   }
 
