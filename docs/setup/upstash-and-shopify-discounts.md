@@ -93,7 +93,9 @@
   - **URL**：`https://你的网站域名/api/shopify/webhook`
   - **API version**：2026-01
 
-  页面底部会显示 webhook 的签名密钥（"Your webhooks will be signed with …"），它必须和 Vercel 里的 `SHOPIFY_WEBHOOK_SECRET` 一致。
+  - 通过应用或 Admin API 创建的订阅使用该应用的 client secret 签名；Vercel 的 `SHOPIFY_CLIENT_SECRET` 必须属于创建订阅的同一个应用。
+  - 旧版 Shopify Admin 中手动创建的 webhook 可能显示单独的签名密钥（"Your webhooks will be signed with …"）；仅这种订阅需要把该值配置为 `SHOPIFY_WEBHOOK_SECRET`。
+  - 部署后必须发送一次真实测试事件，并确认 Shopify delivery 返回 2xx 且订单写入目标 Supabase 项目。仅看到订阅列表不代表验签配置正确。
 
 ---
 
